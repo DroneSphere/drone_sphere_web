@@ -1,0 +1,52 @@
+{
+  "sidebar": {
+    "platform": "平台功能",
+    "recent_project": "近期任务",
+    "support": "联系我们",
+    "feedback": "意见反馈",
+    "settings": {
+      "title": "设置",
+      "account": "账户",
+      "general": "通用"
+    },
+    "drones": {
+      "title": "无人机管理"
+    },
+    "applications": {
+      "title": "应用管理",
+      "inspection": "巡检应用",
+      "universal": "通用应用"
+    },
+    "data": {
+      "title": "数据管理"
+    },
+    "user": {
+      "logout": "退出登录"
+    }
+  },
+  "application": {
+    "inspection": {
+      "title": "巡检",
+      "list": {
+        "table": {
+          "id": "任务ID",
+          "name": "任务名称",
+          "owner": "所有者",
+          "status": "状态",
+          "created_at": "创建时间",
+          "last_run_at": "最后运行时间",
+          "actions": {
+            "title": "操作",
+            "edit": "编辑",
+            "view": "查看"
+          }
+        }
+      }
+    },
+    "universal": {
+      "action": "连接",
+      "map": "地图",
+      "livestream": "实时视频"
+    }
+  }
+}
