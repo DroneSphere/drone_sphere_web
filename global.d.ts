@@ -1,4 +1,4 @@
-type ConnectCallback = (arg: unknown) => void;
+type ConnectCallback = (arg: boolean) => void;
 
 interface Window {
   // DJI Bridge 模块

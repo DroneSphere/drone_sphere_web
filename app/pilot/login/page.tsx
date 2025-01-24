@@ -16,9 +16,9 @@ export default function Home() {
   const [username, setUsername] = useState<string | null>(null);
   const [password, setPassword] = useState<string | null>(null);
 
-  // useEffect(() => {
-  //   setLoginEnabled(username !== null && password !== null);
-  // }, [username, password]);
+  useEffect(() => {
+    setLoginEnabled(username !== null && password !== null);
+  }, [username, password]);
 
   useEffect(() => {
     const vConsole = new VConsole();
@@ -31,8 +31,7 @@ export default function Home() {
     };
     jsNativeAPI.setLicense(licenseInfo);
 
-    // 定义连接状态回调函数
-    const connectCallback = async (arg: unknown) => {
+    const connectCallback = async (arg: boolean) => {
       console.log(arg);
 
       if (arg) {
@@ -92,49 +91,12 @@ export default function Home() {
               };
               jsNativeAPI.setThingParams(thingParams);
               jsNativeAPI.initComponent(DJIModule.THING);
-
-              // jsNativeAPI.connect();
             }}
             className="w-full my-4"
           >
             登录
           </Button>
         </div>
-        <Button
-          onClick={() => {
-            const configs = jsNativeAPI.getConfigs();
-            console.log(configs);
-            
-          }}
-          className="w-full"
-        >
-          获取参数
-        </Button>
-        <Button
-          onClick={() => {
-            jsNativeAPI.disconnect();
-          }}
-          className="w-full"
-        >
-          断开连接
-        </Button>
-        <Button
-          onClick={() => {
-            jsNativeAPI.connect();
-          }}
-          className="w-full"
-        >
-          连接
-        </Button>
-        <Button
-          onClick={() => {
-            const state = jsNativeAPI.getConnectState();
-            console.log(state);
-          }}
-          className="w-full"
-        >
-          获取状态
-        </Button>
       </div>
     </div>
   );

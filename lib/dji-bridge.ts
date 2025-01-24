@@ -155,8 +155,10 @@ class JsNativeAPI {
   /**
    * 设置工作区 ID
    *
-   * @param uuid - The unique identifier for the workspace.
-   * @returns A boolean indicating whether the operation was successful.
+   * @param platformName - 平台名称
+   * @param workspaceName - 工作区名称
+   * @param desc - 工作区描述
+   * @returns 是否设置成功
    */
   setInformation(
     platformName: string,
