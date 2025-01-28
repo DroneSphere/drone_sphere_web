@@ -1,5 +1,6 @@
 "use client";
 
+import { login, LoginCommand } from "@/api/user/login";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -36,13 +37,25 @@ export default function Home() {
 
       if (arg) {
         console.log("Connected successfully!");
-        // 在这里添加连接成功后的逻辑
+        toast({
+          title: "登录成功",
+          description: "已成功登录到 Pilot",
+        });
       } else {
         console.log("Disconnected!");
-        // 在这里添加连接失败后的逻辑
+        toast({
+          title: "登录失败",
+          description: "登录到 Pilot 失败",
+        });
       }
     };
     window.connectCallback = connectCallback;
+  }, [toast]);
+
+  // TODO: Remove this block
+  useEffect(() => {
+    setUsername("admin");
+    setPassword("123456");
   }, []);
 
   return (
@@ -51,43 +64,48 @@ export default function Home() {
         <div className="my-4 text-center text-xl">Pilot 登录</div>
         <div className="flex items-center">
           <User className="w-8 h-8 mr-4" />
-          <Input onChange={(e) => setUsername(e.target.value)} />
+          <Input value={username || ""} />
         </div>
         <div className="flex items-center">
           <Lock className="w-8 h-8 mr-4" />
-          <Input onChange={(e) => setPassword(e.target.value)} />
+          <Input value={password || ""} />
         </div>
         <div className="flex justify-center">
           <Button
             disabled={!isLoginEnabled}
-            onClick={() => {
+            onClick={async () => {
+              // 验证 Developer 许可
               const { success: isVerified, message } =
                 jsNativeAPI.platformVerifyLicense();
               console.log(isVerified, message);
-
-              if (isVerified) {
+              if (!isVerified) {
                 toast({
-                  title: "登录成功",
-                  description: "欢迎回来！",
-                });
-              } else {
-                toast({
-                  title: "登录失败",
+                  title: "许可证验证失败",
                   description: message,
                 });
+                return;
               }
 
+              // 登录
+              const cmd = {
+                username,
+                password,
+                sn: jsNativeAPI.getRemoteControllerSN(),
+              } as LoginCommand;
+              const res = await login(cmd);
+              console.log(res);
+
               jsNativeAPI.setInformation(
-                "DroneSphere",
-                "DEMO",
-                "This is a demo worksace for DroneSphere."
+                res.info.platform,
+                res.info.workspace,
+                res.info.desc
               );
 
               const thingParams: ThingParams = {
-                host: "tcp://47.245.40.222:1883",
+                host: res.params.mqtt.host,
                 connectCallback: "connectCallback",
-                username: "drone",
-                password: "drone",
+                username: res.params.mqtt.username,
+                password: res.params.mqtt.password,
               };
               jsNativeAPI.setThingParams(thingParams);
               jsNativeAPI.initComponent(DJIModule.THING);

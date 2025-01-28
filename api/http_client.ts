@@ -5,11 +5,11 @@ import axios, {
 } from "axios";
 
 class HttpClient {
-  private instance: AxiosInstance;
+  instance: AxiosInstance;
 
   constructor() {
     this.instance = axios.create({
-      baseURL: "https://api.example.com", // 替换为你的API基础URL
+      baseURL: "http://192.168.31.170:10086/api/v1", // 替换为你的API基础URL
       timeout: 10000,
     });
 
@@ -57,8 +57,6 @@ class HttpClient {
     }
     return Promise.reject(error);
   }
-
-  // 可以继续添加PUT, DELETE等方法
 
   public setHeader(key: string, value: string) {
     this.instance.defaults.headers.common[key] = value;
