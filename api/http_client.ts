@@ -1,3 +1,4 @@
+import { getLocalStorage } from "@/lib/storage";
 import axios, {
   AxiosError,
   AxiosInstance,
@@ -18,7 +19,8 @@ class HttpClient {
   }
 
   private loadTokenFromLocalStorage() {
-    const token = localStorage.getItem("auth_token");
+    // const token = localStorage.getItem("auth_token");
+    const token = getLocalStorage("auth_token");
     if (token) {
       this.instance.defaults.headers.common[
         "Authorization"
