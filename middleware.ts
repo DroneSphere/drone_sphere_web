@@ -1,5 +1,7 @@
+import { getLocalStorage } from "@/lib/storage";
 import { NextRequest, NextResponse } from "next/server";
 import { i18n } from "./i18n-config";
+
 
 // 获取用户语言偏好
 function getLocale(request: NextRequest): string {
@@ -24,6 +26,13 @@ function getLocale(request: NextRequest): string {
 // 中间件
 export function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
+  
+  // 检查登录状态
+  const token = getLocalStorage("auth_token");
+  if (!token && !pathname.startsWith("/pilot/login")) {
+    return NextResponse.redirect(new URL("/pilot/login", request.url));
+  }
+
   // 如果以 /pilot 开头，跳过
   if (pathname.startsWith("/pilot")) {
     return NextResponse.next();
