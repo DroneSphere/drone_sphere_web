@@ -39,8 +39,10 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
-            type=sha
+            type=sha,prefix=,suffix=,format=short
             type=ref,event=tag
+        env:
+          DOCKER_METADATA_SHORT_SHA_LENGTH: 12
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
