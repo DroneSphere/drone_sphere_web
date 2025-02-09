@@ -9,7 +9,7 @@ export interface LoginCommand {
 
 export interface LoginResult {
   token: string;
-  info: {
+  platform: {
     desc: string;
     platform: string;
     workspace: string;
@@ -17,22 +17,17 @@ export interface LoginResult {
   user: {
     id: number;
     username: string;
+    role: string;
   };
   params: {
-    http: {
-      Host: string;
-      Token: string;
-    };
-    mqtt: {
-      host: string;
-      password: string;
-      username: string;
-    };
+    mqtt_host: string;
+    mqtt_username: string;
+    mqtt_password: string;
   };
 }
 
 export async function login(payload: LoginCommand): Promise<LoginResult> {
-  console.log('Login Payloiad:' + payload);
+  console.log("Login Payloiad:" + payload);
   const res = await httpClient.instance.post<Response<LoginResult>>(
     "/user/login",
     payload

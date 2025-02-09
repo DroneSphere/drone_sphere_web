@@ -96,16 +96,16 @@ export default function Home() {
               console.log(res);
 
               jsNativeAPI.setInformation(
-                res.info.platform,
-                res.info.workspace,
-                res.info.desc
+                res.platform.platform,
+                res.platform.workspace,
+                res.platform.desc
               );
 
               const thingParams: ThingParams = {
-                host: res.params.mqtt.host,
+                host: res.params.mqtt_host,
                 connectCallback: "connectCallback",
-                username: res.params.mqtt.username,
-                password: res.params.mqtt.password,
+                username: res.params.mqtt_username,
+                password: res.params.mqtt_password,
               };
               jsNativeAPI.setThingParams(thingParams);
               jsNativeAPI.initComponent(DJIModule.THING);
