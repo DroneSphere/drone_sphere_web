@@ -1,6 +1,7 @@
 "use client";
 
 import { DroneItemResult, fetchAllDrones } from "@/api/drone/drone";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
@@ -17,6 +18,7 @@ import {
   getCoreRowModel,
   useReactTable,
 } from "@tanstack/react-table";
+import { RefreshCw } from "lucide-react";
 import { useReducer } from "react";
 
 function StatisticsPanel() {
@@ -85,7 +87,10 @@ export default function DronesPage() {
     <div className="min-h-screen p-4">
       <StatisticsPanel />
       <div className="my-4 flex justify-between">
-        <div className="flex gap-4">
+        <div className="flex gap-4 items-center">
+          <Button onClick={() => rerender()}>
+            <RefreshCw size={16} />
+          </Button>
           {Array.from({ length: 3 }).map((_, index) => (
             <Skeleton key={index} className="h-12 w-[96px] rounded-xl" />
           ))}
@@ -95,6 +100,10 @@ export default function DronesPage() {
           <Skeleton className="h-12 w-[256px] rounded-xl" />
         </div>
       </div>
+      {
+        // 加载中
+        listQuery.isPending && <div className="text-center">加载中...</div>
+      }
       {listQuery.isSuccess && (
         <div className="my-4">
           <Table>
@@ -129,25 +138,21 @@ export default function DronesPage() {
                 </TableRow>
               ))}
             </TableBody>
-            {/* <TableFooter>
-              <TableRow>
-                {table.getFooterGroups().map((footerGroup) =>
-                  footerGroup.headers.map((footer) => (
-                    <TableHead key={footer.id} className="text-center">
-                      {footer.isPlaceholder
-                        ? null
-                        : flexRender(
-                            footer.column.columnDef.footer,
-                            footer.getContext()
-                          )}
-                    </TableHead>
-                  ))
-                )}
-              </TableRow>
-            </TableFooter> */}
           </Table>
         </div>
       )}
+      {
+        // 无数据
+        !listQuery.isPending &&
+          listQuery.isSuccess &&
+          listQuery.data?.length === 0 && (
+            <div className="text-center text-gray-500">暂无数据</div>
+          )
+      }
+      {
+        // 加载失败
+        listQuery.isError && <div className="text-center">加载失败</div>
+      }
     </div>
   );
 }
