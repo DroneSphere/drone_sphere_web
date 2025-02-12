@@ -16,6 +16,8 @@ export default function Home() {
   const [isLoginEnabled, setLoginEnabled] = useState(true);
   const [username, setUsername] = useState<string | null>(null);
   const [password, setPassword] = useState<string | null>(null);
+  // 用来处理回调函数在第一次触发时不应该执行的问题
+  const [firstAttempt, setFirstAttempt] = useState(true);
 
   useEffect(() => {
     setLoginEnabled(username !== null && password !== null);
@@ -34,23 +36,31 @@ export default function Home() {
 
     const connectCallback = async (arg: boolean) => {
       console.log(arg);
-
+      // 第一次触发时不执行
+      if (firstAttempt) {
+        setFirstAttempt(false);
+        console.log("First attempt, skip");
+        toast({
+          title: "开始连接",
+          description: "正在连接到 DroneSphere",
+        });
+      }
       if (arg) {
         console.log("Connected successfully!");
         toast({
-          title: "登录成功",
-          description: "已成功登录到 Pilot",
+          title: "连接成功",
+          description: "已成功连接到 Pilot",
         });
       } else {
         console.log("Disconnected!");
         toast({
-          title: "登录失败",
-          description: "登录到 Pilot 失败",
+          title: "连接失败",
+          description: "无法连接到 Pilot",
         });
       }
     };
     window.connectCallback = connectCallback;
-  }, [toast]);
+  }, [toast, firstAttempt]);
 
   // TODO: Remove this block
   useEffect(() => {
