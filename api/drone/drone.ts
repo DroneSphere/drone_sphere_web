@@ -6,7 +6,7 @@ import { Response } from "../response";
  */
 export interface DroneItemResult {
   domain?: string;
-  id?: number;
+  id: number;
   /**
    * IsRTKAvailable 是否支持RTK
    */
@@ -26,7 +26,7 @@ export interface DroneItemResult {
   /**
    * 以下字段来自实体信息
    */
-  sn?: string;
+  sn: string;
   /**
    * 以上字段来自实体信息
    */

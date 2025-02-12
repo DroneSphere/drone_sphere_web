@@ -57,65 +57,65 @@ import {
 import { useRouter } from "next/navigation";
 import React from "react";
 
-declare module "@tanstack/react-table" {
-  //add fuzzy filter to the filterFns
-  interface FilterFns {
-    fuzzy: FilterFn<unknown>;
-  }
-  interface FilterMeta {
-    itemRank: RankingInfo;
-  }
-}
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const fuzzyFilter: FilterFn<any> = (row, columnId, value, addMeta) => {
-  // Rank the item
-  const itemRank = rankItem(row.getValue(columnId), value);
-
-  // Store the itemRank info
-  addMeta({
-    itemRank,
-  });
-
-  // Return if the item should be filtered in/out
-  return itemRank.passed;
-};
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const fuzzySort: SortingFn<any> = (rowA, rowB, columnId) => {
-  let dir = 0;
-
-  // Only sort by rank if the column has ranking information
-  if (rowA.columnFiltersMeta[columnId]) {
-    dir = compareItems(
-      // eslint-disable-next-line @typescript-eslint/no-non-null-asserted-optional-chain
-      rowA.columnFiltersMeta[columnId]?.itemRank!,
-      // eslint-disable-next-line @typescript-eslint/no-non-null-asserted-optional-chain
-      rowB.columnFiltersMeta[columnId]?.itemRank!
-    );
-  }
-
-  // Provide an alphanumeric fallback for when the item ranks are equal
-  return dir === 0 ? sortingFns.alphanumeric(rowA, rowB, columnId) : dir;
-};
-
-type Task = {
-  id: string;
-  name: string;
-  owner: string;
-  status: string;
-  created_at: string;
-  last_run_at: string;
-  actions?: {
-    title: string;
-    edit: string;
-    view: string;
-  };
-};
-
 export default function InspectionPage() {
   const router = useRouter();
 
+  declare module "@tanstack/react-table" {
+    //add fuzzy filter to the filterFns
+    interface FilterFns {
+      fuzzy: FilterFn<unknown>;
+    }
+    interface FilterMeta {
+      itemRank: RankingInfo;
+    }
+  }
+  
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const fuzzyFilter: FilterFn<any> = (row, columnId, value, addMeta) => {
+    // Rank the item
+    const itemRank = rankItem(row.getValue(columnId), value);
+  
+    // Store the itemRank info
+    addMeta({
+      itemRank,
+    });
+  
+    // Return if the item should be filtered in/out
+    return itemRank.passed;
+  };
+  
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const fuzzySort: SortingFn<any> = (rowA, rowB, columnId) => {
+    let dir = 0;
+  
+    // Only sort by rank if the column has ranking information
+    if (rowA.columnFiltersMeta[columnId]) {
+      dir = compareItems(
+        // eslint-disable-next-line @typescript-eslint/no-non-null-asserted-optional-chain
+        rowA.columnFiltersMeta[columnId]?.itemRank!,
+        // eslint-disable-next-line @typescript-eslint/no-non-null-asserted-optional-chain
+        rowB.columnFiltersMeta[columnId]?.itemRank!
+      );
+    }
+  
+    // Provide an alphanumeric fallback for when the item ranks are equal
+    return dir === 0 ? sortingFns.alphanumeric(rowA, rowB, columnId) : dir;
+  };
+  
+  type Task = {
+    id: string;
+    name: string;
+    owner: string;
+    status: string;
+    created_at: string;
+    last_run_at: string;
+    actions?: {
+      title: string;
+      edit: string;
+      view: string;
+    };
+  };
+  
   const columnHelper = createColumnHelper<Task>();
   const columns = [
     columnHelper.accessor("id", {
