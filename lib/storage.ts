@@ -1,5 +1,7 @@
 "use client";
 
+export const AUTH_TOKEN_KEY = "auth_token";
+
 /**
  * 安全地获取localStorage中的值
  * @param key 存储的键名
