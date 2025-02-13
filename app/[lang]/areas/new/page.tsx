@@ -181,20 +181,26 @@ export default function AreaDetailPage() {
       <div className="flex space-x-4">
         <div
           id="map"
-          className="h-[520px] w-full border rounded-md shadow-sm"
+          className="h-[600px] w-full border rounded-md shadow-sm"
         ></div>
         {path && (
-          <div className="p-4 space-y-2 border rounded-md shadow-sm">
-            <div className="flex justify-around gap-4">
-              <div>经度</div>
-              <div>纬度</div>
-            </div>
-            {path?.map((point, index) => (
-              <div key={index} className="flex justify-around gap-4">
-                <div>{point.getLng().toFixed(6)}</div>
-                <div>{point.getLat().toFixed(6)}</div>
+          <div className="flex flex-col">
+            <div className="p-4 space-y-2 border rounded-md shadow-sm">
+              <div className="flex justify-around gap-4">
+                <div>序号</div>
+                <div>经度</div>
+                <div>纬度</div>
               </div>
-            ))}
+              {path?.map((point, index) => (
+                <div key={index} className="flex justify-around gap-4">
+                  <div>{index}</div>
+                  <div>{point.getLng().toFixed(6)}</div>
+                  <div>{point.getLat().toFixed(6)}</div>
+                </div>
+              ))}
+            </div>
+            <div className="flex-auto"></div>
+            <div>面积: </div>
           </div>
         )}
       </div>

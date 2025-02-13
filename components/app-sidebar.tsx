@@ -1,18 +1,19 @@
 "use client";
 
-import * as React from "react";
 import {
   BookOpen,
   Bot,
   Command,
   Frame,
+  LandPlot,
   LifeBuoy,
   Map,
   PieChart,
   Send,
   Settings2,
-  SquareTerminal,
+  SquareTerminal
 } from "lucide-react";
+import * as React from "react";
 
 import { NavMain } from "@/components/nav-main";
 import { NavProjects } from "@/components/nav-projects";
@@ -39,6 +40,18 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     },
     navMain: [
       {
+        title: dictionary?.sidebar?.drones?.title,
+        url: "/drones",
+        icon: Bot,
+        items: [],
+      },
+      {
+        title: "搜索区域管理",
+        url: "/areas",
+        icon: LandPlot,
+        items: [],
+      },
+      {
         title: dictionary?.sidebar?.applications?.title,
         url: "/applications",
         icon: SquareTerminal,
@@ -52,12 +65,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             url: "/applications/inspection",
           },
         ],
-      },
-      {
-        title: dictionary?.sidebar?.drones?.title,
-        url: "/drones",
-        icon: Bot,
-        items: [],
       },
       {
         title: dictionary?.sidebar?.data?.title,
