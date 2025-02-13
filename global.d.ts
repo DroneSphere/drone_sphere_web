@@ -1,6 +1,10 @@
 type ConnectCallback = (arg: boolean) => void;
 
 interface Window {
+  // AMap
+  _AMapSecurityConfig: {
+    securityJsCode: string;
+  };
   // DJI Bridge 模块
   djiBridge: {
     platformGetLogPath: () => string;
