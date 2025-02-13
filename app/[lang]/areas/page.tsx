@@ -57,7 +57,7 @@ export default function AreasPage() {
   });
 
   return (
-    <div className="min-h-screen p-4">
+    <div className="p-4">
       <div className="my-4 flex justify-between">
         <div className="flex gap-4 items-center">
           <Button variant="outline" onClick={() => rerender()}>
