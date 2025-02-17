@@ -4,19 +4,20 @@ import { AreaListResult, fetchAllAreas } from "@/api/search_area/search_area";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from "@/components/ui/table";
+import { useToast } from "@/hooks/use-toast";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-    createColumnHelper,
-    flexRender,
-    getCoreRowModel,
-    useReactTable,
+  createColumnHelper,
+  flexRender,
+  getCoreRowModel,
+  useReactTable,
 } from "@tanstack/react-table";
 import { Plus, RefreshCw } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -42,6 +43,7 @@ const columns = [
 ];
 
 export default function AreasPage() {
+  const { toast } = useToast();
   const router = useRouter();
   const queryClient = useQueryClient();
   const queryKey = ["areas", "list"];
@@ -65,6 +67,10 @@ export default function AreasPage() {
             onClick={() => {
               queryClient.invalidateQueries({
                 queryKey: queryKey,
+              });
+              toast({
+                title: "刷新成功",
+                description: "已刷新搜索区域列表",
               });
             }}
           >
