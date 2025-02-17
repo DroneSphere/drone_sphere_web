@@ -82,7 +82,7 @@ export default function InspectionDetailPage() {
                         <div
                           className={`${deviceStatusStyle(
                             e.status
-                          )} rounded-full absolute inline-flex size-full opacity-70 animate-ping duration-[3000ms]`}
+                          )} rounded-full absolute inline-flex size-full opacity-70 animate-ping`}
                         />
                         <div
                           className={`${deviceStatusStyle(
