@@ -10,7 +10,7 @@ class HttpClient {
 
   constructor() {
     this.instance = axios.create({
-      baseURL: "http://192.168.31.170:10086/api/v1", // 替换为你的API基础URL
+      baseURL: "http://127.0.0.1:10086/api/v1", // 替换为你的API基础URL
       timeout: 10000,
     });
 
