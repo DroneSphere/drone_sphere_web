@@ -1,6 +1,11 @@
 import httpClient from "../http_client";
 import { Response } from "../response";
 
+export interface AreaQueryParam {
+  id?: number;
+  name?: string;
+}
+
 export interface AreaListResult {
   id: number;
   name: string;
@@ -46,5 +51,12 @@ export async function createArea(
     `${prefix}`,
     payload
   );
+  return res.data.data;
+}
+
+export async function fetchArea(query: AreaQueryParam): Promise<AreaResult> {
+  const res = await httpClient.instance.get<Response<AreaResult>>(`${prefix}`, {
+    params: query,
+  });
   return res.data.data;
 }

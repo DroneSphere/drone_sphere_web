@@ -135,7 +135,7 @@ export default function AreasPage() {
             </TableHeader>
             <TableBody>
               {table.getRowModel().rows.map((row) => (
-                <TableRow key={row.id}>
+                <TableRow key={row.id} onClick={() => router.push(`/areas/${row.original.id}`)} className="cursor-pointer">
                   {row.getVisibleCells().map((cell) => (
                     // 居中
                     <TableCell key={cell.id} className="text-center">
