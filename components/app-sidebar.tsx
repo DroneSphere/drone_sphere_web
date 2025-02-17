@@ -11,12 +11,11 @@ import {
   PieChart,
   Send,
   Settings2,
-  SquareTerminal
+  SquareTerminal,
 } from "lucide-react";
 import * as React from "react";
 
 import { NavMain } from "@/components/nav-main";
-import { NavProjects } from "@/components/nav-projects";
 import { NavSecondary } from "@/components/nav-secondary";
 import { NavUser } from "@/components/nav-user";
 import {
@@ -52,19 +51,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         items: [],
       },
       {
-        title: dictionary?.sidebar?.applications?.title,
-        url: "/applications",
+        title: "搜索任务管理",
+        url: "/jobs",
         icon: SquareTerminal,
-        items: [
-          {
-            title: dictionary?.sidebar?.applications?.universal,
-            url: "/applications/universal",
-          },
-          {
-            title: dictionary?.sidebar?.applications?.inspection,
-            url: "/applications/inspection",
-          },
-        ],
+        items: [],
       },
       {
         title: dictionary?.sidebar?.data?.title,
@@ -140,7 +130,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={data.navMain} />
-        <NavProjects projects={data.projects} />
+        {/* <NavProjects projects={data.projects} /> */}
         <NavSecondary items={data.navSecondary} className="mt-auto" />
       </SidebarContent>
       <SidebarFooter>
