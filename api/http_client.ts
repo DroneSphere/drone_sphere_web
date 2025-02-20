@@ -5,12 +5,16 @@ import axios, {
   InternalAxiosRequestConfig,
 } from "axios";
 
+
+// 导出 baseURL
+export const baseURL = "http://127.0.0.1:10086/api/v1"
+
 class HttpClient {
   instance: AxiosInstance;
 
   constructor() {
     this.instance = axios.create({
-      baseURL: "http://127.0.0.1:10086/api/v1", // 替换为你的API基础URL
+      baseURL: baseURL,
       timeout: 10000,
     });
 

@@ -1,9 +1,22 @@
 "use client";
 
 import { fetchAllJobs, JobItemResult } from "@/api/job/job";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { useQuery } from "@tanstack/react-query";
-import { createColumnHelper, flexRender, getCoreRowModel, useReactTable } from "@tanstack/react-table";
+import {
+  createColumnHelper,
+  flexRender,
+  getCoreRowModel,
+  useReactTable,
+} from "@tanstack/react-table";
 
 const columnHelper = createColumnHelper<JobItemResult>();
 
@@ -26,6 +39,28 @@ const columns = [
   columnHelper.accessor("target_classes", {
     header: () => "目标类别",
   }),
+  // 操作列
+  columnHelper.accessor("id", {
+    header: () => "操作",
+    cell: (row) => (
+      <div className="flex justify-center space-x-2">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => {
+            console.log(row.row.original);
+
+            window.location.href = `/jobs/${row.row.original.id}`;
+          }}
+        >
+          查看
+        </Button>
+        <Button variant="destructive" size="sm">
+          删除
+        </Button>
+      </div>
+    ),
+  }),
 ];
 
 export default function JobListPage() {
@@ -43,13 +78,13 @@ export default function JobListPage() {
   });
 
   return (
-    <div className="p-4">
+    <div className="px-4">
       {query.isLoading ? (
         <div>Loading...</div>
       ) : query.isError ? (
         <div>Error: {query.error.message}</div>
       ) : (
-        <div className="my-4">
+        <div>
           <Table>
             <TableHeader>
               <TableRow>

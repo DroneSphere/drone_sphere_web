@@ -35,10 +35,27 @@ export interface DroneItemResult {
   type?: number;
 }
 
+export interface DroneState {
+  sn: string;
+  lat: number;
+  lng: number;
+  height: number;
+  heading: number;
+  speed: number;
+  battery: number;
+}
+
 export async function fetchAllDrones(): Promise<DroneItemResult[]> {
   const res = await httpClient.instance.get<Response<DroneItemResult[]>>(
     "/drone/list"
   );
   console.log(res);
+  return res.data.data;
+}
+
+export async function fetchDroneState(sn: string): Promise<DroneState> {
+  const res = await httpClient.instance.get<Response<DroneState>>(
+    `/drone/state/sse/${sn}`
+  );
   return res.data.data;
 }
