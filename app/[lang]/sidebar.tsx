@@ -25,7 +25,26 @@ export default function Sidebar({
   const breadcrumbArray = pathnameArrayFiltered.map((item, index) => {
     return (
       <div key={index} className="flex items-center">
-        <BreadcrumbItem>{item}</BreadcrumbItem>
+        <BreadcrumbItem>
+          {(() => {
+            // Define the route map with titles
+            const routeMap: Record<string, string> = {
+              areas: "搜索区域管理",
+              drones: "无人机管理",
+              wayline: "航线管理",
+              jobs: "搜索任务管理",
+              result: "搜索结果管理",
+
+              // Add more routes as needed
+            };
+
+            // Get the title from the route map, fallback to capitalized path segment
+            const title =
+              routeMap[item] || item.charAt(0).toUpperCase() + item.slice(1);
+
+            return title;
+          })()}
+        </BreadcrumbItem>
         {index === pathnameArrayFiltered.length - 1 ? null : (
           <BreadcrumbSeparator className="ml-2" />
         )}

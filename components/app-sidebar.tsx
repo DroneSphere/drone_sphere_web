@@ -27,93 +27,92 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import { useDictionary } from "@/lib/dictionary";
+
+export const routeMap = {
+  user: {
+    name: "ThuRAY",
+    email: "thuray.email@gmail.com",
+    avatar: "/avatars/shadcn.jpg",
+  },
+  navMain: [
+    {
+      title: "无人机管理",
+      url: "/drones",
+      icon: Bot,
+      items: [],
+    },
+    {
+      title: "搜索区域管理",
+      url: "/areas",
+      icon: LandPlot,
+      items: [],
+    },
+    {
+      title: "航线管理",
+      url: "/wayline",
+      icon: Map,
+      items: [],
+    },
+    {
+      title: "搜索任务管理",
+      url: "/jobs",
+      icon: SquareTerminal,
+      items: [],
+    },
+    {
+      title: "搜索结果管理",
+      url: "/result",
+      icon: BookOpen,
+      items: [],
+    },
+    {
+      title: "设置",
+      url: "/settings",
+      icon: Settings2,
+      items: [
+        {
+          title: "账户",
+          url: "/settings#account",
+        },
+        {
+          title: "通用",
+          url: "/settings#general",
+        },
+      ],
+    },
+  ],
+  navSecondary: [
+    {
+      title: "获取支持",
+      url: "/support",
+      icon: LifeBuoy,
+    },
+    {
+      title: "反馈",
+      url: "/feedback",
+      icon: Send,
+    },
+  ],
+  projects: [
+    {
+      name: "Design Engineering",
+      url: "#",
+      icon: Frame,
+    },
+    {
+      name: "Sales & Marketing",
+      url: "#",
+      icon: PieChart,
+    },
+    {
+      name: "Travel",
+      url: "#",
+      icon: Map,
+    },
+  ],
+};
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-  const { dictionary } = useDictionary();
-  const data = {
-    user: {
-      name: "ThuRAY",
-      email: "thuray.email@gmail.com",
-      avatar: "/avatars/shadcn.jpg",
-    },
-    navMain: [
-      {
-        title: dictionary?.sidebar?.drones?.title,
-        url: "/drones",
-        icon: Bot,
-        items: [],
-      },
-      {
-        title: "搜索区域管理",
-        url: "/areas",
-        icon: LandPlot,
-        items: [],
-      },
-      {
-        title: "航线管理",
-        url: "/wayline",
-        icon: Map,
-        items: [],
-      },
-      {
-        title: "搜索任务管理",
-        url: "/jobs",
-        icon: SquareTerminal,
-        items: [],
-      },
-      {
-        title: "搜索结果管理",
-        url: "/result",
-        icon: BookOpen,
-        items: [],
-      },
-      {
-        title: dictionary?.sidebar?.settings?.title,
-        url: "/settings",
-        icon: Settings2,
-        items: [
-          {
-            title: dictionary?.sidebar?.settings?.account,
-            url: "/settings#account",
-          },
-          {
-            title: dictionary?.sidebar?.settings?.general,
-            url: "/settings#general",
-          },
-        ],
-      },
-    ],
-    navSecondary: [
-      {
-        title: "获取支持",
-        url: "/support",
-        icon: LifeBuoy,
-      },
-      {
-        title: "反馈",
-        url: "/feedback",
-        icon: Send,
-      },
-    ],
-    projects: [
-      {
-        name: "Design Engineering",
-        url: "#",
-        icon: Frame,
-      },
-      {
-        name: "Sales & Marketing",
-        url: "#",
-        icon: PieChart,
-      },
-      {
-        name: "Travel",
-        url: "#",
-        icon: Map,
-      },
-    ],
-  };
   // eslint-disable-next-line
   return (
     <Sidebar variant="inset" {...props}>
@@ -135,12 +134,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={data.navMain} />
+        <NavMain items={routeMap.navMain} />
         {/* <NavProjects projects={data.projects} /> */}
-        <NavSecondary items={data.navSecondary} className="mt-auto" />
+        <NavSecondary items={routeMap.navSecondary} className="mt-auto" />
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={data.user} />
+        <NavUser user={routeMap.user} />
       </SidebarFooter>
     </Sidebar>
   );
