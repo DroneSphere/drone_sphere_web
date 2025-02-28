@@ -63,8 +63,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         items: [],
       },
       {
-        title: dictionary?.sidebar?.data?.title,
-        url: "/data",
+        title: "搜索结果管理",
+        url: "/result",
         icon: BookOpen,
         items: [],
       },
