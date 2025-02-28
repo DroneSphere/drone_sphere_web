@@ -8,7 +8,19 @@ export interface DetectResultItem {
   created_at?: string;
 }
 
-export function fetchAllDetectResults(): Promise<DetectResultItem[]> {
+export interface DetectSearchParams {
+  name?: string;
+  class?: string[];
+  createAtBegin?: string;
+  createAtEnd?: string;
+}
+
+export function fetchAllDetectResults(
+  params: DetectSearchParams | null = null
+): Promise<DetectResultItem[]> {
+  console.log(params);
+  setTimeout(() => {}, 1000);
+
   const res = [
     {
       id: 1,
@@ -28,6 +40,19 @@ export function fetchAllDetectResults(): Promise<DetectResultItem[]> {
       lat: 178.91,
       created_at: "2023-10-02T12:00:00Z",
     },
+    {
+      id: 3,
+      job_name: "job3",
+      target_class: "class3",
+      target_label: "label3",
+      lng: 323.456,
+      lat: 278.91,
+      created_at: "2023-10-03T12:00:00Z",
+    },
   ];
+  if (params) {
+    // 随机删除一个元素用于测试
+    res.splice(Math.floor(Math.random() * res.length), 1);
+  }
   return new Promise((resolve) => resolve(res));
 }
