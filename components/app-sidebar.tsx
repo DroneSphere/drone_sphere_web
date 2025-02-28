@@ -51,6 +51,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         items: [],
       },
       {
+        title: "航线管理",
+        url: "/wayline",
+        icon: Map,
+        items: [],
+      },
+      {
         title: "搜索任务管理",
         url: "/jobs",
         icon: SquareTerminal,
