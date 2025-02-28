@@ -9,6 +9,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useRef } from "react";
 
 export default function AreaDetailPage() {
+  const AMapRef = useRef<typeof AMap | null>(null);
   const mapRef = useRef<AMap.Map | null>(null);
   const pathname = usePathname();
 
@@ -22,41 +23,39 @@ export default function AreaDetailPage() {
   });
 
   useEffect(() => {
-    if (query.data) {
-      if (query.data.points) {
-        const path = query.data.points.map(
-          (point) => new AMap.LngLat(point.lng!, point.lat!)
-        );
-        const polygon = new AMap.Polygon();
-        polygon.setPath(path);
+    if (query.data && query.data.points && AMapRef.current) {
+      const path = query.data.points.map(
+        (point) => new AMapRef.current!.LngLat(point.lng!, point.lat!)
+      );
+      const polygon = new AMapRef.current!.Polygon();
+      polygon.setPath(path);
 
-        //鼠标移入事件
-        polygon.on("mouseover", () => {
-          polygon.setOptions({
-            //修改多边形属性的方法
-            fillOpacity: 0.7, //多边形填充透明度
-            fillColor: "#7bccc4",
-          });
+      //鼠标移入事件
+      polygon.on("mouseover", () => {
+        polygon.setOptions({
+          //修改多边形属性的方法
+          fillOpacity: 0.7, //多边形填充透明度
+          fillColor: "#7bccc4",
         });
-        //鼠标移出事件
-        polygon.on("mouseout", () => {
-          polygon.setOptions({
-            fillOpacity: 1,
-            fillColor: "#fff",
-          });
+      });
+      //鼠标移出事件
+      polygon.on("mouseout", () => {
+        polygon.setOptions({
+          fillOpacity: 1,
+          fillColor: "#7bccc4",
         });
-        mapRef.current?.add(polygon);
+      });
+      mapRef.current?.add(polygon);
 
-        const markers = query.data.points.map((point) => {
-          const m = new AMap.Marker({
-            position: new AMap.LngLat(point.lng!, point.lat!),
-          });
-          return m;
+      const markers = query.data.points.map((point) => {
+        const m = new AMapRef.current!.Marker({
+          position: new AMapRef.current!.LngLat(point.lng!, point.lat!),
         });
-        mapRef.current?.add(markers);
+        return m;
+      });
+      mapRef.current?.add(markers);
 
-        mapRef.current?.setFitView([polygon]);
-      }
+      mapRef.current?.setFitView([polygon]);
     }
   }, [query.data]);
 
@@ -69,6 +68,8 @@ export default function AreaDetailPage() {
       version: "2.0", // 指定要加载的 JSAPI 的版本，缺省时默认为 1.4.15
     })
       .then((AMap) => {
+        AMapRef.current = AMap;
+
         mapRef.current = new AMap.Map("map", {
           viewMode: "2D", // 是否为3D地图模式
           zoom: 17, // 初始化地图级别
