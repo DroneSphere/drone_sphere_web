@@ -45,7 +45,17 @@ export interface DroneState {
   battery: number;
 }
 
-export async function fetchAllDrones(): Promise<DroneItemResult[]> {
+export interface DroneSearchParams {
+  sn?: string;
+  name?: string;
+  model?: string;
+}
+
+export async function fetchAllDrones(
+  params: DroneSearchParams | null = null
+): Promise<DroneItemResult[]> {
+  console.log("param", params);
+
   const res = await httpClient.instance.get<Response<DroneItemResult[]>>(
     "/drone/list"
   );

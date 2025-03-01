@@ -1,8 +1,20 @@
 "use client";
 
-import { DroneItemResult, fetchAllDrones } from "@/api/drone/drone";
+import {
+  DroneItemResult,
+  DroneSearchParams,
+  fetchAllDrones,
+} from "@/api/drone/drone";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
 import {
   Table,
   TableBody,
@@ -18,20 +30,7 @@ import {
   getCoreRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import { RefreshCw } from "lucide-react";
-import { useReducer } from "react";
-
-function StatisticsPanel() {
-  return (
-    <div className="mb-4">
-      <div className="flex gap-4 justify-around">
-        {Array.from({ length: 3 }).map((_, index) => (
-          <Skeleton key={index} className="h-[192px] w-full rounded-xl" />
-        ))}
-      </div>
-    </div>
-  );
-}
+import { useMemo, useState } from "react";
 
 const columnHelper = createColumnHelper<DroneItemResult>();
 
@@ -47,35 +46,47 @@ const renderIndicator = (value: boolean | undefined) => {
   );
 };
 
-const columns = [
-  columnHelper.accessor("id", {
-    header: () => "ID",
-  }),
-  columnHelper.accessor("sn", {
-    header: "SN",
-  }),
-  columnHelper.accessor("status", {
-    header: "状态",
-  }),
-  columnHelper.accessor("product_type", {
-    header: "型号",
-  }),
-  columnHelper.accessor("is_rtk_available", {
-    header: () => "RTK",
-    cell: (info) => renderIndicator(info.getValue()),
-  }),
-  columnHelper.accessor("is_thermal_available", {
-    header: () => "热成像",
-    cell: (info) => renderIndicator(info.getValue()),
-  }),
-  columnHelper.accessor("last_login_at", {
-    header: "最后登录时间",
-  }),
-];
-
 export default function DronesPage() {
-  const listQuery = useQuery({ queryKey: ["drones"], queryFn: fetchAllDrones });
-  const rerender = useReducer(() => ({}), {})[1];
+  const [searchParams, setSearchParams] = useState<DroneSearchParams | null>(
+    null
+  );
+  const listQuery = useQuery({
+    queryKey: ["drones", searchParams],
+    queryFn: () => {
+      console.log("searchParam", searchParams);
+
+      return fetchAllDrones(searchParams);
+    },
+  });
+
+  const columns = useMemo(
+    () => [
+      columnHelper.accessor("id", {
+        header: () => "ID",
+      }),
+      columnHelper.accessor("sn", {
+        header: "SN",
+      }),
+      columnHelper.accessor("status", {
+        header: "状态",
+      }),
+      columnHelper.accessor("product_type", {
+        header: "型号",
+      }),
+      columnHelper.accessor("is_rtk_available", {
+        header: () => "RTK",
+        cell: (info) => renderIndicator(info.getValue()),
+      }),
+      columnHelper.accessor("is_thermal_available", {
+        header: () => "热成像",
+        cell: (info) => renderIndicator(info.getValue()),
+      }),
+      columnHelper.accessor("last_login_at", {
+        header: "最后登录时间",
+      }),
+    ],
+    []
+  );
 
   const table = useReactTable({
     data: listQuery.data || [],
@@ -83,22 +94,56 @@ export default function DronesPage() {
     getCoreRowModel: getCoreRowModel(),
   });
 
+  const selectOptions = [
+    { label: "Mavic 3E", value: "M3E" },
+    { label: "Mavic 3T", value: "M3T" },
+  ];
+
   return (
     <div className="min-h-screen p-4">
-      <StatisticsPanel />
-      <div className="my-4 flex justify-between">
-        <div className="flex gap-4 items-center">
-          <Button onClick={() => rerender()}>
-            <RefreshCw size={16} />
-          </Button>
-          {Array.from({ length: 3 }).map((_, index) => (
-            <Skeleton key={index} className="h-12 w-[96px] rounded-xl" />
-          ))}
-        </div>
-
-        <div className="flex gap-4">
-          <Skeleton className="h-12 w-[256px] rounded-xl" />
-        </div>
+      <div className="mb-4 flex gap-4 justify-between items-center">
+        <Input
+          type="text"
+          placeholder="无人机SN"
+          className="px-4 py-2 border rounded-md w-[200px]"
+          onChange={(e) => {
+            console.log(e.target.value);
+            setSearchParams((prev) => ({ ...prev, sn: e.target.value }));
+            console.log(searchParams);
+          }}
+        />
+        <Input
+          type="text"
+          placeholder="无人机名称"
+          className="px-4 py-2 border rounded-md w-[200px]"
+          onChange={(e) =>
+            setSearchParams((prev) => ({ ...prev, name: e.target.value }))
+          }
+        />
+        <Select
+          onValueChange={(value) => {
+            console.log(value);
+            setSearchParams((prev) => ({ ...prev, model: value }));
+          }}
+        >
+          <SelectTrigger className="w-[160px]">
+            <SelectValue placeholder="无人机型号" />
+          </SelectTrigger>
+          <SelectContent>
+            {selectOptions.map((option) => (
+              <SelectItem key={option.value} value={option.value}>
+                {option.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <div className="flex-1"></div>
+        <Button
+          onClick={() => listQuery.refetch()}
+          disabled={listQuery.isPending}
+        >
+          搜索
+        </Button>
       </div>
       {
         // 加载中
@@ -106,8 +151,8 @@ export default function DronesPage() {
       }
       {listQuery.isSuccess && (
         <div className="my-4">
-          <Table>
-            <TableHeader>
+          <Table className="border border-gray-200 rounded-md">
+            <TableHeader className="bg-gray-100">
               <TableRow>
                 {table.getHeaderGroups().map((headerGroup) =>
                   headerGroup.headers.map((header) => (
