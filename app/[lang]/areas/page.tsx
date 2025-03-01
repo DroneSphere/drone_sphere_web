@@ -1,8 +1,18 @@
 "use client";
 
-import { AreaListResult, fetchAllAreas } from "@/api/search_area/search_area";
+import {
+  AreaListResult,
+  AreaSearchParams,
+  fetchAllAreas,
+} from "@/api/search_area/search_area";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Calendar } from "@/components/ui/calendar";
+import { Input } from "@/components/ui/input";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import {
   Table,
   TableBody,
@@ -11,16 +21,18 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { useToast } from "@/hooks/use-toast";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { cn } from "@/lib/utils";
+import { useQuery } from "@tanstack/react-query";
 import {
   createColumnHelper,
   flexRender,
   getCoreRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import { Plus, RefreshCw } from "lucide-react";
+import { format } from "date-fns";
+import { CalendarIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 
 const columnHelper = createColumnHelper<AreaListResult>();
 
@@ -43,13 +55,16 @@ const columns = [
 ];
 
 export default function AreasPage() {
-  const { toast } = useToast();
   const router = useRouter();
-  const queryClient = useQueryClient();
+  const [searchParams, setSearchParams] = useState<AreaSearchParams | null>(
+    null
+  );
   const queryKey = ["areas", "list"];
   const listQuery = useQuery({
     queryKey: queryKey,
-    queryFn: fetchAllAreas,
+    queryFn: () => {
+      return fetchAllAreas(searchParams);
+    },
   });
 
   const table = useReactTable({
@@ -60,32 +75,95 @@ export default function AreasPage() {
 
   return (
     <div className="p-4">
-      <div className="my-4 flex justify-between">
-        <div className="flex gap-4 items-center">
-          <Button
-            variant="outline"
-            onClick={() => {
-              queryClient.invalidateQueries({
-                queryKey: queryKey,
-              });
-              toast({
-                title: "刷新成功",
-                description: "已刷新搜索区域列表",
-              });
-            }}
-          >
-            <RefreshCw size={16} />
-          </Button>
-          {Array.from({ length: 3 }).map((_, index) => (
-            <Skeleton key={index} className="h-12 w-[96px] rounded-xl" />
-          ))}
+      <div className="mb-4 flex gap-4 justify-between items-center">
+        <Input
+          type="text"
+          placeholder="区域名称"
+          className="px-4 py-2 border rounded-md w-[200px]"
+          onChange={(e) =>
+            setSearchParams((prev) => ({ ...prev, name: e.target.value }))
+          }
+        />
+        <div className="flex gap-2 items-center">
+          <span>开始时间:</span>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant={"outline"}
+                className={cn(
+                  "w-[200px] justify-start text-left font-normal",
+                  !searchParams?.createAtBegin && "text-muted-foreground"
+                )}
+              >
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                {searchParams?.createAtBegin
+                  ? format(new Date(searchParams.createAtBegin), "PPP")
+                  : "选择日期"}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0">
+              <Calendar
+                mode="single"
+                selected={
+                  searchParams?.createAtBegin
+                    ? new Date(searchParams.createAtBegin)
+                    : undefined
+                }
+                onSelect={(date) =>
+                  setSearchParams((prev) => ({
+                    ...prev,
+                    createAtBegin: date
+                      ? format(date, "yyyy-MM-dd")
+                      : undefined,
+                  }))
+                }
+                initialFocus
+              />
+            </PopoverContent>
+          </Popover>
         </div>
-
-        <div className="flex gap-4">
-          <Skeleton className="h-12 w-[256px] rounded-xl" />
+        <div className="flex gap-2 items-center">
+          <span>结束时间:</span>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant={"outline"}
+                className={cn(
+                  "w-[200px] justify-start text-left font-normal",
+                  !searchParams?.createAtEnd && "text-muted-foreground"
+                )}
+              >
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                {searchParams?.createAtEnd
+                  ? format(new Date(searchParams.createAtEnd), "PPP")
+                  : "选择日期"}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0">
+              <Calendar
+                mode="single"
+                selected={
+                  searchParams?.createAtEnd
+                    ? new Date(searchParams.createAtEnd)
+                    : undefined
+                }
+                onSelect={(date) =>
+                  setSearchParams((prev) => ({
+                    ...prev,
+                    createAtEnd: date ? format(date, "yyyy-MM-dd") : undefined,
+                  }))
+                }
+                initialFocus
+              />
+            </PopoverContent>
+          </Popover>
         </div>
-        <Button onClick={() => router.push("/areas/new")}>
-          <Plus size={16} />
+        <div className="flex-1"></div>
+        <Button
+          onClick={() => listQuery.refetch()}
+          disabled={listQuery.isPending}
+        >
+          搜索
         </Button>
       </div>
       {
@@ -116,8 +194,8 @@ export default function AreasPage() {
       }
       {listQuery.isSuccess && (
         <div className="my-4">
-          <Table>
-            <TableHeader>
+          <Table className="border border-gray-200 rounded-md">
+            <TableHeader className="bg-gray-100">
               <TableRow>
                 {table.getHeaderGroups().map((headerGroup) =>
                   headerGroup.headers.map((header) => (
@@ -135,7 +213,11 @@ export default function AreasPage() {
             </TableHeader>
             <TableBody>
               {table.getRowModel().rows.map((row) => (
-                <TableRow key={row.id} onClick={() => router.push(`/areas/${row.original.id}`)} className="cursor-pointer">
+                <TableRow
+                  key={row.id}
+                  onClick={() => router.push(`/areas/${row.original.id}`)}
+                  className="cursor-pointer"
+                >
                   {row.getVisibleCells().map((cell) => (
                     // 居中
                     <TableCell key={cell.id} className="text-center">

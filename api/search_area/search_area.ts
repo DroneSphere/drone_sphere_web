@@ -35,9 +35,19 @@ export interface PointResult {
   lng?: number;
 }
 
+export interface AreaSearchParams {
+  name?: string;
+  createAtBegin?: string;
+  createAtEnd?: string;
+}
+
 const prefix = "/areas";
 
-export async function fetchAllAreas(): Promise<AreaListResult[]> {
+export async function fetchAllAreas(
+  params: AreaSearchParams | null = null
+): Promise<AreaListResult[]> {
+  console.log(params);
+
   const res = await httpClient.instance.get<Response<AreaListResult[]>>(
     `${prefix}/list`
   );
