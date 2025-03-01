@@ -34,8 +34,7 @@ export default function Sidebar({
               wayline: "航线管理",
               jobs: "搜索任务管理",
               result: "搜索结果管理",
-
-              // Add more routes as needed
+              settings: "设置",
             };
 
             // Get the title from the route map, fallback to capitalized path segment
