@@ -16,8 +16,8 @@ const geistMono = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "AutoDrone",
-  description: "AutoDrone",
+  title: "搜索原型系统",
+  description: "无人机搜索原型系统",
 };
 
 export default function RootLayout({
