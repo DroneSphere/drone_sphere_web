@@ -33,9 +33,18 @@ export interface JobDrone {
   sn: string;
 }
 
+export interface JobSearchParams {
+  name?: string;
+  area?: string;
+  createAtBegin?: string;
+  createAtEnd?: string;
+}
+
 const prefix = "/job";
 
-export async function fetchAllJobs(): Promise<JobItemResult[]> {
+export async function fetchAllJobs(
+  params: JobSearchParams | null = null
+): Promise<JobItemResult[]> {
   const res = await httpClient.instance.get<Response<JobItemResult[]>>(
     `${prefix}`
   );
