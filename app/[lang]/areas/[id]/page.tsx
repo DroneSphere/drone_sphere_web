@@ -6,11 +6,12 @@ import AMapLoader from "@amap/amap-jsapi-loader";
 import "@amap/amap-jsapi-types";
 import { useQuery } from "@tanstack/react-query";
 import { usePathname } from "next/navigation";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export default function AreaDetailPage() {
   const AMapRef = useRef<typeof AMap | null>(null);
   const mapRef = useRef<AMap.Map | null>(null);
+  const [amapLoaded, setAmapLoaded] = useState(false);
   const pathname = usePathname();
 
   const query = useQuery({
@@ -23,41 +24,42 @@ export default function AreaDetailPage() {
   });
 
   useEffect(() => {
-    if (query.data && query.data.points && AMapRef.current) {
+    console.log("Drawing useEffect", query.data, AMapRef.current, amapLoaded);
+    if (query.data?.points && amapLoaded && AMapRef.current) {
       const path = query.data.points.map(
         (point) => new AMapRef.current!.LngLat(point.lng!, point.lat!)
       );
+
       const polygon = new AMapRef.current!.Polygon();
       polygon.setPath(path);
-
-      //鼠标移入事件
-      polygon.on("mouseover", () => {
+      polygon.setOptions({
+        strokeColor: "#6699FF", //线颜色
+        strokeOpacity: 0.8, //线透明度
+        strokeWeight: 2, //线粗细度
+        fillColor: "#66CCFF", //填充色
+        fillOpacity: 0.4, //填充透明度
+      });
+      // 添加鼠标移入移出修改fillOpacity的事件
+      polygon.on("mouseover", function () {
         polygon.setOptions({
-          //修改多边形属性的方法
-          fillOpacity: 0.7, //多边形填充透明度
-          fillColor: "#7bccc4",
+          fillOpacity: 0.2,
         });
       });
-      //鼠标移出事件
-      polygon.on("mouseout", () => {
+      polygon.on("mouseout", function () {
         polygon.setOptions({
-          fillOpacity: 1,
-          fillColor: "#7bccc4",
+          fillOpacity: 0.4,
         });
       });
-      mapRef.current?.add(polygon);
 
-      const markers = query.data.points.map((point) => {
-        const m = new AMapRef.current!.Marker({
-          position: new AMapRef.current!.LngLat(point.lng!, point.lat!),
-        });
-        return m;
-      });
-      mapRef.current?.add(markers);
-
+      polygon.setMap(mapRef.current);
       mapRef.current?.setFitView([polygon]);
+
+      return () => {
+        // 清除旧的多边形
+        polygon.setMap(null);
+      };
     }
-  }, [query.data]);
+  }, [query.data, amapLoaded]);
 
   useEffect(() => {
     window._AMapSecurityConfig = {
@@ -69,9 +71,10 @@ export default function AreaDetailPage() {
     })
       .then((AMap) => {
         AMapRef.current = AMap;
+        console.log("AMap initialized");
 
         mapRef.current = new AMap.Map("map", {
-          viewMode: "2D", // 是否为3D地图模式
+          viewMode: "3D", // 是否为3D地图模式
           zoom: 17, // 初始化地图级别
         });
 
@@ -85,6 +88,8 @@ export default function AreaDetailPage() {
             mapRef.current?.addControl(scale);
           }
         );
+
+        setAmapLoaded(true); // 更新加载状态
       })
       .catch((e) => {
         console.log(e);
@@ -92,6 +97,7 @@ export default function AreaDetailPage() {
 
     return () => {
       mapRef.current?.destroy();
+      setAmapLoaded(false); // 重置加载状态
     };
   }, []);
 
