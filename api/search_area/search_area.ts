@@ -6,12 +6,13 @@ export interface AreaQueryParam {
   name?: string;
 }
 
-export interface AreaListResult {
+export interface AreaItemResult {
   id: number;
   name: string;
   description?: string;
   center_lat?: number;
   center_lng?: number;
+  points?: PointResult[];
 }
 
 export interface AreaResult {
@@ -45,10 +46,10 @@ const prefix = "/areas";
 
 export async function fetchAllAreas(
   params: AreaSearchParams | null = null
-): Promise<AreaListResult[]> {
+): Promise<AreaItemResult[]> {
   console.log(params);
 
-  const res = await httpClient.instance.get<Response<AreaListResult[]>>(
+  const res = await httpClient.instance.get<Response<AreaItemResult[]>>(
     `${prefix}/list`
   );
   return res.data.data;

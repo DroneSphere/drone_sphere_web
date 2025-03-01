@@ -1,7 +1,7 @@
 "use client";
 
 import {
-  AreaListResult,
+  AreaItemResult,
   AreaSearchParams,
   fetchAllAreas,
 } from "@/api/search_area/search_area";
@@ -34,7 +34,7 @@ import { CalendarIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-const columnHelper = createColumnHelper<AreaListResult>();
+const columnHelper = createColumnHelper<AreaItemResult>();
 
 const columns = [
   columnHelper.accessor("id", {
@@ -45,6 +45,10 @@ const columns = [
   }),
   columnHelper.accessor("description", {
     header: "描述",
+  }),
+  columnHelper.accessor("points", {
+    header: "顶点个数",
+    cell: (info) => info.getValue()?.length,
   }),
   columnHelper.accessor("center_lat", {
     header: "区域中心点纬度",
