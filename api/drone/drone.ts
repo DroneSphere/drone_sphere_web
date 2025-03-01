@@ -7,6 +7,7 @@ import { Response } from "../response";
 export interface DroneItemResult {
   domain?: string;
   id: number;
+  callsign?: string;
   /**
    * IsRTKAvailable 是否支持RTK
    */
@@ -47,7 +48,7 @@ export interface DroneState {
 
 export interface DroneSearchParams {
   sn?: string;
-  name?: string;
+  callsign?: string;
   model?: string;
 }
 

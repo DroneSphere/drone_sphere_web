@@ -67,6 +67,9 @@ export default function DronesPage() {
       columnHelper.accessor("sn", {
         header: "SN",
       }),
+      columnHelper.accessor("callsign", {
+        header: "呼号",
+      }),
       columnHelper.accessor("status", {
         header: "状态",
       }),
@@ -114,10 +117,10 @@ export default function DronesPage() {
         />
         <Input
           type="text"
-          placeholder="无人机名称"
+          placeholder="无人机呼号"
           className="px-4 py-2 border rounded-md w-[200px]"
           onChange={(e) =>
-            setSearchParams((prev) => ({ ...prev, name: e.target.value }))
+            setSearchParams((prev) => ({ ...prev, callsign: e.target.value }))
           }
         />
         <Select
