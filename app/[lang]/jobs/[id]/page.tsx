@@ -129,7 +129,7 @@ export default function JobDetailPage() {
 
   return (
     <div className="px-4">
-      <div className="text-2xl font-semibold mb-4">Job Detail</div>
+      <div className="text-2xl font-semibold mb-4">任务详情</div>
       {query.isLoading ? (
         <p>Loading...</p>
       ) : query.isError ? (
