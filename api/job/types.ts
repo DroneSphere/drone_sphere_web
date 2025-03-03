@@ -1,6 +1,3 @@
-import httpClient from "../http_client";
-import { Response } from "../response";
-
 export interface JobItemResult {
   id: number;
   name: string;
@@ -40,20 +37,20 @@ export interface JobSearchParams {
   createAtEnd?: string;
 }
 
-const prefix = "/job";
-
-export async function fetchAllJobs(
-  params: JobSearchParams | null = null
-): Promise<JobItemResult[]> {
-  const res = await httpClient.instance.get<Response<JobItemResult[]>>(
-    `${prefix}`
-  );
-  return res.data.data;
-}
-
-export async function fetchJobDetail(id: number): Promise<SubJobResult[]> {
-  const res = await httpClient.instance.get<Response<SubJobResult[]>>(
-    `${prefix}/${id}`
-  );
-  return res.data.data;
+export interface JobCreationOptionsResult {
+  droneModels: {
+    model: string;
+    key: string;
+    drones: {
+      id: number;
+      callsign: string;
+      description: string;
+      sn: string;
+    }[];
+  }[];
+  areas: {
+    id: number;
+    name: string;
+    description: string;
+  }[];
 }

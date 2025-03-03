@@ -1,6 +1,6 @@
 "use client";
 
-import { fetchAllJobs, JobItemResult, JobSearchParams } from "@/api/job/job";
+import { fetchAllJobs, JobItemResult, JobSearchParams } from "@/api/job/request";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Input } from "@/components/ui/input";
@@ -28,6 +28,7 @@ import {
 import { format } from "date-fns";
 import { CalendarIcon } from "lucide-react";
 import { useState } from "react";
+import { JobCreator } from "./job-creator";
 
 const columnHelper = createColumnHelper<JobItemResult>();
 
@@ -191,6 +192,7 @@ export default function JobListPage() {
         >
           搜索
         </Button>
+        <JobCreator />
       </div>
       {listQuery.isLoading ? (
         <div>Loading...</div>

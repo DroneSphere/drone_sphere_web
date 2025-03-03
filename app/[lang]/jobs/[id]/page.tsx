@@ -2,7 +2,7 @@
 
 import { DroneState } from "@/api/drone/drone";
 import { baseURL } from "@/api/http_client";
-import { fetchJobDetail } from "@/api/job/job";
+import { fetchJobDetail } from "@/api/job/request";
 import { Button } from "@/components/ui/button";
 import {
   Card,
