@@ -35,6 +35,7 @@ export default function Sidebar({
               jobs: "搜索任务管理",
               result: "搜索结果管理",
               settings: "设置",
+              creation: "创建",
             };
 
             // Get the title from the route map, fallback to capitalized path segment

@@ -2,6 +2,7 @@ import httpClient from "../http_client";
 import { Response } from "../response";
 import {
   JobCreationOptionsResult,
+  JobEditionResult,
   JobItemResult,
   JobSearchParams,
   SubJobResult,
@@ -94,4 +95,51 @@ export async function fetchJobCreateionOptions(): Promise<JobCreationOptionsResu
       resolve(mockOptions);
     }, delay);
   });
+}
+
+export async function fetchJobEditionData(
+  id: number
+): Promise<JobEditionResult> {
+  console.log("fetchJobEditionData", id);
+
+  const mockOptions: JobEditionResult = {
+    droneModel: "DJI Mavic 3",
+    drones: [
+      {
+        id: 1,
+        callsign: "Drone A",
+        description: "Description A",
+        sn: "SN123",
+        rtk_available: true,
+        thermal_available: true,
+      },
+      {
+        id: 2,
+        callsign: "Drone B",
+        description: "Description B",
+        sn: "SN456",
+        rtk_available: true,
+        thermal_available: false,
+      },
+    ],
+    area: {
+      name: "Area A",
+      points: [
+        { lat: 36.666631, lng: 117.138154, marker: "A" },
+        { lat: 36.667631, lng: 117.139154, marker: "B" },
+        { lat: 36.665631, lng: 117.139154, marker: "C" },
+      ],
+    },
+  };
+  // Random delay between 300-1000ms before returning mock data
+  return new Promise((resolve) => {
+    const delay = Math.floor(Math.random() * (1000 - 300 + 1)) + 300;
+    setTimeout(() => {
+      resolve(mockOptions);
+    }, delay);
+  });
+  // const res = await httpClient.instance.get<Response<JobEditionResult>>(
+  //   `${prefix}/${id}/edit`
+  // );
+  // return res.data.data;
 }

@@ -23,9 +23,11 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { useQuery } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 export function JobCreator() {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
@@ -42,6 +44,7 @@ export function JobCreator() {
     e.preventDefault();
     // 提交逻辑...
     setOpen(false);
+    router.push("/jobs/creation");
   };
 
   return (
