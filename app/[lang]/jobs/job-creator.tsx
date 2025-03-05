@@ -1,6 +1,6 @@
 "use client";
 
-import { fetchJobCreateionOptions } from "@/api/job/request";
+import { createJob, fetchJobCreateionOptions } from "@/api/job/request";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -11,9 +11,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
 
 import {
   Form,
@@ -45,10 +44,25 @@ const formSchema = z.object({
 
 export function JobCreator() {
   const router = useRouter();
-  const [open, setOpen] = useState(false);
+  // const [open, setOpen] = useState(false);
   const optionsQuery = useQuery({
     queryKey: ["job", "creation", "options"],
     queryFn: fetchJobCreateionOptions,
+  });
+
+  const createMutation = useMutation({
+    mutationFn: (data: z.infer<typeof formSchema>) => {
+      console.log("createMutation", data);
+      return createJob({
+        area_id: parseInt(data.areaId),
+        description: data.description,
+        name: data.name,
+      });
+    },
+    onSuccess: (data) => {
+      console.log("createMutation onSuccess", data);
+      router.push("/jobs/creation/" + data);
+    },
   });
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -62,12 +76,11 @@ export function JobCreator() {
 
   function onSubmit(data: z.infer<typeof formSchema>) {
     console.log("onSubmit", data);
-    setOpen(false);
-    router.push("/jobs/creation");
+    createMutation.mutate(data);
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog>
       <DialogTrigger asChild>
         <Button>创建飞行任务</Button>
       </DialogTrigger>
@@ -153,108 +166,25 @@ export function JobCreator() {
 
             {/* 底部操作栏 */}
             <DialogFooter>
-              {/* <div className="pt-8 flex justify-end gap-3"> */}
               <DialogClose asChild>
-                <Button type="button" variant="outline" className="px-6">
+                <Button
+                  disabled={createMutation.isPending}
+                  variant="outline"
+                  className="px-6"
+                >
                   取消
                 </Button>
               </DialogClose>
               <Button
+                disabled={createMutation.isPending}
                 type="submit"
                 className="px-6 bg-primary hover:bg-primary/90"
               >
                 创建任务
               </Button>
-              {/* </div> */}
             </DialogFooter>
           </form>
         </Form>
-
-        {/* 保持原有表单结构，仅调整容器高度 */}
-        {/* <form onSubmit={handleSubmit} className="">
-          <div className="overflow-y-auto flex flex-col gap-4">
-            <div>
-              <Label htmlFor="name">任务名称</Label>
-              <Input
-                id="name"
-                value={formData.name}
-                onChange={(e) =>
-                  setFormData({ ...formData, name: e.target.value })
-                }
-                placeholder="请输入任务名称"
-                required
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="description">任务描述</Label>
-              <Textarea
-                id="description"
-                value={formData.description}
-                onChange={(e) =>
-                  setFormData({ ...formData, description: e.target.value })
-                }
-                placeholder="请输入任务详细信息"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label>选择飞行区域</Label>
-              {optionsQuery.isLoading ? (
-                <Skeleton className="rounded-lg" />
-              ) : (
-                <Select
-                  value={formData.areaId}
-                  onValueChange={(value) =>
-                    setFormData({ ...formData, areaId: value })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="选择飞行区域" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {optionsQuery.data?.areas.map((area) => (
-                      <SelectItem
-                        key={area.id}
-                        value={area.id.toString()}
-                        className="flex items-center"
-                      >
-                        <div className="font-semibold">{area.name}</div>
-                        {formData.areaId != area.id.toString() && (
-                          <div className="text-muted-foreground text-sm">
-                            {area.description}
-                          </div>
-                        )}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-            </div>
-          </div>
-        
-        {/* 底部操作栏 */}
-        {/* <DialogFooter>
-          <div className="pt-8 flex justify-end gap-3">
-            <DialogClose asChild>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setOpen(false)}
-                className="px-6"
-              >
-                取消
-              </Button>
-            </DialogClose>
-            <Button
-              type="submit"
-              className="px-6 bg-primary hover:bg-primary/90"
-            >
-              创建任务
-            </Button>
-          </div>
-          </form> */}
-        {/* </DialogFooter> */}
       </DialogContent>
     </Dialog>
   );

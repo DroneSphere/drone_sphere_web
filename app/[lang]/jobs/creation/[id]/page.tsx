@@ -1,20 +1,47 @@
 "use client";
 
-import { fetchJobEditionData } from "@/api/job/request";
+import { fetchJobEditionData, modifyJob } from "@/api/job/request";
+import { JobEditionResult, JobModifyRequest } from "@/api/job/types";
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
 import AMapLoader from "@amap/amap-jsapi-loader";
 import "@amap/amap-jsapi-types";
-import { useQuery } from "@tanstack/react-query";
-import { useEffect, useRef } from "react";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { usePathname } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
 import DroneSelectionSidebar from "./drone-selection-sidebar";
 
 export default function Page() {
   const AMapRef = useRef<typeof AMap | null>(null);
   const mapRef = useRef<AMap.Map | null>(null);
-  const id = 1;
+  const path = usePathname();
+  const id = parseInt(path.split("/")[4]);
+  const { toast } = useToast();
   const dataQuery = useQuery({
     queryKey: ["job-creation-options"],
     queryFn: () => fetchJobEditionData(id),
+  });
+
+  const [selectedDrones, setSelectedDrones] = useState<
+    JobEditionResult["drones"] | undefined
+  >();
+
+  const editionMutation = useMutation({
+    mutationFn: () => {
+      const req = {
+        id,
+        drone_ids: selectedDrones?.map((d) => d.id) || [],
+      } as JobModifyRequest;
+      console.log("editionMutation", req);
+      return modifyJob(req);
+    },
+    onSuccess: () => {
+      console.log("success");
+      toast({
+        title: "保存成功",
+        description: "任务已保存",
+      });
+    },
   });
 
   // 完成数据加载后开始处理挂载地图逻辑
@@ -78,8 +105,8 @@ export default function Page() {
     <div className="px-4">
       <div className="mb-4 flex items-center justify-between">
         <div className="text-2xl font-semibold">任务创建</div>
-        <Button className="mb-4">
-          <span>保存</span>
+        <Button className="mb-4" onClick={() => editionMutation.mutate()}>
+          保存
         </Button>
       </div>
       <div className="mb-8 flex gap-4">
@@ -92,7 +119,7 @@ export default function Page() {
             drones={dataQuery.data?.drones || []}
             onSelectedChange={(selected) => {
               console.log("Selected drones:", selected);
-              // Handle or store the selected drones as needed
+              setSelectedDrones(selected);
             }}
           />
         </div>

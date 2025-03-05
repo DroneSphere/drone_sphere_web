@@ -12,8 +12,6 @@ export interface JobItemResult {
   description: string;
   /** 使用的无人机列表 */
   drones: string[];
-  /** 目标分类列表 */
-  target_classes: string[];
 }
 
 export interface SubJobResult {
@@ -47,16 +45,6 @@ export interface JobSearchParams {
 }
 
 export interface JobCreationOptionsResult {
-  droneModels: {
-    model: string;
-    key: string;
-    drones: {
-      id: number;
-      callsign: string;
-      description: string;
-      sn: string;
-    }[];
-  }[];
   areas: {
     id: number;
     name: string;
@@ -64,18 +52,60 @@ export interface JobCreationOptionsResult {
   }[];
 }
 
+export interface JobCreationRequest {
+  area_id: number;
+  description?: string;
+  name: string;
+}
+
 export interface JobEditionResult {
-  droneModel: string;
-  drones: {
-    id: number;
-    callsign: string;
-    description: string;
-    sn: string;
-    rtk_available: boolean;
-    thermal_available: boolean;
-  }[];
+  id: number;
+  name: string;
+  description: string;
   area: {
     name: string;
-    points: Point[];
+    points: {
+      lat: number;
+      lng: number;
+      marker: string;
+    }[];
   };
+  drones: {
+    callsign: string;
+    description?: string;
+    id: number;
+    model: string;
+    rtk_available: boolean;
+    sn: string;
+    thermal_available: boolean;
+  }[];
+}
+
+export interface JobModifyRequest {
+  id: number;
+  description?: string;
+  drone_ids?: number[];
+  name?: string;
+}
+
+export interface JobDetailResult {
+  id: number;
+  area: {
+    description: string;
+    id: number;
+    name: string;
+    points?: {
+      lat: number;
+      lng: number;
+    }[];
+  };
+  description: string;
+  drones?: {
+    callsign: string;
+    description: string;
+    id: number;
+    model: string;
+    sn: string;
+  }[];
+  name?: string;
 }

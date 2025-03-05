@@ -54,7 +54,6 @@ const DroneSelectionSidebar = ({
           <PopoverContent className="w-64 p-0" align="end">
             <ScrollArea className="h-auto max-h-64">
               <div className="p-2">
-                <h4 className="text-sm font-medium mb-2 px-2">可用无人机</h4>
                 {drones
                   .filter(
                     (drone) => !selectedDrones.some((d) => d.id === drone.id)
@@ -66,11 +65,13 @@ const DroneSelectionSidebar = ({
                       className="w-full justify-start text-left p-2 mb-1 h-auto"
                       onClick={() => handleAddDrone(drone)}
                     >
-                      <div>
-                        <div className="font-medium">{drone.callsign}</div>
-                        <div className="text-xs text-muted-foreground">
+                      <div className="flex flex-col">
+                        <span className="text-sm font-medium">
+                          {drone.callsign}
+                        </span>
+                        <span className="text-xs text-muted-foreground">
                           {drone.description}
-                        </div>
+                        </span>
                       </div>
                     </Button>
                   ))}
@@ -91,7 +92,7 @@ const DroneSelectionSidebar = ({
               <Card key={drone.id} className="shadow-sm">
                 <CardHeader className="p-3 pb-0 flex flex-row items-center justify-between">
                   <CardTitle className="text-sm font-medium">
-                    {drone.callsign}（{drone.sn}）
+                    {drone.callsign}
                   </CardTitle>
                   <Button
                     size="sm"
@@ -103,6 +104,7 @@ const DroneSelectionSidebar = ({
                   </Button>
                 </CardHeader>
                 <CardContent className="p-3 pt-1">
+                  <p className="text-xs text-muted-foreground">{drone.model}</p>
                   <p className="text-xs text-muted-foreground">
                     {drone.description}
                   </p>

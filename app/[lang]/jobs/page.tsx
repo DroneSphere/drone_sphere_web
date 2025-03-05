@@ -49,9 +49,6 @@ const columns = [
   columnHelper.accessor("drones", {
     header: () => "无人机",
   }),
-  columnHelper.accessor("target_classes", {
-    header: () => "目标类别",
-  }),
   // 操作列
   columnHelper.accessor("id", {
     header: () => "操作",
