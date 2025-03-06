@@ -194,15 +194,17 @@ export default function JobDetailPage() {
                         <div className="flex items-center">
                           <span className="w-12 min-w-[3rem]">经度:</span>
                           <span className="font-mono">
-                            {(drone.sn && droneStates[drone.sn]?.lng) ?? "--"}
-                            °E
+                            {(drone.sn &&
+                              droneStates[drone.sn]?.lng.toFixed(6)) ??
+                              "--"}
                           </span>
                         </div>
                         <div className="flex items-center">
                           <span className="w-12 min-w-[3rem]">纬度:</span>
                           <span className="font-mono">
-                            {(drone.sn && droneStates[drone.sn]?.lat) ?? "--"}
-                            °N
+                            {(drone.sn &&
+                              droneStates[drone.sn]?.lat.toFixed(6)) ??
+                              "--"}
                           </span>
                         </div>
                       </div>
