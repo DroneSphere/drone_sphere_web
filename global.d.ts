@@ -42,4 +42,6 @@ interface Window {
   };
 
   connectCallback: ConnectCallback;
+  thingConnectCallback: ConnectCallback;
+  wsConenctCallback: ConnectCallback;
 }

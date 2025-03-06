@@ -18,14 +18,33 @@ export interface ThingParams {
   password: string;
 }
 
+export interface APIParams {
+  host: string;
+  token: string;
+}
+
+export interface WSParams {
+  host: string;
+  token: string;
+  connectCallback: string;
+}
+
+export interface EmptyParams {}
+
 export enum DJIModule {
   THING = "thing",
+  API = "api",
+  WS = "ws",
+  MISSION = "mission",
+  TSA = "tsa",
 }
 
 class JsNativeAPI {
   // 私有属性
   private license: DJILicense | null = null;
   private thingParams: ThingParams | null = null;
+  private apiParams: APIParams | null = null;
+  private wsParams: WSParams | null = null;
 
   /**
    * 解析响应并返回字符串数据
@@ -106,8 +125,36 @@ class JsNativeAPI {
           DJIModule.THING,
           JSON.stringify(this.thingParams)
         );
-        console.log(res);
+        console.log("thingRes: ", res);
         return true;
+      case DJIModule.API:
+        const apiRes = window.djiBridge.platformLoadComponent(
+          DJIModule.API,
+          JSON.stringify(this.apiParams)
+        );
+        console.log("apiRes: ", apiRes);
+        return this.returnBool(apiRes);
+      case DJIModule.WS:
+        const wsRes = window.djiBridge.platformLoadComponent(
+          DJIModule.WS,
+          JSON.stringify(this.wsParams)
+        );
+        console.log("wsRes: ", wsRes);
+        return this.returnBool(wsRes);
+      case DJIModule.MISSION:
+        const missionRes = window.djiBridge.platformLoadComponent(
+          DJIModule.MISSION,
+          JSON.stringify(this.apiParams)
+        );
+        console.log("missionRes: ", missionRes);
+        return this.returnBool(missionRes);
+      case DJIModule.TSA:
+        const tsaRes = window.djiBridge.platformLoadComponent(
+          DJIModule.TSA,
+          JSON.stringify(this.apiParams)
+        );
+        console.log("tsaRes: ", tsaRes);
+        return this.returnBool(tsaRes);
       default:
         console.error("未知模块");
         return false;
@@ -170,6 +217,17 @@ class JsNativeAPI {
       workspaceName,
       desc
     );
+    return this.returnBool(response);
+  }
+
+  /**
+   * 设置工作区 ID
+   *
+   * @param uuid - 工作区 ID
+   * @returns 是否设置成功
+   */
+  setWorkspaceId(uuid: string): boolean {
+    const response = window.djiBridge.platformSetWorkspaceId(uuid);
     return this.returnBool(response);
   }
 
@@ -264,6 +322,32 @@ class JsNativeAPI {
   getConfigs(): any {
     const response = window.djiBridge.thingGetConfigs();
     return this.returnData(response);
+  }
+
+  /**** API 模块 ****/
+  /**
+   * 设置 API 参数
+   *
+   * @param params - API 参数
+   * @returns 设置是否成功
+   * @memberof JsNativeAPI
+   */
+  setApiParams(params: APIParams): boolean {
+    this.apiParams = params;
+    return true;
+  }
+
+  /**** WS 模块 ****/
+  /**
+   * 设置 WS 参数
+   *
+   * @param params - WS 参数
+   * @returns 设置是否成功
+   * @memberof JsNativeAPI
+   */
+  setWSParams(params: WSParams): boolean {
+    this.wsParams = params;
+    return true;
   }
 }
 

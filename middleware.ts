@@ -40,16 +40,16 @@ export function middleware(request: NextRequest) {
   // 检查登录状态
   const token = request.cookies.get(AUTH_TOKEN_KEY) || getLocalStorage(AUTH_TOKEN_KEY);
   if (!token) {
-    console.log("未登录");
-    // pathname 含有 login 的情况下，跳过
-    if (pathname.split("/").includes("login")) {
-      console.log("跳过登录检查");
-      return NextResponse.next();
-    }
-    console.log("重定向到登录页");
+    // console.log("未登录");
+    // // pathname 含有 login 的情况下，跳过
+    // if (pathname.split("/").includes("login")) {
+    //   console.log("跳过登录检查");
+    //   return NextResponse.next();
+    // }
+    // console.log("重定向到登录页");
 
-    const url = isWebview ? "/pilot/login" : "/login";
-    return NextResponse.redirect(new URL(url, request.url));
+    // const url = isWebview ? "/pilot/login" : "/login";
+    // return NextResponse.redirect(new URL(url, request.url));
   }
 
   // 如果以 /pilot 开头，跳过

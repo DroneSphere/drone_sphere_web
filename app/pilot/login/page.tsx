@@ -4,14 +4,16 @@ import { login, LoginRequest } from "@/api/user/login";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { DJIModule, jsNativeAPI, ThingParams } from "@/lib/dji-bridge";
+import { jsNativeAPI } from "@/lib/dji-bridge";
 import "dotenv/config";
 import { Lock, User } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import VConsole from "vconsole";
 
 export default function Home() {
   const { toast } = useToast();
+  const router = useRouter();
 
   const [isLoginEnabled, setLoginEnabled] = useState(true);
   const [username, setUsername] = useState<string | null>(null);
@@ -67,18 +69,6 @@ export default function Home() {
           <Button
             disabled={!isLoginEnabled}
             onClick={async () => {
-              // 验证 Developer 许可
-              const { success: isVerified, message } =
-                jsNativeAPI.platformVerifyLicense();
-              console.log(isVerified, message);
-              if (!isVerified) {
-                toast({
-                  title: "许可证验证失败",
-                  description: message,
-                });
-                return;
-              }
-
               // 登录
               const cmd = {
                 username,
@@ -87,21 +77,8 @@ export default function Home() {
               } as LoginRequest;
               const res = await login(cmd);
               console.log(res);
-
-              jsNativeAPI.setInformation(
-                res.platform.platform,
-                res.platform.workspace,
-                res.platform.desc
-              );
-
-              const thingParams: ThingParams = {
-                host: res.params.mqtt_host,
-                connectCallback: "connectCallback",
-                username: res.params.mqtt_username,
-                password: res.params.mqtt_password,
-              };
-              jsNativeAPI.setThingParams(thingParams);
-              jsNativeAPI.initComponent(DJIModule.THING);
+              router.push("/pilot");
+              
             }}
             className="w-full my-4"
           >

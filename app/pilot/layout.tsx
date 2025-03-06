@@ -1,7 +1,7 @@
 import { Toaster } from "@/components/ui/toaster";
-import { Metadata } from "next";
 import localFont from "next/font/local";
 import "../globals.css";
+import QueryWrapper from "./wrapper";
 
 const geistSans = localFont({
   src: "../fonts/GeistVF.woff",
@@ -13,11 +13,6 @@ const geistMono = localFont({
   variable: "--font-geist-mono",
   weight: "100 900",
 });
-
-export const metadata: Metadata = {
-  title: "DroneSphere",
-  description: "DroneSphere",
-};
 
 export default function RootLayout({
   children,
@@ -35,7 +30,9 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <main>{children}</main>
+        <main>
+          <QueryWrapper>{children}</QueryWrapper>
+        </main>
         <Toaster />
       </body>
     </html>
