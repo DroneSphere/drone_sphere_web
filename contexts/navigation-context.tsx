@@ -32,15 +32,6 @@ export function NavigationProvider({
 
   // 判断是否为活动路由
   const isActiveRoute = (path: string) => {
-    console.log(
-      "pathname",
-      pathname,
-      "path",
-      path,
-      "isActiveRoute",
-      pathname.includes(path)
-    );
-
     return pathname.includes(path);
   };
 

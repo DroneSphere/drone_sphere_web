@@ -16,10 +16,12 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import { useNavigation } from "@/contexts/navigation-context";
+import { useUserContext } from "@/contexts/user-context";
 import { routeMap } from "@/lib/route";
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { isActiveRoute } = useNavigation();
+  const { workspace, isLoading } = useUserContext();
 
   return (
     <Sidebar variant="inset" {...props}>
@@ -32,8 +34,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   <Command className="size-4" />
                 </div>
                 <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-semibold">山东大学</span>
-                  <span className="truncate text-xs">团队账号</span>
+                  <span className="truncate font-semibold">
+                    {isLoading ? "加载中..." : workspace?.name || "未知工作区"}
+                  </span>
+                  <span className="truncate text-xs">
+                    {isLoading ? "" : workspace?.type || "未知类型"}
+                  </span>
                 </div>
               </a>
             </SidebarMenuButton>
@@ -56,7 +62,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         />
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={routeMap.user} />
+        <NavUser />
       </SidebarFooter>
     </Sidebar>
   );

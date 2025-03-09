@@ -1,6 +1,6 @@
 "use client";
 
-import { login, LoginRequest } from "@/api/user/login";
+import { login, LoginRequest } from "@/api/user/request";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
