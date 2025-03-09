@@ -1,18 +1,6 @@
 "use client";
 
-import {
-  BookOpen,
-  Bot,
-  Command,
-  Frame,
-  LandPlot,
-  LifeBuoy,
-  Map,
-  PieChart,
-  Send,
-  Settings2,
-  SquareTerminal,
-} from "lucide-react";
+import { Command } from "lucide-react";
 import * as React from "react";
 
 import { NavMain } from "@/components/nav-main";
@@ -27,93 +15,12 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
-
-export const routeMap = {
-  user: {
-    name: "ThuRAY",
-    email: "thuray.email@gmail.com",
-    avatar: "/avatars/shadcn.jpg",
-  },
-  navMain: [
-    {
-      title: "无人机管理",
-      url: "/drones",
-      icon: Bot,
-      items: [],
-    },
-    {
-      title: "搜索区域管理",
-      url: "/areas",
-      icon: LandPlot,
-      items: [],
-    },
-    {
-      title: "航线管理",
-      url: "/wayline",
-      icon: Map,
-      items: [],
-    },
-    {
-      title: "搜索任务管理",
-      url: "/jobs",
-      icon: SquareTerminal,
-      items: [],
-    },
-    {
-      title: "搜索结果管理",
-      url: "/result",
-      icon: BookOpen,
-      items: [],
-    },
-    {
-      title: "设置",
-      url: "/settings",
-      icon: Settings2,
-      items: [
-        {
-          title: "账户",
-          url: "/settings#account",
-        },
-        {
-          title: "通用",
-          url: "/settings#general",
-        },
-      ],
-    },
-  ],
-  navSecondary: [
-    {
-      title: "获取支持",
-      url: "/support",
-      icon: LifeBuoy,
-    },
-    {
-      title: "反馈",
-      url: "/feedback",
-      icon: Send,
-    },
-  ],
-  projects: [
-    {
-      name: "Design Engineering",
-      url: "#",
-      icon: Frame,
-    },
-    {
-      name: "Sales & Marketing",
-      url: "#",
-      icon: PieChart,
-    },
-    {
-      name: "Travel",
-      url: "#",
-      icon: Map,
-    },
-  ],
-};
+import { useNavigation } from "@/contexts/navigation-context";
+import { routeMap } from "@/lib/route";
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-  // eslint-disable-next-line
+  const { isActiveRoute } = useNavigation();
+
   return (
     <Sidebar variant="inset" {...props}>
       <SidebarHeader>
@@ -134,9 +41,19 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={routeMap.navMain} />
-        {/* <NavProjects projects={data.projects} /> */}
-        <NavSecondary items={routeMap.navSecondary} className="mt-auto" />
+        <NavMain
+          items={routeMap.navMain.map((item) => ({
+            ...item,
+            isActive: isActiveRoute(item.url) ? true : false,
+          }))}
+        />
+        <NavSecondary
+          items={routeMap.navSecondary.map((item) => ({
+            ...item,
+            isActive: isActiveRoute(item.url) ? true : false,
+          }))}
+          className="mt-auto"
+        />
       </SidebarContent>
       <SidebarFooter>
         <NavUser user={routeMap.user} />

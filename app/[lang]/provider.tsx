@@ -42,13 +42,7 @@ export default function Provider({
   return (
     <AuthCheck>
       <QueryClientProvider client={queryClient}>
-        {showSidebar ? (
-          <Sidebar>
-            <div className="flex-1">{children}</div>
-          </Sidebar>
-        ) : (
-          children
-        )}
+        {showSidebar ? <Sidebar>{children}</Sidebar> : children}
         <Toaster />
       </QueryClientProvider>
     </AuthCheck>
