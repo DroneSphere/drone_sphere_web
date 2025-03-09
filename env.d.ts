@@ -4,6 +4,7 @@ declare global {
       NEXT_PUBLIC_DJI_APP_ID: string;
       NEXT_PUBLIC_DJI_APP_KEY: string;
       NEXT_PUBLIC_DJI_LICENSE: string;
+      API_HOST: string;
       NODE_ENV: "dev" | "prod" | "test";
     }
   }

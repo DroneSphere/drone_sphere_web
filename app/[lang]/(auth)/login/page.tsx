@@ -7,24 +7,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import {
-  QueryClient,
-  QueryClientProvider,
-  useMutation,
+  useMutation
 } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
-const queryClient = new QueryClient();
-
-export default function App() {
-  return (
-    <QueryClientProvider client={queryClient}>
-      <LoginPage />
-    </QueryClientProvider>
-  );
-}
-
-function LoginPage() {
+export default function LoginPage() {
   const { toast } = useToast();
   const router = useRouter();
   const [username, setUsername] = useState("");
@@ -55,25 +43,12 @@ function LoginPage() {
     console.log("LoginMut: " + loginMut.isSuccess);
   }, [loginMut.isSuccess]);
 
-  // useEffect(() => {
-  //   if (loginMut.isSuccess) {
-  //     console.log("Will route");
-  //     setTimeout(() => {
-  //       const res = router.replace("/");
-  //       console.log(res);
-  //       // router.refresh();
-  //       // window.location.href = "/";
-  //       console.log("Routed");
-  //     }, 200);
-  //   }
-  // }, [loginMut.isSuccess, router]);
-
   return (
     <>
       <div className="flex h-screen items-center justify-center">
         <Card className="w-[350px]">
           <CardHeader>
-            <CardTitle className="text-2xl text-center">登录</CardTitle>
+            <CardTitle className="text-2xl text-center">无人机搜索原型系统</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">

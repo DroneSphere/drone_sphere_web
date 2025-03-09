@@ -5,9 +5,8 @@ import axios, {
   InternalAxiosRequestConfig,
 } from "axios";
 
-
 // 导出 baseURL
-export const baseURL = "http://192.168.1.112:10086/api/v1"
+export const baseURL = "http://127.0.0.1:10086/api/v1";
 
 class HttpClient {
   instance: AxiosInstance;
