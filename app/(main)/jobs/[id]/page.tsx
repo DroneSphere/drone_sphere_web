@@ -100,7 +100,7 @@ export default function JobDetailPage() {
     polygon.setPath(points);
     polygon.setMap(mapRef.current);
     mapRef.current.setFitView();
-  }, [query.data, AMapRef.current, mapRef.current]);
+  }, [query.data]);
 
   // SSE处理逻辑
   useEffect(() => {
@@ -161,7 +161,7 @@ export default function JobDetailPage() {
     return () => {
       eventSources.forEach((source) => source.close());
     };
-  }, [query.data, query.isLoading, droneStates]);
+  }, [query.data, query.isLoading, droneMarkers]);
 
   return (
     <div className="px-4">

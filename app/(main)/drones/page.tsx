@@ -98,7 +98,7 @@ export default function DronesPage() {
           <div className="flex justify-center space-x-2">
             <EditDialog sn={info.row.original.sn} />
             <ViewDialog sn={info.row.original.sn} />
-            <DeleteDialog id={info.row.original.id} />
+            <DeleteDialog sn={info.row.original.sn} />
           </div>
         ),
       }),
