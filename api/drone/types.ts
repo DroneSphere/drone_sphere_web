@@ -51,7 +51,19 @@ export interface DroneUpdateRequest {
 
 export interface DroneItemResult {
   id: number;
+  /**
+   * 无人机的序列号
+   */
+  sn: string;
   callsign?: string;
+  /**
+   * ProductModel 无人机的型号名称
+   */
+  product_model: string;
+  /**
+   * 无人机状态
+   */
+  status?: string;
   /**
    * IsRTKAvailable 是否支持RTK
    */
@@ -60,18 +72,8 @@ export interface DroneItemResult {
    * IsThermalAvailable 是否支持热成像
    */
   is_thermal_available?: boolean;
-  /**
-   * ProductModel 无人机的型号名称
-   */
-  product_model: string;
-  /**
-   * 以下字段来自实体信息
-   */
-  sn: string;
-  /**
-   * 以上字段来自实体信息
-   */
-  status?: string;
+  created_at: string;
+  last_online_at: string;
 }
 
 export interface DroneState {

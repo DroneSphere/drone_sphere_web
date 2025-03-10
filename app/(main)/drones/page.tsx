@@ -56,8 +56,6 @@ export default function DronesPage() {
   const listQuery = useQuery({
     queryKey: ["drones", searchParams],
     queryFn: () => {
-      console.log("searchParam", searchParams);
-
       return fetchAllDrones(searchParams);
     },
   });
@@ -86,6 +84,12 @@ export default function DronesPage() {
       columnHelper.accessor("is_thermal_available", {
         header: () => "热成像",
         cell: (info) => renderIndicator(info.getValue()),
+      }),
+      columnHelper.accessor("created_at", {
+        header: "创建时间",
+      }),
+      columnHelper.accessor("last_online_at", {
+        header: "最后在线时间",
       }),
       columnHelper.display({
         id: "actions",
