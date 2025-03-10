@@ -9,7 +9,6 @@ import {
 } from "@/components/ui/collapsible";
 import {
   SidebarGroup,
-  SidebarGroupLabel,
   SidebarMenu,
   SidebarMenuAction,
   SidebarMenuButton,
@@ -18,7 +17,6 @@ import {
   SidebarMenuSubButton,
   SidebarMenuSubItem,
 } from "@/components/ui/sidebar";
-import { useDictionary } from "@/lib/dictionary";
 
 export function NavMain({
   items,
@@ -34,19 +32,16 @@ export function NavMain({
     }[];
   }[];
 }) {
-  const { dictionary } = useDictionary();
   return (
     <SidebarGroup>
-      <SidebarGroupLabel>{dictionary?.sidebar?.platform}</SidebarGroupLabel>
+      {/* <SidebarGroupLabel>{dictionary?.sidebar?.platform}</SidebarGroupLabel> */}
       <SidebarMenu>
         {items.map((item) => (
           <Collapsible
             key={item.title}
             asChild
             defaultOpen={item.isActive}
-            className={`${
-              item.isActive ? "bg-sidebar-accent" : ""
-            }`}
+            className={`${item.isActive ? "bg-sidebar-accent" : ""}`}
           >
             <SidebarMenuItem>
               <SidebarMenuButton asChild tooltip={item.title}>

@@ -1,14 +1,15 @@
 import {
-    BookOpen,
-    Bot,
-    Frame,
-    LandPlot,
-    LifeBuoy,
-    Map,
-    PieChart,
-    Send,
-    Settings2,
-    SquareTerminal,
+  BookOpen,
+  Bot,
+  Frame,
+  LandPlot,
+  Logs,
+  Map,
+  Monitor,
+  PieChart,
+  Plane,
+  Settings2,
+  SquareTerminal,
 } from "lucide-react";
 
 export interface RouteItem {
@@ -35,7 +36,19 @@ export const routeMap = {
       items: [],
     },
     {
-      title: "搜索区域管理",
+      title: "机型管理",
+      url: "/models",
+      icon: Plane,
+      items: [],
+    },
+    {
+      title: "载荷管理",
+      url: "/payloads",
+      icon: Frame,
+      items: [],
+    },
+    {
+      title: "区域管理",
       url: "/areas",
       icon: LandPlot,
       items: [],
@@ -47,15 +60,27 @@ export const routeMap = {
       items: [],
     },
     {
-      title: "搜索任务管理",
+      title: "任务管理",
       url: "/jobs",
       icon: SquareTerminal,
       items: [],
     },
     {
-      title: "搜索结果管理",
+      title: "过程监控",
+      url: "/monitor",
+      icon: Monitor,
+      items: [],
+    },
+    {
+      title: "结果管理",
       url: "/result",
       icon: BookOpen,
+      items: [],
+    },
+    {
+      title: "飞行日志",
+      url: "/logs",
+      icon: Logs,
       items: [],
     },
     {
@@ -75,16 +100,16 @@ export const routeMap = {
     },
   ],
   navSecondary: [
-    {
-      title: "获取支持",
-      url: "/support",
-      icon: LifeBuoy,
-    },
-    {
-      title: "反馈",
-      url: "/feedback",
-      icon: Send,
-    },
+    // {
+    //   title: "获取支持",
+    //   url: "/support",
+    //   icon: LifeBuoy,
+    // },
+    // {
+    //   title: "反馈",
+    //   url: "/feedback",
+    //   icon: Send,
+    // },
   ],
   projects: [
     {

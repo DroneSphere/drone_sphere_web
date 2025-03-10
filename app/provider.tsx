@@ -1,11 +1,12 @@
 "use client";
 
 import { Toaster } from "@/components/ui/toaster";
+import { NavigationProvider } from "@/contexts/navigation-context";
 import { UserContextProvider } from "@/contexts/user-context";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
-import { AUTH_TOKEN_KEY } from "../../lib/storage";
+import { AUTH_TOKEN_KEY } from "../lib/storage";
 import Sidebar from "./sidebar";
 
 const queryClient = new QueryClient();
@@ -43,16 +44,18 @@ export default function Provider({
   return (
     <QueryClientProvider client={queryClient}>
       <UserContextProvider>
-        <AuthCheck>
-          {showSidebar ? (
-            <UserContextProvider>
-              <Sidebar>{children}</Sidebar>
-            </UserContextProvider>
-          ) : (
-            children
-          )}
-          <Toaster />
-        </AuthCheck>
+        <NavigationProvider>
+          <AuthCheck>
+            {showSidebar ? (
+              <UserContextProvider>
+                <Sidebar>{children}</Sidebar>
+              </UserContextProvider>
+            ) : (
+              children
+            )}
+            <Toaster />
+          </AuthCheck>
+        </NavigationProvider>
       </UserContextProvider>
     </QueryClientProvider>
   );
