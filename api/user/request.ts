@@ -20,6 +20,15 @@ export async function login(payload: LoginRequest): Promise<LoginResult> {
   return res.data.data;
 }
 
+export async function register(payload: LoginRequest): Promise<LoginResult> {
+  const res = await httpClient.instance.post<Response<LoginResult>>(
+    "/user/register",
+    payload
+  );
+  console.log(res);
+  return res.data.data;
+}
+
 export async function getInfo(): Promise<LoginResult> {
   const res = await httpClient.instance.get<Response<LoginResult>>("/user");
 
