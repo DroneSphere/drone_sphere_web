@@ -65,6 +65,16 @@ const columns = [
         >
           查看
         </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => {
+            console.log(row.row.original);
+            window.location.href = `/jobs/creation/${row.row.original.id}`;
+          }}
+        >
+          编辑
+        </Button>
         <Button variant="destructive" size="sm">
           删除
         </Button>

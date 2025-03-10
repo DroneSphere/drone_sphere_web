@@ -9,8 +9,8 @@ const notoSans = Noto_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "搜索原型系统",
-  description: "无人机搜索原型系统",
+  title: "无人机集群搜索系统",
+  description: "无人机集群搜索系统",
 };
 
 export default function RootLayout({

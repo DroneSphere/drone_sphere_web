@@ -169,6 +169,14 @@ export default function AreasPage() {
         >
           搜索
         </Button>
+        {/* 创建 */}
+        <Button
+          onClick={() => router.push("/areas/new")}
+          disabled={listQuery.isPending}
+          variant="outline"
+        >
+          创建
+        </Button>
       </div>
       {
         // 加载中
