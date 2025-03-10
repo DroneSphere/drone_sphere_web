@@ -40,12 +40,16 @@ export interface DroneDetailResult {
    * 类型
    */
   type: number;
-}/**
- * DroneItemResult
- */
+}
+
+export interface DroneUpdateRequest {
+  /**
+   * 呼号
+   */
+  callsign?: string;
+}
 
 export interface DroneItemResult {
-  domain?: string;
   id: number;
   callsign?: string;
   /**
@@ -57,13 +61,9 @@ export interface DroneItemResult {
    */
   is_thermal_available?: boolean;
   /**
-   * LastLoginAt 最后登录时间
+   * ProductModel 无人机的型号名称
    */
-  last_login_at?: string;
-  /**
-   * ProductType 无人机的型号名称
-   */
-  product_type?: string;
+  product_model: string;
   /**
    * 以下字段来自实体信息
    */
@@ -72,9 +72,8 @@ export interface DroneItemResult {
    * 以上字段来自实体信息
    */
   status?: string;
-  sub_type?: number;
-  type?: number;
 }
+
 export interface DroneState {
   sn: string;
   lat: number;
@@ -84,4 +83,3 @@ export interface DroneState {
   speed: number;
   battery: number;
 }
-

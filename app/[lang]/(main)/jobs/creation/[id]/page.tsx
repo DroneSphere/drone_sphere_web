@@ -104,7 +104,7 @@ export default function Page() {
   return (
     <div className="px-4">
       <div className="mb-4 flex items-center justify-between">
-        <div className="text-2xl font-semibold">任务创建</div>
+        <div className="text-2xl font-semibold">任务编辑</div>
         <Button className="mb-4" onClick={() => editionMutation.mutate()}>
           保存
         </Button>

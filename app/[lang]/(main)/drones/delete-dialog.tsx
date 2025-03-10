@@ -18,6 +18,7 @@ export default function DeleteDialog(
     id: Number;
   }>
 ) {
+    
   return (
     <AlertDialog>
       <AlertDialogTrigger>

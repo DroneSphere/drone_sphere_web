@@ -1,9 +1,6 @@
 "use client";
 
-import {
-  DroneSearchParams,
-  fetchAllDrones,
-} from "@/api/drone/request";
+import { DroneSearchParams, fetchAllDrones } from "@/api/drone/request";
 import { DroneItemResult } from "@/api/drone/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -39,12 +36,15 @@ const columnHelper = createColumnHelper<DroneItemResult>();
 
 const renderIndicator = (value: boolean | undefined) => {
   return (
-    <div className="flex justify-center">
-      <div
+    <div className="flex justify-center items-center">
+      <span
         className={`w-3 h-3 rounded-full ${
           value === null ? "bg-gray-300" : value ? "bg-green-500" : "bg-red-500"
         }`}
       />
+      <span className="ml-2 text-sm w-12 text-left">
+        {value === null ? "未知" : value ? "支持" : "不支持"}
+      </span>
     </div>
   );
 };
@@ -76,7 +76,7 @@ export default function DronesPage() {
       columnHelper.accessor("status", {
         header: "状态",
       }),
-      columnHelper.accessor("product_type", {
+      columnHelper.accessor("product_model", {
         header: "型号",
       }),
       columnHelper.accessor("is_rtk_available", {
@@ -92,7 +92,7 @@ export default function DronesPage() {
         header: () => <div className="text-center">操作</div>,
         cell: (info) => (
           <div className="flex justify-center space-x-2">
-            <EditDialog id={info.row.original.id} />
+            <EditDialog sn={info.row.original.sn} />
             <ViewDialog sn={info.row.original.sn} />
             <DeleteDialog id={info.row.original.id} />
           </div>
