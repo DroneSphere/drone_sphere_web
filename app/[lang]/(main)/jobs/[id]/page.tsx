@@ -1,6 +1,6 @@
 "use client";
 
-import { DroneState } from "@/api/drone/drone";
+import { DroneState } from "@/api/drone/types";
 import { baseURL } from "@/api/http_client";
 import { fetchJobDetail } from "@/api/job/request";
 import { Button } from "@/components/ui/button";

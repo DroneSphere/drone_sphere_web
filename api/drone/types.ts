@@ -1,9 +1,49 @@
-import httpClient from "../http_client";
-import { Response } from "../response";
-
-/**
+export interface DroneDetailResult {
+  id: number;
+  /**
+   * 呼号
+   */
+  callsign?: string;
+  /**
+   * 领域
+   */
+  domain: number;
+  /**
+   * 是否支持RTK◊
+   */
+  is_rtk_available?: boolean;
+  /**
+   * 是否支持热成像
+   */
+  is_thermal_available?: boolean;
+  /**
+   * 产品型号
+   */
+  product_model: string;
+  /**
+   * 产品型号标识符
+   */
+  product_model_key: string;
+  /**
+   * 序列号
+   */
+  sn: string;
+  /**
+   * 在线状态
+   */
+  status?: string;
+  /**
+   * 子类型
+   */
+  sub_type: number;
+  /**
+   * 类型
+   */
+  type: number;
+}/**
  * DroneItemResult
  */
+
 export interface DroneItemResult {
   domain?: string;
   id: number;
@@ -35,7 +75,6 @@ export interface DroneItemResult {
   sub_type?: number;
   type?: number;
 }
-
 export interface DroneState {
   sn: string;
   lat: number;
@@ -46,27 +85,3 @@ export interface DroneState {
   battery: number;
 }
 
-export interface DroneSearchParams {
-  sn?: string;
-  callsign?: string;
-  model?: string;
-}
-
-export async function fetchAllDrones(
-  params: DroneSearchParams | null = null
-): Promise<DroneItemResult[]> {
-  console.log("param", params);
-
-  const res = await httpClient.instance.get<Response<DroneItemResult[]>>(
-    "/drone/list"
-  );
-  console.log(res);
-  return res.data.data;
-}
-
-export async function fetchDroneState(sn: string): Promise<DroneState> {
-  const res = await httpClient.instance.get<Response<DroneState>>(
-    `/drone/state/sse/${sn}`
-  );
-  return res.data.data;
-}

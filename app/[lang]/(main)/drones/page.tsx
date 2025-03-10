@@ -1,10 +1,10 @@
 "use client";
 
 import {
-  DroneItemResult,
   DroneSearchParams,
   fetchAllDrones,
-} from "@/api/drone/drone";
+} from "@/api/drone/request";
+import { DroneItemResult } from "@/api/drone/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -31,6 +31,9 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import { useMemo, useState } from "react";
+import DeleteDialog from "./delete-dialog";
+import EditDialog from "./edit-dialog";
+import ViewDialog from "./view-dialog";
 
 const columnHelper = createColumnHelper<DroneItemResult>();
 
@@ -84,8 +87,16 @@ export default function DronesPage() {
         header: () => "热成像",
         cell: (info) => renderIndicator(info.getValue()),
       }),
-      columnHelper.accessor("last_login_at", {
-        header: "最后登录时间",
+      columnHelper.display({
+        id: "actions",
+        header: () => <div className="text-center">操作</div>,
+        cell: (info) => (
+          <div className="flex justify-center space-x-2">
+            <EditDialog id={info.row.original.id} />
+            <ViewDialog sn={info.row.original.sn} />
+            <DeleteDialog id={info.row.original.id} />
+          </div>
+        ),
       }),
     ],
     []
