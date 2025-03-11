@@ -4,6 +4,11 @@ import { fetchAllJobs } from "@/api/job/request";
 import { JobItemResult, JobSearchParams } from "@/api/job/types";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
+import {
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
+} from "@/components/ui/hover-card";
 import { Input } from "@/components/ui/input";
 import {
   Popover,
@@ -27,7 +32,7 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import { format } from "date-fns";
-import { CalendarIcon } from "lucide-react";
+import { CalendarIcon, Edit, Trash, View } from "lucide-react";
 import { useState } from "react";
 import { JobCreator } from "./job-creator";
 
@@ -38,16 +43,32 @@ const columns = [
     header: () => "ID",
   }),
   columnHelper.accessor("name", {
-    header: "名称",
-  }),
-  columnHelper.accessor("description", {
-    header: "描述",
+    header: () => <div className="min-w-8">任务名称</div>,
   }),
   columnHelper.accessor("area_name", {
     header: "搜索区域",
   }),
   columnHelper.accessor("drones", {
-    header: () => "无人机",
+    header: () => <div className="min-w-8">无人机</div>,
+    cell: (info) =>
+      info.getValue() || <span className="text-gray-400">未指定</span>,
+  }),
+  columnHelper.accessor("description", {
+    header: () => <div className="min-w-12">描述</div>,
+    cell: (info) => (
+      <HoverCard>
+        <HoverCardTrigger>
+          <div className="text-left overflow-hidden text-ellipsis whitespace-nowrap max-w-36">
+            {info.getValue() || <span className="text-gray-400">无</span>}
+          </div>
+        </HoverCardTrigger>
+        <HoverCardContent>
+          <div className="text-left max-w-196">
+            {info.getValue() || <span className="text-gray-400">无</span>}
+          </div>
+        </HoverCardContent>
+      </HoverCard>
+    ),
   }),
   // 操作列
   columnHelper.accessor("id", {
@@ -55,28 +76,29 @@ const columns = [
     cell: (row) => (
       <div className="flex justify-center space-x-2">
         <Button
-          variant="outline"
-          size="sm"
+          variant="secondary"
+          size="icon"
+          className="h-8 w-8 bg-blue-400 text-gray-100 hover:bg-blue-500"
           onClick={() => {
             console.log(row.row.original);
-
             window.location.href = `/jobs/${row.row.original.id}`;
           }}
         >
-          查看
+          <View className="h-4 w-4" />
         </Button>
         <Button
-          variant="outline"
-          size="sm"
+          variant="secondary"
+          size="icon"
+          className="h-8 w-8 bg-blue-400 text-gray-100 hover:bg-blue-500"
           onClick={() => {
             console.log(row.row.original);
             window.location.href = `/jobs/creation/${row.row.original.id}`;
           }}
         >
-          编辑
+          <Edit className="h-4 w-4" />
         </Button>
-        <Button variant="destructive" size="sm">
-          删除
+        <Button variant="destructive" size="icon" className="h-8 w-8">
+          <Trash className="h-4 w-4" />
         </Button>
       </div>
     ),
@@ -102,7 +124,7 @@ export default function JobListPage() {
 
   return (
     <div className="px-4">
-      <div className="mb-4 flex gap-4 justify-between items-center">
+      <div className="flex gap-4 justify-between items-center max-w-full overflow-x-auto pb-4">
         <Input
           type="text"
           placeholder="任务名称"
@@ -119,80 +141,75 @@ export default function JobListPage() {
             setSearchParams((prev) => ({ ...prev, area: e.target.value }))
           }
         />
-        <div className="flex gap-2 items-center">
-          <span>开始时间:</span>
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant={"outline"}
-                className={cn(
-                  "w-[200px] justify-start text-left font-normal",
-                  !searchParams?.createAtBegin && "text-muted-foreground"
-                )}
-              >
-                <CalendarIcon className="mr-2 h-4 w-4" />
-                {searchParams?.createAtBegin
-                  ? format(new Date(searchParams.createAtBegin), "PPP")
-                  : "选择日期"}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0">
-              <Calendar
-                mode="single"
-                selected={
-                  searchParams?.createAtBegin
-                    ? new Date(searchParams.createAtBegin)
-                    : undefined
-                }
-                onSelect={(date) =>
-                  setSearchParams((prev) => ({
-                    ...prev,
-                    createAtBegin: date
-                      ? format(date, "yyyy-MM-dd")
-                      : undefined,
-                  }))
-                }
-                initialFocus
-              />
-            </PopoverContent>
-          </Popover>
-        </div>
-        <div className="flex gap-2 items-center">
-          <span>结束时间:</span>
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant={"outline"}
-                className={cn(
-                  "w-[200px] justify-start text-left font-normal",
-                  !searchParams?.createAtEnd && "text-muted-foreground"
-                )}
-              >
-                <CalendarIcon className="mr-2 h-4 w-4" />
-                {searchParams?.createAtEnd
-                  ? format(new Date(searchParams.createAtEnd), "PPP")
-                  : "选择日期"}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0">
-              <Calendar
-                mode="single"
-                selected={
-                  searchParams?.createAtEnd
-                    ? new Date(searchParams.createAtEnd)
-                    : undefined
-                }
-                onSelect={(date) =>
-                  setSearchParams((prev) => ({
-                    ...prev,
-                    createAtEnd: date ? format(date, "yyyy-MM-dd") : undefined,
-                  }))
-                }
-                initialFocus
-              />
-            </PopoverContent>
-          </Popover>
-        </div>
+
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              variant={"outline"}
+              className={cn(
+                "w-[128px] justify-start text-left font-normal",
+                !searchParams?.createAtBegin && "text-muted-foreground"
+              )}
+            >
+              <CalendarIcon className="mr-2 h-4 w-4" />
+              {searchParams?.createAtBegin
+                ? format(new Date(searchParams.createAtBegin), "PPP")
+                : "开始时间"}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0">
+            <Calendar
+              mode="single"
+              selected={
+                searchParams?.createAtBegin
+                  ? new Date(searchParams.createAtBegin)
+                  : undefined
+              }
+              onSelect={(date) =>
+                setSearchParams((prev) => ({
+                  ...prev,
+                  createAtBegin: date ? format(date, "yyyy-MM-dd") : undefined,
+                }))
+              }
+              initialFocus
+            />
+          </PopoverContent>
+        </Popover>
+
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              variant={"outline"}
+              className={cn(
+                "w-[128px] justify-start text-left font-normal",
+                !searchParams?.createAtEnd && "text-muted-foreground"
+              )}
+            >
+              <CalendarIcon className="mr-2 h-4 w-4" />
+              {searchParams?.createAtEnd
+                ? format(new Date(searchParams.createAtEnd), "PPP")
+                : "结束时间"}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0">
+            <Calendar
+              mode="single"
+              selected={
+                searchParams?.createAtEnd
+                  ? new Date(searchParams.createAtEnd)
+                  : undefined
+              }
+              onSelect={(date) =>
+                setSearchParams((prev) => ({
+                  ...prev,
+                  createAtEnd: date ? format(date, "yyyy-MM-dd") : undefined,
+                }))
+              }
+              initialFocus
+            />
+          </PopoverContent>
+        </Popover>
+
         <div className="flex-1"></div>
         <Button
           onClick={() => listQuery.refetch()}
@@ -230,7 +247,7 @@ export default function JobListPage() {
                 <TableRow key={row.id}>
                   {row.getVisibleCells().map((cell) => (
                     // 居中
-                    <TableCell key={cell.id} className="text-center">
+                    <TableCell key={cell.id} className="text-center p-2">
                       {flexRender(
                         cell.column.columnDef.cell,
                         cell.getContext()
