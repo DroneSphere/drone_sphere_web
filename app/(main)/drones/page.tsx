@@ -3,6 +3,11 @@
 import { DroneSearchParams, fetchAllDrones } from "@/api/drone/request";
 import { DroneItemResult } from "@/api/drone/types";
 import { Button } from "@/components/ui/button";
+import {
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
+} from "@/components/ui/hover-card";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -11,7 +16,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-
 import {
   Table,
   TableBody,
@@ -70,12 +74,19 @@ export default function DronesPage() {
       }),
       columnHelper.accessor("callsign", {
         header: "呼号",
+        cell: (info) => <div className="w-32">{info.getValue()}</div>,
       }),
       columnHelper.accessor("status", {
         header: "状态",
+        cell: (info) => (
+          <div className="w-8">
+            {info.getValue() || <span className="text-gray-400">未知</span>}
+          </div>
+        ),
       }),
       columnHelper.accessor("product_model", {
         header: "型号",
+        cell: (info) => <div className="w-16">{info.getValue()}</div>,
       }),
       columnHelper.accessor("is_rtk_available", {
         header: () => "RTK",
@@ -87,9 +98,28 @@ export default function DronesPage() {
       }),
       columnHelper.accessor("created_at", {
         header: "创建时间",
+        cell: (info) => <div className="w-32">{info.getValue()}</div>,
       }),
       columnHelper.accessor("last_online_at", {
         header: "最后在线时间",
+        cell: (info) => <div className="w-32">{info.getValue()}</div>,
+      }),
+      columnHelper.accessor("description", {
+        header: "描述",
+        cell: (info) => (
+          <HoverCard>
+            <HoverCardTrigger>
+              <div className="text-left overflow-hidden text-ellipsis whitespace-nowrap max-w-36">
+                {info.getValue() || <span className="text-gray-400">无</span>}
+              </div>
+            </HoverCardTrigger>
+            <HoverCardContent>
+              <div className="text-left max-w-196">
+                {info.getValue() || <span className="text-gray-400">无</span>}
+              </div>
+            </HoverCardContent>
+          </HoverCard>
+        ),
       }),
       columnHelper.display({
         id: "actions",
@@ -155,20 +185,20 @@ export default function DronesPage() {
             ))}
           </SelectContent>
         </Select>
-        <div className="flex-1"></div>
         <Button
           onClick={() => listQuery.refetch()}
           disabled={listQuery.isPending}
         >
           搜索
         </Button>
+        <div className="flex-1"></div>
       </div>
       {
         // 加载中
         listQuery.isPending && <div className="text-center">加载中...</div>
       }
       {listQuery.isSuccess && (
-        <div className="my-4">
+        <div className="my-4 max-w-full overflow-x-auto">
           <Table className="border border-gray-200 rounded-md">
             <TableHeader className="bg-gray-100">
               <TableRow>

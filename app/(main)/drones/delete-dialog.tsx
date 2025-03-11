@@ -12,27 +12,30 @@ import {
 import { Button } from "@/components/ui/button";
 
 import { Trash } from "lucide-react";
+import { useState } from "react";
 
 export default function DeleteDialog(
   props: Readonly<{
     sn: string;
   }>
 ) {
-  console.log("delete dialog", props.sn);
+  const [open, setOpen] = useState(false);
+  console.log("DeleteDialog", props.sn);
 
   return (
-    <AlertDialog>
-      <AlertDialogTrigger>
+    <AlertDialog open={open} onOpenChange={setOpen}>
+      <AlertDialogTrigger asChild>
         <Button variant="destructive" size="icon" className="h-8 w-8">
           <Trash className="h-4 w-4" />
         </Button>
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>是否删除该无人机？</AlertDialogTitle>
+          <AlertDialogTitle>是否删除无人机?</AlertDialogTitle>
           <AlertDialogDescription>
-            This action cannot be undone. This will permanently delete your
-            account and remove your data from our servers.
+            删除后该无人机（SN: {props.sn}）将无法恢复。
+            <br />
+            <span className="text-red-500">删除操作不可逆，请谨慎操作！</span>
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

@@ -1,20 +1,22 @@
 import { updateDrone } from "@/api/drone/request";
 import { Button } from "@/components/ui/button";
 import {
-    Dialog,
-    DialogClose,
-    DialogContent,
-    DialogFooter,
-    DialogTrigger,
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
-    Form,
-    FormControl,
-    FormDescription,
-    FormField,
-    FormItem,
-    FormLabel,
-    FormMessage,
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -26,6 +28,7 @@ import { z } from "zod";
 
 const formSchema = z.object({
   callsign: z.string().optional(),
+  description: z.string().optional(),
 });
 
 export default function EditDialog(
@@ -75,6 +78,9 @@ export default function EditDialog(
         </Button>
       </DialogTrigger>
       <DialogContent>
+        <DialogHeader>
+          <DialogTitle>编辑无人机信息</DialogTitle>
+        </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <FormField
@@ -88,6 +94,22 @@ export default function EditDialog(
                   </FormControl>
                   <FormDescription>
                     该呼号将用于无人机的识别和通信，请确保其唯一性。
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="description"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>描述</FormLabel>
+                  <FormControl>
+                    <Input placeholder="请输入描述" {...field} />
+                  </FormControl>
+                  <FormDescription>
+                    描述用于对该机进行标识和说明，可以是任何信息。
                   </FormDescription>
                   <FormMessage />
                 </FormItem>

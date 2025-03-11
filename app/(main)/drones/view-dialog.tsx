@@ -1,12 +1,12 @@
 import { getBySN } from "@/api/drone/request";
 import { Button } from "@/components/ui/button";
 import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogHeader,
-    DialogTitle,
-    DialogTrigger,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
 } from "@/components/ui/dialog";
 import { useQuery } from "@tanstack/react-query";
 import { View } from "lucide-react";
@@ -39,10 +39,16 @@ export default function ViewDialog(
         </Button>
       </DialogTrigger>
       <DialogContent>
-        {query.isLoading && <div className="text-center py-4">Loading...</div>}
+        {query.isLoading && (
+          <div className="flex justify-center items-center py-8">
+            <div className="w-8 h-8 border-4 border-blue-300 border-t-blue-500 rounded-full animate-spin"></div>
+          </div>
+        )}
         {query.isError && (
           <div className="text-center py-4 text-red-500">
-            Error loading data
+            <p>发生错误: {query.error.message}</p>
+            <p>请稍后再试</p>
+            <p>如果问题持续存在，请联系管理员</p>
           </div>
         )}
         {query.isSuccess && query.data && (

@@ -8,6 +8,7 @@ export interface DroneDetailResult {
    * 领域
    */
   domain: number;
+  description?: string;
   /**
    * 是否支持RTK◊
    */
@@ -47,6 +48,7 @@ export interface DroneUpdateRequest {
    * 呼号
    */
   callsign?: string;
+  description?: string;
 }
 
 export interface DroneItemResult {
@@ -55,6 +57,7 @@ export interface DroneItemResult {
    * 无人机的序列号
    */
   sn: string;
+  description?: string;
   callsign?: string;
   /**
    * ProductModel 无人机的型号名称

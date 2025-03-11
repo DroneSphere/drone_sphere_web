@@ -1,12 +1,6 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
@@ -17,14 +11,12 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { useUserContext } from "@/contexts/user-context";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 import { Slot } from "@radix-ui/react-slot";
 import { VariantProps, cva } from "class-variance-authority";
-import { LogOut, PanelLeft } from "lucide-react";
+import { PanelLeft } from "lucide-react";
 import * as React from "react";
-import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 
 const SIDEBAR_COOKIE_NAME = "sidebar:state";
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7;
@@ -76,7 +68,6 @@ const SidebarProvider = React.forwardRef<
   ) => {
     const isMobile = useIsMobile();
     const [openMobile, setOpenMobile] = React.useState(false);
-    const { isLoading, user } = useUserContext();
 
     // This is the internal state of the sidebar.
     // We use openProp and setOpenProp for control from outside the component.
@@ -137,50 +128,12 @@ const SidebarProvider = React.forwardRef<
       [state, open, setOpen, isMobile, openMobile, setOpenMobile, toggleSidebar]
     );
 
-    const username = "admin";
-
     return (
       <SidebarContext.Provider value={contextValue}>
         <TooltipProvider delayDuration={0}>
-          <div className="p-2 w-full bg-sidebar align-middle">
-            <div className="flex items-center justify-between w-full px-4">
-              <SidebarTrigger className="md:hidden" />
-              <h1 className="font-semibold text-center flex-1 text-2xl">
-                无人机集群搜索系统
-              </h1>
+          {/* <div className="p-2 w-full bg-sidebar align-middle"> */}
 
-              {!isLoading && user && (
-                <div className="flex items-center">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        className="flex items-center gap-2 px-2 py-1 hover:bg-gray-100 rounded"
-                      >
-                        <Avatar className="h-8 w-8">
-                          <AvatarImage src="" alt={user.username} />
-                          <AvatarFallback className="bg-primary text-primary-foreground">
-                            {username.charAt(0).toUpperCase()}
-                          </AvatarFallback>
-                        </Avatar>
-                        <span className="font-medium">{user.username}</span>
-                      </Button>
-                    </DropdownMenuTrigger>
-
-                    <DropdownMenuContent align="end" className="w-48">
-                      <div className="px-2 py-1.5 text-sm font-medium border-b">
-                        {user.email}
-                      </div>
-                      <DropdownMenuItem className="cursor-pointer text-red-500 focus:text-red-500">
-                        <LogOut className="mr-2 h-4 w-4" />
-                        <span>登出</span>
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-              )}
-            </div>
-          </div>
+          {/* </div> */}
           <div
             style={
               {
