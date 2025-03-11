@@ -13,6 +13,8 @@ export interface AreaItemResult {
   center_lat?: number;
   center_lng?: number;
   points?: PointResult[];
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface AreaResult {

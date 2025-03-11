@@ -218,10 +218,10 @@ export default function DronesPage() {
             </TableHeader>
             <TableBody>
               {table.getRowModel().rows.map((row) => (
-                <TableRow key={row.id}>
+                <TableRow key={row.id} className="hover:bg-gray-50">
                   {row.getVisibleCells().map((cell) => (
                     // 居中
-                    <TableCell key={cell.id} className="text-center">
+                    <TableCell key={cell.id} className="text-center p-2">
                       {flexRender(
                         cell.column.columnDef.cell,
                         cell.getContext()

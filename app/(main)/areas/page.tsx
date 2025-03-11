@@ -7,6 +7,11 @@ import {
 } from "@/api/search_area/search_area";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
+import {
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
+} from "@/components/ui/hover-card";
 import { Input } from "@/components/ui/input";
 import {
   Popover,
@@ -30,33 +35,11 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import { format } from "date-fns";
-import { CalendarIcon } from "lucide-react";
+import { CalendarIcon, View } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 const columnHelper = createColumnHelper<AreaItemResult>();
-
-const columns = [
-  columnHelper.accessor("id", {
-    header: () => "ID",
-  }),
-  columnHelper.accessor("name", {
-    header: "名称",
-  }),
-  columnHelper.accessor("description", {
-    header: "描述",
-  }),
-  columnHelper.accessor("points", {
-    header: "顶点个数",
-    cell: (info) => info.getValue()?.length,
-  }),
-  columnHelper.accessor("center_lat", {
-    header: "区域中心点纬度",
-  }),
-  columnHelper.accessor("center_lng", {
-    header: "区域中心点经度",
-  }),
-];
 
 export default function AreasPage() {
   const router = useRouter();
@@ -71,6 +54,67 @@ export default function AreasPage() {
     },
   });
 
+  const columns = [
+    columnHelper.accessor("id", {
+      header: () => "ID",
+    }),
+    columnHelper.accessor("name", {
+      header: () => <div className="text-center min-w-32">区域名称</div>,
+    }),
+    columnHelper.accessor("points", {
+      header: () => <div className="text-center min-w-16">顶点个数</div>,
+      cell: (info) =>
+        info.getValue()?.length || <span className="text-gray-400">无</span>,
+    }),
+    columnHelper.accessor("center_lat", {
+      header: () => <div className="text-center min-w-32">区域中心点纬度</div>,
+      cell: (info) => info.getValue()?.toFixed(8),
+    }),
+    columnHelper.accessor("center_lng", {
+      header: () => <div className="text-center min-w-32">区域中心点净度</div>,
+      cell: (info) => info.getValue()?.toFixed(8),
+    }),
+    columnHelper.accessor("created_at", {
+      header: () => <div className="text-center min-w-32">创建时间</div>,
+    }),
+    columnHelper.accessor("updated_at", {
+      header: () => <div className="text-center min-w-32">更新时间</div>,
+    }),
+    columnHelper.accessor("description", {
+      header: () => <div className="text-center min-w-32">描述</div>,
+      cell: (info) => (
+        <HoverCard>
+          <HoverCardTrigger>
+            <div className="text-left overflow-hidden text-ellipsis whitespace-nowrap max-w-48">
+              {info.getValue() || <span className="text-gray-400">无</span>}
+            </div>
+          </HoverCardTrigger>
+          <HoverCardContent>
+            <div className="text-left max-w-196">
+              {info.getValue() || <span className="text-gray-400">无</span>}
+            </div>
+          </HoverCardContent>
+        </HoverCard>
+      ),
+    }),
+    columnHelper.display({
+      id: "actions",
+      header: () => <div className="text-center min-w-12">操作</div>,
+      cell: (info) => (
+        <div className="flex justify-center space-x-2">
+          <Button
+            variant="secondary"
+            size="icon"
+            className="h-8 w-8 bg-blue-400 text-gray-100 hover:bg-blue-500"
+            onClick={() => router.push(`/areas/${info.row.original.id}`)}
+          >
+            <View className="h-4 w-4" />
+          </Button>
+        </div>
+      ),
+    }),
+  ];
+
   const table = useReactTable({
     data: listQuery.data || [],
     columns,
@@ -78,7 +122,7 @@ export default function AreasPage() {
   });
 
   return (
-    <div className="p-4">
+    <div className="px-4">
       <div className="mb-4 flex gap-4 justify-between items-center">
         <Input
           type="text"
@@ -225,14 +269,10 @@ export default function AreasPage() {
             </TableHeader>
             <TableBody>
               {table.getRowModel().rows.map((row) => (
-                <TableRow
-                  key={row.id}
-                  onClick={() => router.push(`/areas/${row.original.id}`)}
-                  className="cursor-pointer"
-                >
+                <TableRow key={row.id} className="hover:bg-gray-50">
                   {row.getVisibleCells().map((cell) => (
                     // 居中
-                    <TableCell key={cell.id} className="text-center">
+                    <TableCell key={cell.id} className="text-center p-2">
                       {flexRender(
                         cell.column.columnDef.cell,
                         cell.getContext()
