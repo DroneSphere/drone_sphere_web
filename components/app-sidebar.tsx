@@ -8,7 +8,7 @@ import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
-} from "@/components/ui/sidebar";
+} from "@/components/sidebar";
 import { useNavigation } from "@/contexts/navigation-context";
 import { routeMap } from "@/lib/route";
 

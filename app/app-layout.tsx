@@ -3,11 +3,11 @@ import {
   SidebarInset,
   SidebarProvider,
   SidebarTrigger,
-} from "@/components/ui/sidebar";
+} from "@/components/sidebar";
 import { useNavigation } from "@/contexts/navigation-context";
 import Link from "next/link";
 
-export default function Sidebar({
+export default function AppLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;

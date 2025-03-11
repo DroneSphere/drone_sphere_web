@@ -7,7 +7,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { AUTH_TOKEN_KEY } from "../lib/storage";
-import Sidebar from "./sidebar";
+import AppLayout from "./app-layout";
 
 const queryClient = new QueryClient();
 
@@ -48,7 +48,7 @@ export default function Provider({
           <AuthCheck>
             {showSidebar ? (
               <UserContextProvider>
-                <Sidebar>{children}</Sidebar>
+                <AppLayout>{children}</AppLayout>
               </UserContextProvider>
             ) : (
               children
