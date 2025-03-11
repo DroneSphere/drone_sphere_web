@@ -20,10 +20,12 @@ export interface AreaItemResult {
 export interface AreaResult {
   id?: number;
   name?: string;
+  description?: string;
   center_lat?: number;
   center_lng?: number;
-  description?: string;
   points?: PointResult[];
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface CreateAreaRequest {

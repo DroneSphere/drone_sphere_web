@@ -15,16 +15,15 @@ export default function AreaDetailPage() {
   const pathname = usePathname();
 
   const query = useQuery({
-    queryKey: ["areas", pathname.split("/")[3]],
+    queryKey: ["areas", pathname.split("/")[2]],
     queryFn: () => {
       return fetchArea({
-        id: Number(pathname.split("/")[3]),
+        id: Number(pathname.split("/")[2]),
       });
     },
   });
 
   useEffect(() => {
-    console.log("Drawing useEffect", query.data, AMapRef.current, amapLoaded);
     if (query.data?.points && amapLoaded && AMapRef.current) {
       const path = query.data.points.map(
         (point) => new AMapRef.current!.LngLat(point.lng!, point.lat!)
@@ -55,7 +54,6 @@ export default function AreaDetailPage() {
       mapRef.current?.setFitView([polygon]);
 
       return () => {
-        // 清除旧的多边形
         polygon.setMap(null);
       };
     }
@@ -102,16 +100,19 @@ export default function AreaDetailPage() {
   }, []);
 
   return (
-    <div className="p-4 space-y-4">
-      <div className="flex space-x-4 items-end">
-        <div className="text-2xl font-semibold">{query.data?.name}</div>
+    <div className="px-4">
+      <div className="flex space-x-4 items-end mb-4">
+        <div>
+          <div className="text-xl font-semibold">{query.data?.name}</div>
+          <div className="text-sm text-gray-500">{query.data?.description}</div>
+        </div>
         <div className="flex-auto"></div>
-        <Button variant="destructive">删除</Button>
+        <Button variant="destructive" size="sm">删除</Button>
       </div>
-      <div className="flex space-x-4">
+      <div className="flex space-x-4 mb-4">
         <div
           id="map"
-          className="h-[600px] w-full border rounded-md shadow-sm"
+          className="h-[calc(100vh-120px)] w-full border rounded-md shadow-sm"
         ></div>
         {query.data?.points && (
           <div className="flex flex-col">
