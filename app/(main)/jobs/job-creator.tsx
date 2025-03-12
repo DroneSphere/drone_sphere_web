@@ -82,7 +82,7 @@ export function JobCreator() {
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button>创建飞行任务</Button>
+        <Button>创建任务</Button>
       </DialogTrigger>
 
       <DialogContent className="min-w-[320px] sm:rounded-lg">

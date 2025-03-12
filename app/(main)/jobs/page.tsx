@@ -124,7 +124,7 @@ export default function JobListPage() {
 
   return (
     <div className="px-4">
-      <div className="flex gap-4 justify-between items-center max-w-full overflow-x-auto pb-4">
+      <div className="flex gap-4 justify-start items-center max-w-full overflow-x-auto pb-4">
         <Input
           type="text"
           placeholder="任务名称"
@@ -209,18 +209,19 @@ export default function JobListPage() {
             />
           </PopoverContent>
         </Popover>
-
-        <div className="flex-1"></div>
         <Button
           onClick={() => listQuery.refetch()}
           disabled={listQuery.isPending}
         >
           搜索
         </Button>
+        <div className="flex-1" />
         <JobCreator />
       </div>
       {listQuery.isLoading ? (
-        <div>Loading...</div>
+        <div className="flex justify-center items-center py-8">
+          <div className="w-8 h-8 border-4 border-blue-300 border-t-blue-500 rounded-full animate-spin" />
+        </div>
       ) : listQuery.isError ? (
         <div>Error: {listQuery.error.message}</div>
       ) : (

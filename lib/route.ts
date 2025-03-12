@@ -76,7 +76,7 @@ export const routeMap = {
     },
     {
       title: "过程监控",
-      url: "/monitor",
+      url: "/tasks",
       icon: Monitor,
       items: [],
     },
