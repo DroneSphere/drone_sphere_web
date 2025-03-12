@@ -65,6 +65,7 @@ export function NavigationProvider({
     // 从路径中创建段
     const segments = pathname.split("/").filter((seg) => seg);
     const breadcrumbs: { title: string; url: string }[] = [];
+    console.log("segments", segments);
 
     // 开始构建面包屑数组
     let currentPath = "";
@@ -78,12 +79,16 @@ export function NavigationProvider({
       const matchingItem = allNavItems.find((item) => item.url === currentPath);
 
       if (matchingItem) {
+        console.log("matchingItem", matchingItem);
+        
         // 如果找到匹配项，使用其标题
         breadcrumbs.push({
           title: matchingItem.title,
           url: matchingItem.url,
         });
       } else {
+        console.log("segment", segment);
+        
         // 使用特殊路由映射或将段首字母大写
         const title =
           specialRouteMap[segment] ||
@@ -95,6 +100,8 @@ export function NavigationProvider({
         });
       }
     });
+    console.log("breadcrumbs", breadcrumbs);
+    
 
     return breadcrumbs;
   };

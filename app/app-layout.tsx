@@ -27,18 +27,19 @@ export default function AppLayout({
 
   return (
     <>
-      <div className="flex items-center justify-between w-full px-8 py-4 bg-sidebar">
-        <h1 className="font-semibold text-center flex-1 text-2xl">
+      <div className="flex items-center justify-between w-full px-8 h-16 bg-sidebar">
+        <div className="flex-1" />
+        <h1 className="flex-1 font-semibold text-center text-2xl">
           无人机集群搜索系统
         </h1>
 
         {!isLoading && user && (
-          <div>
+          <div className="flex-1 flex justify-end">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
                   variant="ghost"
-                  className="flex items-center gap-2 px-2 py-1 hover:bg-gray-100 rounded"
+                  className="flex items-center gap-2 px-2 hover:bg-gray-100 rounded"
                 >
                   <Avatar className="h-8 w-8">
                     <AvatarImage src="" alt={user.username} />
@@ -66,6 +67,7 @@ export default function AppLayout({
             </DropdownMenu>
           </div>
         )}
+        {(isLoading || !user) && <div className="flex-1 flex justify-end" />}
       </div>
       <SidebarProvider id="sidebar-provider" className="overflow-x-auto">
         <AppSidebar className="pt-20" />
@@ -89,7 +91,7 @@ export default function AppLayout({
                     </span>
                   )}
                   {index < getBreadcrumbs().length - 1 && (
-                    <span className="text-slate-400 dark:text-slate-500 mx-1">
+                    <span className="text-slate-400 dark:text-slate-500 mr-2">
                       /
                     </span>
                   )}

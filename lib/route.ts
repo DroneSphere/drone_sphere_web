@@ -1,6 +1,5 @@
 import {
   BookOpen,
-  Bot,
   Frame,
   LandPlot,
   Logs,
@@ -32,20 +31,30 @@ export const routeMap = {
     {
       title: "无人机管理",
       url: "/drones",
-      icon: Bot,
-      items: [],
-    },
-    {
-      title: "机型管理",
-      url: "/models",
       icon: Plane,
-      items: [],
     },
     {
-      title: "载荷管理",
-      url: "/payloads",
+      title: "型号管理",
       icon: Frame,
-      items: [],
+      url: "/models",
+      items: [
+        {
+          title: "机型管理",
+          url: "/models/drones",
+        },
+        {
+          title: "网关管理",
+          url: "/models/gateways",
+        },
+        {
+          title: "负载管理",
+          url: "/models/gimbals",
+        },
+        {
+          title: "载荷管理",
+          url: "/models/payloads",
+        },
+      ],
     },
     {
       title: "区域管理",
