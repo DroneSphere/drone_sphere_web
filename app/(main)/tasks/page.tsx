@@ -2,26 +2,26 @@
 
 import { Button } from "@/components/ui/button";
 import {
-    HoverCard,
-    HoverCardContent,
-    HoverCardTrigger,
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
 } from "@/components/ui/hover-card";
 import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from "@/components/ui/table";
 import { useQuery } from "@tanstack/react-query";
 import {
-    createColumnHelper,
-    flexRender,
-    getCoreRowModel,
-    useReactTable,
+  createColumnHelper,
+  flexRender,
+  getCoreRowModel,
+  useReactTable,
 } from "@tanstack/react-table";
-import { Edit, View } from "lucide-react";
+import { View } from "lucide-react";
 import { getTasks } from "./request";
 import { TaskItemResult, TaskStatus, TaskStatusMap } from "./type";
 
@@ -117,12 +117,12 @@ const columns = [
           className="h-8 w-8 bg-blue-400 text-gray-100 hover:bg-blue-500"
           onClick={() => {
             console.log(row.row.original);
-            window.location.href = `/jobs/${row.row.original.job_id}`;
+            window.location.href = `/tasks/8`;
           }}
         >
           <View className="h-4 w-4" />
         </Button>
-        <Button
+        {/* <Button
           variant="secondary"
           size="icon"
           className="h-8 w-8 bg-blue-400 text-gray-100 hover:bg-blue-500"
@@ -132,7 +132,7 @@ const columns = [
           }}
         >
           <Edit className="h-4 w-4" />
-        </Button>
+        </Button> */}
       </div>
     ),
   }),

@@ -27,6 +27,22 @@ export async function fetchJobDetail(id: number): Promise<JobDetailResult> {
   const res = await httpClient.instance.get<Response<JobDetailResult>>(
     `${prefix}/${id}`
   );
+  res.data.data.drones = [
+    {
+      id: 1,
+      callsign: "无人机1",
+      description: "无人机1描述",
+      model: "Mavic 2 Pro",
+      sn: "1234567890",
+    },
+    {
+      id: 2,
+      callsign: "无人机2",
+      description: "无人机2描述",
+      model: "Phantom 4 Pro",
+      sn: "0987654321",
+    },
+  ];
   return res.data.data;
 }
 
