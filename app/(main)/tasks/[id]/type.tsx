@@ -5,11 +5,26 @@ export interface DroneModel {
   sub_type: number;
 }
 
-export interface RequiredDrone {
+export interface RequiredItem {
   id: number;
+  area?: {
+    index: number;
+    measure: string;
+    points: {
+      lng: number;
+      lat: number;
+    }[];
+    color: string;
+  }
   model: DroneModel;
   rtk_required: boolean;
   thermal_required: boolean;
+}
+
+export enum DroneStatus {
+  IDLE = 0,
+  BUSY = 1,
+  OFFLINE = 2,
 }
 
 export interface AvailableDrone {
@@ -17,6 +32,7 @@ export interface AvailableDrone {
   callsign: string;
   sn: string;
   model: DroneModel;
+  status: number;
   description?: string;
   gimbal?: {
     id: number;

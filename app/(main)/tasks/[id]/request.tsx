@@ -1,4 +1,4 @@
-import { AvailableDrone, DroneModel, RequiredDrone } from "./type";
+import { AvailableDrone, DroneModel, DroneStatus, RequiredItem } from "./type";
 
 // Mock data for drone models
 const mockDroneModels: DroneModel[] = [
@@ -10,30 +10,70 @@ const mockDroneModels: DroneModel[] = [
 ];
 
 // Mock function to get required drones
-export const fetchRequiredDrones = (): Promise<RequiredDrone[]> => {
+export const fetchRequiredDrones = (): Promise<RequiredItem[]> => {
   return new Promise((resolve) => {
     setTimeout(() => {
       resolve([
         {
           id: 101,
+          area: {
+            index: 1,
+            measure: "1000m²",
+            points: [
+              { lng: 117.138899, lat: 36.667827 },
+              { lng: 117.139847, lat: 36.667908 },
+              { lng: 117.139536, lat: 36.667208 },
+            ],
+            color: "#FF0000",
+          },
           model: mockDroneModels[0],
           rtk_required: false,
           thermal_required: false,
         },
         {
           id: 102,
+          // area: {
+          //   index: 2,
+          //   measure: "1000m²",
+          //   points: [
+          //     { lng: 116.387128, lat: 39.916927 },
+          //     { lng: 116.387328, lat: 39.916527 },
+          //     { lng: 116.386928, lat: 39.916527 },
+          //   ],
+          //   color: "#00FF00",
+          // },
           model: mockDroneModels[2],
           rtk_required: true,
           thermal_required: true,
         },
         {
           id: 103,
+          // area: {
+          //   index: 3,
+          //   measure: "1000m²",
+          //   points: [
+          //     { lng: 116.377128, lat: 39.916927 },
+          //     { lng: 116.377328, lat: 39.916527 },
+          //     { lng: 116.376928, lat: 39.916527 },
+          //   ],
+          //   color: "#0000FF",
+          // },
           model: mockDroneModels[3],
           rtk_required: false,
           thermal_required: true,
         },
         {
           id: 104,
+          // area: {
+          //   index: 4,
+          //   measure: "1000m²",
+          //   points: [
+          //     { lng: 116.367128, lat: 39.916927 },
+          //     { lng: 116.367328, lat: 39.916527 },
+          //     { lng: 116.366928, lat: 39.916527 },
+          //   ],
+          //   color: "#FFFF00",
+          // },
           model: mockDroneModels[1],
           rtk_required: true,
           thermal_required: false,
@@ -53,6 +93,7 @@ export const fetchAvailableDrones = (): Promise<AvailableDrone[]> => {
           callsign: "Drone-A1",
           sn: "DJI123456",
           model: mockDroneModels[0],
+          status: DroneStatus.IDLE,
           description: "Standard mapping drone",
           gimbal: {
             id: 301,
@@ -67,6 +108,7 @@ export const fetchAvailableDrones = (): Promise<AvailableDrone[]> => {
           callsign: "Drone-B2",
           sn: "DJI789012",
           model: mockDroneModels[2],
+          status: DroneStatus.IDLE,
           description: "Industrial survey drone",
           gimbal: {
             id: 302,
@@ -86,6 +128,7 @@ export const fetchAvailableDrones = (): Promise<AvailableDrone[]> => {
           callsign: "Drone-C3",
           sn: "DJI345678",
           model: mockDroneModels[1],
+          status: DroneStatus.OFFLINE,
           description: "Photogrammetry drone",
           payload: {
             id: 402,
@@ -100,6 +143,7 @@ export const fetchAvailableDrones = (): Promise<AvailableDrone[]> => {
           callsign: "Drone-D4",
           sn: "DJI901234",
           model: mockDroneModels[3],
+          status: DroneStatus.IDLE,
           description: "Film production drone",
           gimbal: {
             id: 303,
@@ -119,6 +163,7 @@ export const fetchAvailableDrones = (): Promise<AvailableDrone[]> => {
           callsign: "Drone-E5",
           sn: "DJI567890",
           model: mockDroneModels[4],
+          status: DroneStatus.BUSY,
           description: "Compact aerial drone",
           rtk_available: false,
           thermal_available: false,
