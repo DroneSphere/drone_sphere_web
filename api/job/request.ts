@@ -52,6 +52,92 @@ export async function fetchJobEditionData(
   const res = await httpClient.instance.get<Response<JobEditionResult>>(
     `${prefix}/edition/${id}/options`
   );
+  res.data.data.drones = [
+    {
+      id: 1,
+      callsign: "无人机1",
+      variantions: [
+        {
+          index: 1,
+          name: "变体1",
+          gimbal: {
+            id: 1,
+            name: "云台1",
+            description: "云台1描述",
+          },
+          rtk_available: true,
+          thermal_available: false,
+        },
+        {
+          index: 2,
+          name: "变体2",
+          gimbal: {
+            id: 2,
+            name: "云台2",
+            description: "云台2描述",
+          },
+          rtk_available: false,
+          thermal_available: true,
+        },
+      ],
+    },
+    {
+      id: 2,
+      callsign: "无人机2",
+      variantions: [
+        {
+          index: 1,
+          name: "变体1",
+          gimbal: {
+            id: 1,
+            name: "云台1",
+            description: "云台1描述",
+          },
+          rtk_available: true,
+          thermal_available: false,
+        },
+        {
+          index: 2,
+          name: "变体2",
+          gimbal: {
+            id: 2,
+            name: "云台2",
+            description: "云台2描述",
+          },
+          rtk_available: false,
+          thermal_available: true,
+        },
+        {
+          index: 3,
+          name: "变体3",
+          gimbal: {
+            id: 3,
+            name: "云台3",
+            description: "云台3描述",
+          },
+          rtk_available: true,
+          thermal_available: true,
+        },
+      ],
+    },
+  ];
+  res.data.data.areas = [
+    {
+      id: 1,
+      name: "区域1",
+      points: [],
+    },
+    {
+      id: 2,
+      name: "区域2",
+      points: [],
+    },
+    {
+      id: 3,
+      name: "区域3",
+      points: [],
+    },
+  ];
   return res.data.data;
 }
 

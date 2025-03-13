@@ -62,22 +62,36 @@ export interface JobEditionResult {
   id: number;
   name: string;
   description: string;
-  area: {
+  areas: {
+    id: number;
     name: string;
     points: {
       lat: number;
       lng: number;
       marker: string;
     }[];
-  };
+  }[];
   drones: {
+    id: number;
     callsign: string;
     description?: string;
-    id: number;
-    model: string;
-    rtk_available: boolean;
-    sn: string;
-    thermal_available: boolean;
+    model?: string;
+    variantions: {
+      index: number;
+      name: string;
+      gimbal?: {
+        id: number;
+        name: string;
+        description?: string;
+      };
+      payload?: {
+        id: number;
+        name: string;
+        description?: string;
+      };
+      rtk_available: boolean;
+      thermal_available: boolean;
+    }[];
   }[];
 }
 
