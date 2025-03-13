@@ -33,13 +33,15 @@ import {
   getCoreRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import { useParams, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
 const deleteArea = async (id: number) => {
   // mock
+  console.log("deleteArea", id);
+
   return new Promise((resolve) => {
     setTimeout(() => {
       resolve(true);
@@ -47,8 +49,20 @@ const deleteArea = async (id: number) => {
   });
 };
 
-const updateArea = async (data: any) => {
+interface UpdateAreaParams {
+  id: number;
+  name: string;
+  description?: string;
+  points: Array<{
+    lng?: number;
+    lat?: number;
+  }>;
+}
+
+const updateArea = async (data: UpdateAreaParams): Promise<boolean> => {
   // mock
+  console.log("updateArea", data);
+
   return new Promise((resolve) => {
     setTimeout(() => {
       resolve(true);
@@ -82,7 +96,6 @@ const formSchema = z.object({
 });
 
 export default function AreaDetailPage() {
-  const params = useParams();
   const router = useRouter();
   const queryClient = useQueryClient();
   const AMapRef = useRef<typeof AMap | null>(null);
@@ -91,7 +104,6 @@ export default function AreaDetailPage() {
   const polygonEditorRef = useRef<AMap.PolygonEditor | null>(null);
   const [amapLoaded, setAmapLoaded] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [polygonPoints, setPolygonPoints] = useState<
     { lng?: number; lat?: number }[]
   >([]);
@@ -201,7 +213,7 @@ export default function AreaDetailPage() {
         });
       }
     }
-  }, [query.data, isCreating]);
+  }, [query.data, isCreating, form]);
 
   // 处理地图绘制的多边形
   useEffect(() => {
@@ -304,14 +316,15 @@ export default function AreaDetailPage() {
               });
 
               // 绘制完成事件
-              mouseTool.on("draw", function (event: any) {
+              // @ts-expect-error - AMap MouseTool draw event typing is not properly defined in the types
+              mouseTool.on("draw", function (event) {
                 // 获取绘制的多边形
                 const polygon = event.obj;
 
                 // 保存多边形路径点
                 const path = polygon.getPath();
                 const points = path.map(
-                  (point: { getLng: () => any; getLat: () => any }) => ({
+                  (point: { getLng: () => number; getLat: () => number }) => ({
                     lng: point.getLng(),
                     lat: point.getLat(),
                   })
@@ -330,7 +343,10 @@ export default function AreaDetailPage() {
                   function () {
                     const newPath = polygon.getPath();
                     const newPoints = newPath.map(
-                      (point: { getLng: () => any; getLat: () => any }) => ({
+                      (point: {
+                        getLng: () => number;
+                        getLat: () => number;
+                      }) => ({
                         lng: point.getLng(),
                         lat: point.getLat(),
                       })
@@ -665,14 +681,14 @@ export default function AreaDetailPage() {
                       >
                         编辑
                       </Button>
-                      <Button
+                      {/* <Button
                         variant="destructive"
                         type="button"
                         size="sm"
                         onClick={() => setShowDeleteDialog(true)}
                       >
                         删除
-                      </Button>
+                      </Button> */}
                     </>
                   )}
                 </div>

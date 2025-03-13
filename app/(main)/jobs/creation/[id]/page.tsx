@@ -1,7 +1,7 @@
 "use client";
 
-import { fetchJobEditionData, modifyJob } from "@/api/job/request";
-import { JobEditionResult, JobModifyRequest } from "@/api/job/types";
+import { fetchJobEditionData } from "@/api/job/request";
+import { JobEditionResult } from "@/api/job/types";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -27,7 +27,7 @@ import { useToast } from "@/hooks/use-toast";
 import AMapLoader from "@amap/amap-jsapi-loader";
 import "@amap/amap-jsapi-types";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { Plus, Trash } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -161,23 +161,23 @@ export default function Page() {
     console.log("onSubmit", data);
   }
 
-  const editionMutation = useMutation({
-    mutationFn: () => {
-      const req = {
-        id,
-        drone_ids: selectedDrones?.map((d) => d.id) || [],
-      } as JobModifyRequest;
-      console.log("editionMutation", req);
-      return modifyJob(req);
-    },
-    onSuccess: () => {
-      console.log("success");
-      toast({
-        title: "保存成功",
-        description: "任务已保存",
-      });
-    },
-  });
+  // const editionMutation = useMutation({
+  //   mutationFn: () => {
+  //     const req = {
+  //       id,
+  //       drone_ids: selectedDrones?.map((d) => d.id) || [],
+  //     } as JobModifyRequest;
+  //     console.log("editionMutation", req);
+  //     return modifyJob(req);
+  //   },
+  //   onSuccess: () => {
+  //     console.log("success");
+  //     toast({
+  //       title: "保存成功",
+  //       description: "任务已保存",
+  //     });
+  //   },
+  // });
 
   // 完成数据加载后开始处理挂载地图逻辑
   useEffect(() => {

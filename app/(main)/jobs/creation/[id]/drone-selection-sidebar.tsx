@@ -1,5 +1,4 @@
 import { JobEditionResult } from "@/api/job/types";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -109,7 +108,7 @@ const DroneSelectionSidebar = ({
                     {drone.description}
                   </p>
                   <div className="flex flex-wrap gap-1.5 mt-2">
-                    <Badge
+                    {/* <Badge
                       variant={drone.rtk_available ? "default" : "secondary"}
                       className={`text-xs ${
                         drone.rtk_available
@@ -130,7 +129,7 @@ const DroneSelectionSidebar = ({
                       }`}
                     >
                       {drone.thermal_available ? "支持热成像" : "无热成像"}
-                    </Badge>
+                    </Badge> */}
                   </div>
                 </CardContent>
               </Card>
