@@ -7,6 +7,7 @@ import {
   Monitor,
   PieChart,
   Plane,
+  Router,
   Settings2,
   SquareTerminal,
 } from "lucide-react";
@@ -32,6 +33,11 @@ export const routeMap = {
       title: "无人机管理",
       url: "/drones",
       icon: Plane,
+    },
+    {
+      title: "网关管理",
+      url: "/gateways",
+      icon: Router,
     },
     {
       title: "型号管理",
