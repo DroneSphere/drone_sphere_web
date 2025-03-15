@@ -20,8 +20,8 @@ import {
   getCoreRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import { getGimbalList } from "./requests";
-import { GimbalItemResult } from "./types";
+import { getGimbalList } from "./request";
+import { GimbalItemResult } from "./type";
 
 const columnHelper = createColumnHelper<GimbalItemResult>();
 

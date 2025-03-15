@@ -1,4 +1,4 @@
-export interface GatewayItemResult {
+export interface GatewayModelItemResult {
   id: number;
   name: string;
   description?: string;

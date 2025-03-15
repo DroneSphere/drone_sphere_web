@@ -13,6 +13,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { toast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
 import {
   createColumnHelper,
@@ -20,10 +21,11 @@ import {
   getCoreRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import { getAllModels } from "./requests";
-import { DroneModel } from "./types";
+import { useEffect } from "react";
+import { getAllModels } from "./request";
+import { DroneModelItemResult } from "./type";
 
-const columnHelper = createColumnHelper<DroneModel>();
+const columnHelper = createColumnHelper<DroneModelItemResult>();
 
 const columns = [
   columnHelper.accessor("id", {
@@ -114,9 +116,19 @@ const columns = [
 
 export default function Page() {
   const query = useQuery({
-    queryKey: ["drone-models"],
+    queryKey: ["models", "drones"],
     queryFn: () => getAllModels(),
   });
+
+  useEffect(() => {
+    if (query.isError) {
+      toast({
+        title: "获取无人机型号列表失败",
+        description: query.error.message,
+        variant: "destructive",
+      });
+    }
+  }, [query.isError, query.error]);
 
   const table = useReactTable({
     data: query.data || [],

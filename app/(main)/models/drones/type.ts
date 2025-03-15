@@ -1,4 +1,4 @@
-export interface DroneModel {
+export interface DroneModelItemResult {
   id: number;
   name: string;
   description?: string;

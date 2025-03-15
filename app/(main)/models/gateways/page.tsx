@@ -13,6 +13,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { toast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
 import {
   createColumnHelper,
@@ -20,10 +21,11 @@ import {
   getCoreRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import { getAllGateways } from "./requests";
-import { GatewayItemResult } from "./types";
+import { useEffect } from "react";
+import { getGatewayModels } from "./request";
+import { GatewayModelItemResult } from "./type";
 
-const columnHelper = createColumnHelper<GatewayItemResult>();
+const columnHelper = createColumnHelper<GatewayModelItemResult>();
 
 const columns = [
   columnHelper.accessor("id", {
@@ -62,9 +64,19 @@ const columns = [
 
 export default function Page() {
   const query = useQuery({
-    queryKey: ["gateways"],
-    queryFn: () => getAllGateways(),
+    queryKey: ["models", "gateways"],
+    queryFn: () => getGatewayModels(),
   });
+
+  useEffect(() => {
+    if (query.isError) {
+      toast({
+        title: "获取网关型号列表失败",
+        description: query.error.message,
+        variant: "destructive",
+      });
+    }
+  }, [query.isError, query.error]);
 
   const table = useReactTable({
     data: query.data || [],
