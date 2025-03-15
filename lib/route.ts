@@ -69,12 +69,6 @@ export const routeMap = {
       items: [],
     },
     {
-      title: "航线管理",
-      url: "/wayline",
-      icon: Map,
-      items: [],
-    },
-    {
       title: "任务管理",
       url: "/jobs",
       icon: SquareTerminal,

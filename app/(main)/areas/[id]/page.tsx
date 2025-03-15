@@ -173,6 +173,14 @@ export default function AreaDetailPage() {
   // 表单提交回调函数
   const onSubmit = (data: z.infer<typeof formSchema>) => {
     if (isCreating) {
+      // 添加点序列
+      console.log("onSubmit", data);
+      data.points = polygonPoints.map((point) => ({
+        lng: point.lng,
+        lat: point.lat,
+      }));
+      console.log("onSubmit", data);
+
       createMutation.mutate(data);
     } else {
       updateMutation.mutate({
@@ -291,6 +299,7 @@ export default function AreaDetailPage() {
             "AMap.Scale",
             "AMap.PolygonEditor",
             "AMap.MouseTool",
+            "AMap.Geolocation",
           ],
           function () {
             const tool = new AMap.ToolBar();
@@ -367,6 +376,16 @@ export default function AreaDetailPage() {
                 );
               });
             }
+
+            // 初始化定位
+            const geolocation = new AMap.Geolocation({
+              enableHighAccuracy: true, // 是否使用高精度定位，默认：true
+              timeout: 10000, // 设置定位超时时间，默认：无穷大
+              offset: [20, 100], // 定位按钮的停靠位置的偏移量
+              zoomToAccuracy: true, //  定位成功后调整地图视野范围使定位位置及精度范围视野内可见，默认：false
+              position: "RB", //  定位按钮的排放位置,  RB表示右下
+            });
+            mapRef.current?.addControl(geolocation);
           }
         );
 
