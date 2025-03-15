@@ -59,16 +59,13 @@ export interface JobCreationRequest {
 }
 
 export interface JobEditionResult {
-  id: number;
-  name: string;
-  description: string;
   areas: {
     id: number;
     name: string;
     points: {
       lat: number;
       lng: number;
-      marker: string;
+      marker?: string;
     }[];
   }[];
   drones: {

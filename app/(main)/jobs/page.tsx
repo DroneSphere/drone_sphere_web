@@ -34,7 +34,6 @@ import {
 import { format } from "date-fns";
 import { CalendarIcon, Edit, Trash, View } from "lucide-react";
 import { useState } from "react";
-import { JobCreator } from "./job-creator";
 
 const columnHelper = createColumnHelper<JobItemResult>();
 
@@ -216,7 +215,14 @@ export default function JobListPage() {
           搜索
         </Button>
         <div className="flex-1" />
-        <JobCreator />
+        <Button
+          onClick={() => {
+            window.location.href = "/jobs/new";
+          }}
+          disabled={listQuery.isPending}
+        >
+          创建任务
+        </Button>
       </div>
       {listQuery.isLoading ? (
         <div className="flex justify-center items-center py-8">

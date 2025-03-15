@@ -1,7 +1,6 @@
 "use client";
 
 import { fetchJobEditionData } from "@/api/job/request";
-import { JobEditionResult } from "@/api/job/types";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -24,15 +23,141 @@ import {
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
+import { useIsCreateMode } from "@/lib/misc";
 import AMapLoader from "@amap/amap-jsapi-loader";
 import "@amap/amap-jsapi-types";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQuery } from "@tanstack/react-query";
+import * as turf from "@turf/turf";
 import { Plus, Trash } from "lucide-react";
-import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
+
+function dividePolygonAmongDrones(
+  path: AMap.LngLat[],
+  selectedDrones: any[],
+  AMapRef: any
+) {
+  const droneCount = selectedDrones.length;
+  if (droneCount === 0) {
+    return;
+  }
+
+  const coordinates = path.map((p) => [p.getLng(), p.getLat()]);
+  // 确保多边形是闭合的
+  if (coordinates.length > 0) {
+    const firstCoordinate = coordinates[0];
+    const lastCoordinate = coordinates[coordinates.length - 1];
+    // 检查第一个和最后一个坐标是否相同
+    if (
+      firstCoordinate[0] !== lastCoordinate[0] ||
+      firstCoordinate[1] !== lastCoordinate[1]
+    ) {
+      coordinates.push(firstCoordinate); // 将第一个坐标添加到末尾
+    }
+  }
+  const turfPolygon = turf.polygon([coordinates]);
+  const totalArea = turf.area(turfPolygon);
+  const targetArea = totalArea / droneCount;
+
+  const bounds = turf.bbox(turfPolygon);
+  const minLng = bounds[0];
+  const maxLng = bounds[2];
+  const minLat = bounds[1];
+  const maxLat = bounds[3];
+
+  const droneSubRegions = [];
+  let currentMinLng = minLng;
+
+  for (let i = 0; i < droneCount - 1; i++) {
+    let lowLng = currentMinLng;
+    let highLng = maxLng;
+    let bestCutLng = -1;
+    let minAreaDiff = Infinity;
+
+    for (let j = 0; j < 50; j++) {
+      // Binary search for longitude
+      const midLng = (lowLng + highLng) / 2;
+      const rectangle = turf.polygon([
+        [
+          [currentMinLng, minLat],
+          [midLng, minLat],
+          [midLng, maxLat],
+          [currentMinLng, maxLat],
+          [currentMinLng, minLat],
+        ],
+      ]);
+      const intersection = turf.intersect(
+        turf.featureCollection([turfPolygon, rectangle])
+      );
+      if (intersection) {
+        const area = turf.area(intersection);
+        const diff = Math.abs(area - targetArea);
+        if (diff < minAreaDiff) {
+          minAreaDiff = diff;
+          bestCutLng = midLng;
+        }
+        if (area < targetArea) {
+          lowLng = midLng;
+        } else {
+          highLng = midLng;
+        }
+      } else {
+        highLng = midLng;
+      }
+    }
+
+    let cutLng =
+      bestCutLng !== -1
+        ? bestCutLng
+        : currentMinLng + ((maxLng - minLng) / droneCount) * (i + 1);
+    const cutRectangle = turf.polygon([
+      [
+        [currentMinLng, minLat],
+        [cutLng, minLat],
+        [cutLng, maxLat],
+        [currentMinLng, maxLat],
+        [currentMinLng, minLat],
+      ],
+    ]);
+    const intersection = turf.intersect(
+      turf.featureCollection([turfPolygon, cutRectangle])
+    );
+    if (intersection && intersection.geometry.coordinates.length > 0) {
+      droneSubRegions.push(
+        intersection.geometry.coordinates[0].map(
+          (coord: any) => new AMapRef.current.LngLat(coord[0], coord[1])
+        )
+      );
+    }
+    currentMinLng = cutLng;
+  }
+
+  const lastRectangle = turf.polygon([
+    [
+      [currentMinLng, minLat],
+      [maxLng, minLat],
+      [maxLng, maxLat],
+      [currentMinLng, maxLat],
+      [currentMinLng, minLat],
+    ],
+  ]);
+  const lastIntersection = turf.intersect(
+    turf.featureCollection([turfPolygon, lastRectangle])
+  );
+  // const lastIntersection = intersect(turfPolygon, lastRectangle);
+  // // const lastIntersection = turf.intersect(turfPolygon, lastRectangle);
+  if (lastIntersection && lastIntersection.geometry.coordinates.length > 0) {
+    droneSubRegions.push(
+      lastIntersection.geometry.coordinates[0].map(
+        (coord: any) => new AMapRef.current.LngLat(coord[0], coord[1])
+      )
+    );
+  }
+
+  return droneSubRegions;
+}
 
 const formSchema = z.object({
   name: z.string().optional(),
@@ -41,24 +166,58 @@ const formSchema = z.object({
 });
 
 export default function Page() {
+  const { toast } = useToast();
   const AMapRef = useRef<typeof AMap | null>(null);
   const mapRef = useRef<AMap.Map | null>(null);
-  const [taskInfoCollapsed, setTaskInfoCollapsed] = useState(true);
-  const [dronesCollapsed, setDronesCollapsed] = useState(true);
-  const [waylinesCollapsed, setWaylinesCollapsed] = useState(false);
-  const pathname = usePathname();
-  const id = parseInt(pathname.split("/")[3]);
-  const { toast } = useToast();
-  const query = useQuery({
-    queryKey: ["job-creation-options"],
-    queryFn: () => fetchJobEditionData(id),
-  });
+
+  // 计算工作状态
+  const { isCreateMode: isCreating, idPart } = useIsCreateMode();
+  const [isEditing, setIsEditing] = useState(false);
+  useEffect(() => {
+    console.log("当前工作状态", isCreating, isEditing);
+  }, [isCreating, isEditing]);
+
+  // 折叠状态
+  const [isTaskInfoCollapsed, setIsTaskInfoCollapsed] = useState(true);
+  const [isDronesCollapsed, setIsDronesCollapsed] = useState(false);
+  const [isWaylinesCollapsed, setIsWaylinesCollapsed] = useState(false);
+
+  // 已选择的无人机
   const [selectedDrones, setSelectedDrones] = useState<
-    JobEditionResult["drones"]
+    {
+      id: number;
+      callsign: string;
+      description?: string;
+      model?: string;
+      color: string;
+      variantion: {
+        index: number;
+        name: string;
+        gimbal?: {
+          id: number;
+          name: string;
+          description?: string;
+        };
+        payload?: {
+          id: number;
+          name: string;
+          description?: string;
+        };
+        rtk_available: boolean;
+        thermal_available: boolean;
+      };
+    }[]
   >([]);
-  const [selectedValue, setSelectedValue] = useState<string | undefined>(
+  // TODO: 浏览或编辑时，将获取的数据传入
+  // useEffect(() => {
+  //   console.log("selectedDrones", selectedDrones);
+  // }, [selectedDrones]);
+
+  const [selectedDroneKey, setSelectedDroneKey] = useState<string | undefined>(
     undefined
   );
+
+  // 生成的航线区域
   const [waylineAreas, setWaylineAreas] = useState<
     {
       droneId: number;
@@ -68,85 +227,24 @@ export default function Page() {
     }[]
   >([]);
 
-  const pathRef = useRef<AMap.LngLat[] | null>(null);
+  // 当前选中的搜索区域路径
+  const [path, setPath] = useState<AMap.LngLat[]>([]);
 
+  // 编辑和创建需要的参数
+  const optionsQuery = useQuery({
+    queryKey: ["job-creation-options"],
+    queryFn: () => fetchJobEditionData(parseInt(idPart)),
+    enabled: isCreating || isEditing,
+  });
   useEffect(() => {
-    setSelectedDrones([
-      {
-        id: 2,
-        callsign: "无人机2",
-        variantions: [
-          {
-            index: 1,
-            name: "变体1",
-            gimbal: {
-              id: 1,
-              name: "云台1",
-              description: "云台1描述",
-            },
-            rtk_available: true,
-            thermal_available: false,
-          },
-        ],
-      },
-      {
-        id: 3,
-        callsign: "无人机3",
-        variantions: [
-          {
-            index: 1,
-            name: "变体1",
-            gimbal: {
-              id: 1,
-              name: "云台1",
-              description: "云台1描述",
-            },
-            rtk_available: true,
-            thermal_available: false,
-          },
-          {
-            index: 2,
-            name: "变体2",
-            gimbal: {
-              id: 2,
-              name: "云台2",
-              description: "云台2描述",
-            },
-            rtk_available: false,
-            thermal_available: true,
-          },
-        ],
-      },
-      {
-        id: 4,
-        callsign: "无人机4",
-        variantions: [
-          {
-            index: 1,
-            name: "变体1",
-            gimbal: {
-              id: 1,
-              name: "云台1",
-              description: "云台1描述",
-            },
-            rtk_available: true,
-            thermal_available: false,
-          },
-          {
-            index: 2,
-            name: "变体2",
-            gimbal: {
-              id: 2,
-              name: "云台2",
-              description: "云台2描述",
-            },
-            rtk_available: false,
-            thermal_available: true,
-          },
-        ],
-      },
-    ]);
-  }, [query.data]);
+    console.log("optionsQuery", optionsQuery.data);
+  }, [optionsQuery.data]);
+  // 编辑或浏览时查询已有的数据
+  const dataQuery = useQuery({
+    queryKey: ["job-edition-data", parseInt(idPart)],
+    queryFn: () => fetchJobEditionData(parseInt(idPart)),
+    enabled: !isCreating,
+  });
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -206,47 +304,6 @@ export default function Page() {
           const scale = new AMap.Scale();
           mapRef.current?.addControl(scale);
         });
-
-        // Draw the area polygon
-        pathRef.current = [
-          new AMapRef.current!.LngLat(116.397128, 39.908722),
-          new AMapRef.current!.LngLat(116.407128, 39.908722),
-          new AMapRef.current!.LngLat(116.407128, 39.918722),
-          new AMapRef.current!.LngLat(116.397128, 39.918722),
-        ];
-        console.log("path", pathRef.current);
-
-        const polygon = new AMap.Polygon();
-        polygon.setPath(pathRef.current);
-        polygon.setOptions({
-          strokeColor: "#3366FF",
-          strokeWeight: 2,
-          strokeOpacity: 0.8,
-          fillColor: "#3366FF",
-          fillOpacity: 0.3,
-        });
-        console.log("polygon", polygon);
-
-        mapRef.current?.add(polygon);
-        mapRef.current?.setFitView([polygon]);
-        // if (query.data.area && query.data.area.points) {
-        //   const path = query.data.area.points.map(
-        //     (point) => new AMapRef.current!.LngLat(point.lng, point.lat)
-        //   );
-        //   const polygon = new AMap.Polygon({
-        //     path,
-        //     strokeColor: "#3366FF",
-        //     strokeWeight: 2,
-        //     strokeOpacity: 0.8,
-        //     fillColor: "#3366FF",
-        //     fillOpacity: 0.3,
-        //   });
-
-        //   mapRef.current?.add(polygon);
-
-        //   // Fit map bounds to the polygon
-        //   mapRef.current?.setFitView([polygon]);
-        // }
       })
       .catch((e) => {
         console.log(e);
@@ -257,6 +314,27 @@ export default function Page() {
     };
   }, []);
   // }, [query.data, query.isSuccess]);
+
+  // 选择区域时绘制选中的搜索区域多边形
+  useEffect(() => {
+    if (!path || !AMapRef.current) return;
+
+    // 清空已有图形
+    mapRef.current?.clearMap();
+    const polygon = new AMap.Polygon();
+    polygon.setPath(path);
+    polygon.setOptions({
+      strokeColor: "#3366FF",
+      strokeWeight: 2,
+      strokeOpacity: 0.8,
+      fillColor: "#3366FF",
+      fillOpacity: 0.3,
+    });
+    console.log("polygon", polygon);
+
+    mapRef.current?.add(polygon);
+    mapRef.current?.setFitView([polygon]);
+  }, [path]); // 直接依赖path状态值，每次变化都会触发
 
   return (
     <div className="px-4 mb-4">
@@ -277,10 +355,10 @@ export default function Page() {
                     className="h-8 w-8 p-0"
                     onClick={(e) => {
                       e.preventDefault();
-                      setTaskInfoCollapsed(!taskInfoCollapsed);
+                      setIsTaskInfoCollapsed(!isTaskInfoCollapsed);
                     }}
                   >
-                    {taskInfoCollapsed ? (
+                    {isTaskInfoCollapsed ? (
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
                         width="16"
@@ -311,7 +389,7 @@ export default function Page() {
                     )}
                   </Button>
                 </div>
-                {!taskInfoCollapsed && (
+                {!isTaskInfoCollapsed && (
                   <>
                     <FormField
                       control={form.control}
@@ -355,14 +433,24 @@ export default function Page() {
                             <Select
                               onValueChange={(value) => {
                                 field.onChange(parseInt(value));
+                                // 设置当前区域路径
+                                setPath(
+                                  optionsQuery.data?.areas
+                                    .find((e) => e.id === parseInt(value))
+                                    ?.points.map((p) => {
+                                      return new AMapRef.current!.LngLat(
+                                        p.lng,
+                                        p.lat
+                                      );
+                                    }) || []
+                                );
                               }}
-                              defaultValue={field.value?.toString() || ""}
                             >
                               <SelectTrigger>
                                 <SelectValue placeholder="请选择区域" />
                               </SelectTrigger>
                               <SelectContent>
-                                {query.data?.areas.map((e) => (
+                                {optionsQuery.data?.areas.map((e) => (
                                   <SelectItem
                                     key={e.id}
                                     value={e.id.toString()}
@@ -373,9 +461,6 @@ export default function Page() {
                               </SelectContent>
                             </Select>
                           </FormControl>
-                          <FormDescription>
-                            区域 ID 用于标识该任务的区域。
-                          </FormDescription>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -393,10 +478,10 @@ export default function Page() {
                     className="h-8 w-8 p-0"
                     onClick={(e) => {
                       e.preventDefault();
-                      setDronesCollapsed(!dronesCollapsed);
+                      setIsDronesCollapsed(!isDronesCollapsed);
                     }}
                   >
-                    {dronesCollapsed ? (
+                    {isDronesCollapsed ? (
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
                         width="16"
@@ -427,16 +512,14 @@ export default function Page() {
                     )}
                   </Button>
                 </div>
-                {!dronesCollapsed && (
+                {!isDronesCollapsed && (
                   <>
                     {/* 一条用来创建的按钮 */}
                     <div className="flex justify-between items-center">
-                      <FormItem>
+                      <FormItem className="flex-1 mr-4">
                         <Select
                           onValueChange={(value) => {
-                            console.log("onValueChange", value);
-                            setSelectedValue(value);
-                            console.log("selectedValue", selectedValue);
+                            setSelectedDroneKey(value);
                           }}
                         >
                           <FormControl>
@@ -445,7 +528,7 @@ export default function Page() {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            {query.data?.drones.map((e) => (
+                            {optionsQuery.data?.drones.map((e) => (
                               <SelectGroup key={e.id} className="w-full">
                                 <SelectLabel className="w-full">
                                   {e.callsign}
@@ -464,7 +547,6 @@ export default function Page() {
                         </Select>
                       </FormItem>
 
-                      <div className="flex-1" />
                       <Button
                         variant="destructive"
                         size="icon"
@@ -477,12 +559,12 @@ export default function Page() {
                       </Button>
                       <Button
                         variant="default"
-                        disabled={!selectedValue}
+                        disabled={!selectedDroneKey}
                         size="icon"
                         type="button"
                         className="h-8 w-8 bg-blue-400 text-gray-100 hover:bg-blue-500"
                         onClick={() => {
-                          if (!selectedValue) {
+                          if (!selectedDroneKey) {
                             toast({
                               title: "请选择无人机",
                               description: "请重新选择无人机",
@@ -490,12 +572,14 @@ export default function Page() {
                             return;
                           }
 
-                          const droneId = parseInt(selectedValue.split("-")[0]);
+                          const droneId = parseInt(
+                            selectedDroneKey.split("-")[0]
+                          );
                           const variantionIndex = parseInt(
-                            selectedValue.split("-")[1]
+                            selectedDroneKey.split("-")[1]
                           );
 
-                          const drone = query.data?.drones.find(
+                          const drone = optionsQuery.data?.drones.find(
                             (d) => d.id === droneId
                           );
                           if (!drone) {
@@ -516,16 +600,35 @@ export default function Page() {
                             });
                             return;
                           }
-
-                          const newDrone = {
-                            ...drone,
-                            variantions: [variantion],
-                          };
+                          // 生成一个随机的16进制颜色
+                          const colors = [
+                            "#FF5733",
+                            "#33FF57",
+                            "#3357FF",
+                            "#F033FF",
+                            "#33FFF6",
+                            "#FF33A6",
+                            "#FFD700",
+                            "#4169E1",
+                            "#32CD32",
+                            "#8A2BE2",
+                            "#FF6347",
+                            "#20B2AA",
+                          ];
+                          const color =
+                            colors[Math.floor(Math.random() * colors.length)];
+                          console.log("color", color);
 
                           setSelectedDrones((prev) => {
-                            return [...prev, newDrone];
+                            return [
+                              ...prev,
+                              {
+                                ...drone,
+                                variantion: variantion,
+                                color: color,
+                              },
+                            ];
                           });
-                          setSelectedValue(undefined);
                         }}
                       >
                         <Plus className="h-4 w-4" />
@@ -533,102 +636,71 @@ export default function Page() {
                     </div>
                     {/* 渲染已选择的无人机机型 */}
                     {selectedDrones?.map((d) => (
-                      <>
-                        {d.variantions.map((v) => (
-                          <>
-                            <div
-                              key={d.id}
-                              className="flex justify-between items-start"
-                            >
-                              <div className="text-sm">
-                                <p>{d.callsign}</p>
-                                <p className="mt-2 text-gray-500">
-                                  {d.variantions[0].name}
-                                </p>
-                              </div>
-                              <div className="flex-1" />
-                              {/* 一个颜色指示器，方便快速识别 */}
-                              <div
-                                className={`rounded-full h-4 w-4 m-2 bg-blue-600`}
-                              />
+                      <div className="mt-4 px-1" key={d.id}>
+                        <div className="flex justify-between items-start">
+                          <div className="text-sm">
+                            <p>{d.callsign}</p>
+                            <p className="mt-2 text-gray-500">
+                              {d.variantion.name}
+                            </p>
+                          </div>
+                          <div className="flex-1" />
+                          <div
+                            className={`rounded-full h-4 w-4 m-2 `}
+                            style={{ backgroundColor: d.color }}
+                          />
 
-                              <Button
-                                variant="outline"
-                                size="icon"
-                                className="h-8 w-8"
-                                onClick={() => {
-                                  // 先找到对应的机型，再删除对应的变体
-                                  const drone = selectedDrones?.find(
-                                    (dr) => dr.id === d.id
-                                  );
-                                  if (!drone) return;
-                                  const newDrones = selectedDrones?.filter(
-                                    (dr) => dr.id !== d.id
-                                  );
-                                  setSelectedDrones(newDrones);
-                                  const newVariantions =
-                                    drone.variantions.filter(
-                                      (v) =>
-                                        v.index !== drone.variantions[0].index
-                                    );
-                                  if (newVariantions.length === 0) {
-                                    setSelectedDrones((prev) =>
-                                      prev?.filter((dr) => dr.id !== d.id)
-                                    );
-                                  }
-                                  setSelectedDrones((prev) => {
-                                    return prev?.map((dr) => {
-                                      if (dr.id === d.id) {
-                                        return {
-                                          ...dr,
-                                          variantions: newVariantions,
-                                        };
-                                      }
-                                      return dr;
-                                    });
-                                  });
-                                }}
-                              >
-                                <Trash className="h-4 w-4" />
-                              </Button>
-                            </div>
-                            <div className="text-xs text-gray-500 flex items-center">
-                              <div className="mr-2">{v.gimbal?.name}</div>
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            className="h-8 w-8"
+                            onClick={() => {
+                              setSelectedDrones((prev) =>
+                                prev.filter((dr) => dr.id !== d.id)
+                              );
+                            }}
+                          >
+                            <Trash className="h-4 w-4" />
+                          </Button>
+                        </div>
+                        <div className="text-xs text-gray-500 flex items-center">
+                          <div className="mr-2">
+                            {d.variantion.gimbal?.name}
+                          </div>
 
-                              <div
-                                className={`rounded-full h-3 w-3 mr-1 ${
-                                  v.rtk_available
-                                    ? "bg-green-500"
-                                    : "bg-red-500"
-                                }`}
-                              />
-                              <div className="mr-2">
-                                {v.rtk_available ? "RTK可用" : "RTK不可用"}
-                              </div>
+                          <div
+                            className={`rounded-full h-3 w-3 mr-1 ${
+                              d.variantion.rtk_available
+                                ? "bg-green-500"
+                                : "bg-red-500"
+                            }`}
+                          />
+                          <div className="mr-2">
+                            {d.variantion.rtk_available
+                              ? "RTK可用"
+                              : "RTK不可用"}
+                          </div>
 
-                              <div
-                                className={`rounded-full h-3 w-3 mr-1 ${
-                                  v.thermal_available
-                                    ? "bg-green-500"
-                                    : "bg-red-500"
-                                }`}
-                              />
-                              <div>
-                                {v.thermal_available
-                                  ? "热成像可用"
-                                  : "热成像不可用"}
-                              </div>
-                            </div>
-                            {
-                              // 判断是否为最后一个元素，不是最后一个元素都有分隔线
-                              selectedDrones?.length !== 1 ||
-                              selectedDrones?.[0].variantions.length !== 1 ? (
-                                <Separator className="my-2" />
-                              ) : null
-                            }
-                          </>
-                        ))}
-                      </>
+                          <div
+                            className={`rounded-full h-3 w-3 mr-1 ${
+                              d.variantion.thermal_available
+                                ? "bg-green-500"
+                                : "bg-red-500"
+                            }`}
+                          />
+                          <div>
+                            {d.variantion.thermal_available
+                              ? "热成像可用"
+                              : "热成像不可用"}
+                          </div>
+                        </div>
+                        {
+                          // 判断是否为最后一个元素，不是最后一个元素都有分隔线
+                          selectedDrones?.length !== 1 ? (
+                            <Separator className="my-2" />
+                          ) : null
+                        }
+                      </div>
                     ))}
                     {selectedDrones?.length === 0 && (
                       <div className="text-sm text-gray-500">
@@ -648,10 +720,10 @@ export default function Page() {
                     className="h-8 w-8 p-0"
                     onClick={(e) => {
                       e.preventDefault();
-                      setWaylinesCollapsed(!waylinesCollapsed);
+                      setIsWaylinesCollapsed(!isWaylinesCollapsed);
                     }}
                   >
-                    {waylinesCollapsed ? (
+                    {isWaylinesCollapsed ? (
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
                         width="16"
@@ -682,7 +754,7 @@ export default function Page() {
                     )}
                   </Button>
                 </div>
-                {!waylinesCollapsed && (
+                {!isWaylinesCollapsed && (
                   <>
                     <div className="text-sm text-gray-500 flex items-center justify-between">
                       <div>已选择{selectedDrones.length}架无人机</div>
@@ -691,7 +763,7 @@ export default function Page() {
                         variant="outline"
                         onClick={() => {
                           if (
-                            !pathRef.current ||
+                            path.length <= 0 ||
                             !AMapRef.current ||
                             !mapRef.current ||
                             selectedDrones.length === 0
@@ -703,64 +775,27 @@ export default function Page() {
                             return;
                           }
 
-                          // 清除现有多边形
-                          mapRef.current.clearMap();
-
-                          // 计算多边形的边界
-                          const bounds = pathRef.current.reduce(
-                            (acc, point) => {
-                              return {
-                                minLng: Math.min(acc.minLng, point.getLng()),
-                                maxLng: Math.max(acc.maxLng, point.getLng()),
-                                minLat: Math.min(acc.minLat, point.getLat()),
-                                maxLat: Math.max(acc.maxLat, point.getLat()),
-                              };
-                            },
-                            {
-                              minLng: Infinity,
-                              maxLng: -Infinity,
-                              minLat: Infinity,
-                              maxLat: -Infinity,
-                            }
+                          const subPaths = dividePolygonAmongDrones(
+                            path,
+                            selectedDrones,
+                            AMapRef
                           );
-
-                          // 根据无人机数量划分区域
-                          const droneCount = selectedDrones.length;
-                          const colors = [
-                            "#FF5733",
-                            "#33FF57",
-                            "#3357FF",
-                            "#F033FF",
-                            "#FF33A6",
-                            "#33FFF6",
-                          ];
-
-                          // 计算每个区域的宽度
-                          const lngRange = bounds.maxLng - bounds.minLng;
-                          const segmentWidth = lngRange / droneCount;
-
-                          // 为每个无人机创建区域
-                          for (let i = 0; i < droneCount; i++) {
-                            const minLng = bounds.minLng + i * segmentWidth;
-                            const maxLng =
-                              bounds.minLng + (i + 1) * segmentWidth;
-
-                            // 创建子区域的多边形路径
-                            // Create sub-area polygon path
-                            const subPath = [
-                              new AMapRef.current.LngLat(minLng, bounds.minLat),
-                              new AMapRef.current.LngLat(maxLng, bounds.minLat),
-                              new AMapRef.current.LngLat(maxLng, bounds.maxLat),
-                              new AMapRef.current.LngLat(minLng, bounds.maxLat),
-                            ];
-
-                            // Store subPath to state
+                          if (!subPaths) {
+                            toast({
+                              title: "无法生成航线",
+                              description: "请确保已选择区域和无人机",
+                            });
+                            return;
+                          }
+                          for (let i = 0; i < subPaths.length; i++) {
+                            const subPath = subPaths[i];
+                            const drone = selectedDrones[i];
                             setWaylineAreas((prev) => [
                               ...prev,
                               {
-                                droneId: selectedDrones[i].id,
-                                callsign: selectedDrones[i].callsign,
-                                color: colors[i % colors.length],
+                                droneId: drone.id,
+                                callsign: drone.callsign,
+                                color: drone.color,
                                 path: subPath,
                               },
                             ]);
@@ -769,15 +804,15 @@ export default function Page() {
                             const subPolygon = new AMapRef.current.Polygon();
                             subPolygon.setPath(subPath);
                             subPolygon.setOptions({
-                              strokeColor: colors[i % colors.length],
+                              strokeColor: drone.color,
                               strokeWeight: 2,
                               strokeOpacity: 1,
-                              fillColor: colors[i % colors.length],
+                              fillColor: drone.color,
                               fillOpacity: 0.3,
                             });
 
                             // 添加无人机信息到多边形
-                            const droneInfo = selectedDrones[i].callsign;
+                            const droneInfo = drone.callsign;
                             const infoWindow = new AMapRef.current.InfoWindow({
                               content: `<div>${droneInfo}</div>`,
                               offset: new AMapRef.current.Pixel(0, -25),
@@ -828,7 +863,7 @@ export default function Page() {
 
                           toast({
                             title: "航线已生成",
-                            description: `已为${droneCount}架无人机分配区域`,
+                            description: `已为${selectedDrones.length}架无人机分配区域`,
                           });
                         }}
                       >
@@ -849,7 +884,8 @@ export default function Page() {
                             <div className="flex-1" />
                             {/* 一个颜色指示器，方便快速识别 */}
                             <div
-                              className={`rounded-full h-4 w-4 m-2 bg-blue-600`}
+                              className={`rounded-full h-4 w-4 m-2`}
+                              style={{ backgroundColor: e.color }}
                             />
 
                             <Button
