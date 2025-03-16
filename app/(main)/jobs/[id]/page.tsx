@@ -26,6 +26,11 @@ export default function Page() {
   const AMapRef = useRef<typeof AMap | null>(null);
   const [isMapLoaded, setIsMapLoaded] = useState(false);
   const mapRef = useRef<AMap.Map | null>(null);
+  // Add a ref to store active editors and info windows
+  const activeEditorRef = useRef<number>(-1);
+  const infoWindowsRef = useRef<AMap.InfoWindow[]>([]);
+  const polygonsRef = useRef<AMap.Polygon[]>([]);
+  const editorsRef = useRef<AMap.PolygonEditor[]>([]);
 
   // 计算工作状态
   const { isCreateMode: isCreating, idPart } = useIsCreateMode();
@@ -84,7 +89,7 @@ export default function Page() {
   // 完成数据加载后开始处理挂载地图逻辑
   useEffect(() => {
     window._AMapSecurityConfig = {
-      securityJsCode: "4ef657a379f13efbbf096baf8b08b3ed",
+      securityJsCode: "4ef657a379f13efbbf096baf8b3ed",
     };
 
     AMapLoader.load({
@@ -122,7 +127,7 @@ export default function Page() {
       if (AMapRef.current) {
         AMapRef.current = null;
       }
-    }
+    };
   }, []);
 
   useEffect(() => {
@@ -206,14 +211,45 @@ export default function Page() {
   useEffect(() => {
     if (!waylineAreas || !isMapLoaded || !AMapRef.current || !mapRef.current)
       return;
+
+    console.log("重新绘制航线区域，waylineAreas:", waylineAreas.length);
+    
+    // Store current map to avoid referencing the changing state in event callbacks
+    const currentMap = mapRef.current;
+    const currentAMap = AMapRef.current;
+
+    // Clear previous polygons
+    currentMap.clearMap();
+
+    // Clear previous refs
+    infoWindowsRef.current = [];
+    polygonsRef.current = [];
+    editorsRef.current = [];
+
+    // Redraw search area if available
+    if (path && path.length > 0) {
+      const areaPolygon = new currentAMap.Polygon();
+      areaPolygon.setOptions({
+        path: path,
+        strokeColor: "#3366FF",
+        strokeWeight: 2,
+        strokeOpacity: 0.8,
+        fillColor: "#3366FF",
+        fillOpacity: 0.3,
+      });
+      currentMap.add(areaPolygon);
+    }
+
     for (let i = 0; i < waylineAreas.length; i++) {
       const subPath = waylineAreas[i].path;
-      const drone = selectedDrones[i];
+      const drone = selectedDrones[i] || {
+        color: "#FF0000",
+        name: "未知无人机",
+      };
 
       // 创建子区域多边形
-      const subPolygon = new AMapRef.current.Polygon();
+      const subPolygon = new currentAMap.Polygon();
       subPolygon.setPath(subPath);
-
       subPolygon.setOptions({
         strokeColor: drone.color,
         strokeWeight: 2,
@@ -222,26 +258,31 @@ export default function Page() {
         fillOpacity: 0.3,
       });
 
-      // 添加无人机信息到多边形
-      const droneInfo = drone.name;
-      const infoWindow = new AMapRef.current.InfoWindow({
-        content: `<div>${droneInfo}</div>`,
-        offset: new AMapRef.current.Pixel(0, -25),
+      polygonsRef.current.push(subPolygon);
+      currentMap.add(subPolygon);
+
+      // 创建信息窗口但不立即打开
+      const infoWindow = new currentAMap.InfoWindow({
+        content: `<div>${drone.name}</div>`,
+        offset: new currentAMap.Pixel(0, -25),
+        isCustom: false,
       });
+      infoWindowsRef.current.push(infoWindow);
 
-      // 点击时显示信息窗口
-      AMapRef.current.Event.addListener(subPolygon, "click", () => {
-        if (!infoWindow || !mapRef.current) return;
-        // 关闭所有信息窗口
-        mapRef.current.clearInfoWindow();
-        // 打开当前信息窗口
-        const path = subPolygon.getPath();
-        if (!path) return;
+      // 点击时显示信息窗口和开启编辑
+      const polygonIndex = i; // Capture the current index
+      currentAMap.Event.addListener(subPolygon, "click", () => {
+        console.log(`点击了多边形 ${polygonIndex}`);
+        // Close all info windows first
+        currentMap.clearInfoWindow();
 
-        const center = path
+        // Calculate center point and open info window
+        const pathPoints = subPolygon.getPath();
+        if (!pathPoints) return;
+
+        const center = pathPoints
           .reduce(
             (acc, point) => {
-              // Ensure point is a LngLat object
               if ("getLng" in point && "getLat" in point) {
                 return [acc[0] + point.getLng(), acc[1] + point.getLat()];
               }
@@ -249,16 +290,104 @@ export default function Page() {
             },
             [0, 0]
           )
-          .map((val) => val / path.length);
-        infoWindow.open(mapRef.current, [center[0], center[1]]);
+          .map((val) => val / pathPoints.length);
+
+        infoWindow.open(currentMap, [center[0], center[1]]);
+
+        // Only handle editors if in edit mode
+        if (isCreating || isEditing) {
+          // Close previous active editor if exists
+          if (
+            activeEditorRef.current !== -1 &&
+            editorsRef.current[activeEditorRef.current]
+          ) {
+            console.log(`关闭编辑器 ${activeEditorRef.current}`);
+            editorsRef.current[activeEditorRef.current].close();
+          }
+
+          // Open this editor
+          if (editorsRef.current[polygonIndex]) {
+            console.log(`打开编辑器 ${polygonIndex}`);
+            editorsRef.current[polygonIndex].open();
+            activeEditorRef.current = polygonIndex;
+          }
+        }
       });
 
-      mapRef.current.add(subPolygon);
+      // 创建编辑器
+      if (isCreating || isEditing) {
+        currentAMap.plugin(["AMap.PolygonEditor"], () => {
+          const polygonEditor = new currentAMap.PolygonEditor(
+            currentMap,
+            subPolygon
+          );
+          editorsRef.current.push(polygonEditor);
 
-      // 适应视图
-      mapRef.current.setFitView();
+          // 修复: 使用参考值来防止无限循环
+          let lastUpdateTime = Date.now();
+          let lastPathString = JSON.stringify(subPolygon.getPath());
+          
+          // 监听编辑结束事件，更新waylineAreas
+          currentAMap.Event.addListener(polygonEditor, "end", () => {
+            const newPath = subPolygon.getPath();
+            if (!newPath) return;
+            
+            // 将路径转换为字符串以便比较
+            const newPathString = JSON.stringify(newPath);
+            // 确保路径确实发生了变化，并且两次更新间隔足够长
+            const currentTime = Date.now();
+            
+            console.log(`编辑器${polygonIndex}结束编辑，距上次更新: ${currentTime - lastUpdateTime}ms`);
+            
+            if (newPathString !== lastPathString && currentTime - lastUpdateTime > 300) {
+              lastUpdateTime = currentTime;
+              lastPathString = newPathString;
+              
+              // 确保newPath是LngLat[]类型
+              const safeNewPath = Array.isArray(newPath)
+                ? newPath
+                    .flat()
+                    .filter(
+                      (p): p is AMap.LngLat =>
+                        p instanceof currentAMap.LngLat
+                    )
+                : [];
+              
+              console.log(`更新第${polygonIndex}个区域路径，点数量: ${safeNewPath.length}`);
+              
+              // 使用函数式更新以避免依赖于当前状态
+              setWaylineAreas(prev => {
+                return prev.map((area, idx) => {
+                  if (idx === polygonIndex) {
+                    return { ...area, path: safeNewPath };
+                  }
+                  return area;
+                });
+              });
+            } else {
+              console.log(`忽略更新: ${newPathString === lastPathString ? '路径未变' : '更新间隔太短'}`);
+            }
+          });
+        });
+      }
     }
-  }, [waylineAreas, isMapLoaded, selectedDrones]);
+
+    // 适应视图
+    currentMap.setFitView();
+
+    return () => {
+      console.log("清除航线区域编辑器");
+      // 清除编辑器
+      editorsRef.current.forEach((editor, index) => {
+        if (editor) {
+          console.log(`关闭编辑器 ${index}`);
+          editor.close();
+        }
+      });
+      // Clear active editor reference
+      activeEditorRef.current = -1;
+    };
+  }, [waylineAreas, isMapLoaded, selectedDrones, path, isCreating, isEditing]);
 
   return (
     <div className="px-4 mb-4">
