@@ -101,22 +101,48 @@ export interface JobModifyRequest {
 
 export interface JobDetailResult {
   id: number;
+  name: string;
+  description: string;
   area: {
-    description: string;
     id: number;
     name: string;
+    description: string;
     points?: {
       lat: number;
       lng: number;
     }[];
   };
-  description: string;
-  drones?: {
-    callsign: string;
-    description: string;
+  drones: {
     id: number;
-    model: string;
-    sn: string;
+    callsign: string;
+    description?: string;
+    model?: string;
+    color: string;
+    variantion: {
+      index: number;
+      name: string;
+      gimbal?: {
+        id: number;
+        name: string;
+        description?: string;
+      };
+      payload?: {
+        id: number;
+        name: string;
+        description?: string;
+      };
+      rtk_available: boolean;
+      thermal_available: boolean;
+    };
   }[];
-  name?: string;
+  waylines: {
+    // ${drone_id}-${variation_index}
+    drone_key: string;
+    height: number;
+    color: string;
+    points: {
+      lat: number;
+      lng: number;
+    }[];
+  }[];
 }

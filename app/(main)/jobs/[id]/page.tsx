@@ -1,27 +1,11 @@
 "use client";
 
-import { fetchJobEditionData } from "@/api/job/request";
+import { fetchJobDetail, fetchJobEditionData } from "@/api/job/request";
+import DroneSelectionPanel from "@/app/(main)/jobs/[id]/drone-selection-panel";
+import TaskInfoPanel from "@/app/(main)/jobs/[id]/task-info-panel";
+import WaylinePanel from "@/app/(main)/jobs/[id]/wayline-panel";
 import { Button } from "@/components/ui/button";
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectLabel,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator";
+import { Form } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
 import { useIsCreateMode } from "@/lib/misc";
 import AMapLoader from "@amap/amap-jsapi-loader";
@@ -29,7 +13,6 @@ import "@amap/amap-jsapi-types";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQuery } from "@tanstack/react-query";
 import * as turf from "@turf/turf";
-import { Plus, Trash } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -168,6 +151,7 @@ const formSchema = z.object({
 export default function Page() {
   const { toast } = useToast();
   const AMapRef = useRef<typeof AMap | null>(null);
+  const [isMapLoaded, setIsMapLoaded] = useState(false);
   const mapRef = useRef<AMap.Map | null>(null);
 
   // 计算工作状态
@@ -208,10 +192,6 @@ export default function Page() {
       };
     }[]
   >([]);
-  // TODO: 浏览或编辑时，将获取的数据传入
-  // useEffect(() => {
-  //   console.log("selectedDrones", selectedDrones);
-  // }, [selectedDrones]);
 
   const [selectedDroneKey, setSelectedDroneKey] = useState<string | undefined>(
     undefined
@@ -242,7 +222,7 @@ export default function Page() {
   // 编辑或浏览时查询已有的数据
   const dataQuery = useQuery({
     queryKey: ["job-edition-data", parseInt(idPart)],
-    queryFn: () => fetchJobEditionData(parseInt(idPart)),
+    queryFn: () => fetchJobDetail(parseInt(idPart)),
     enabled: !isCreating,
   });
 
@@ -279,9 +259,6 @@ export default function Page() {
 
   // 完成数据加载后开始处理挂载地图逻辑
   useEffect(() => {
-    // Skip if data is not loaded yet
-    // if (!query.isSuccess || !query.data?.areas?.length) return;
-
     window._AMapSecurityConfig = {
       securityJsCode: "4ef657a379f13efbbf096baf8b08b3ed",
     };
@@ -291,11 +268,13 @@ export default function Page() {
       version: "2.0",
     })
       .then((AMap) => {
+        if (isMapLoaded) return;
         AMapRef.current = AMap;
         mapRef.current = new AMap.Map("map", {
           viewMode: "3D",
           zoom: 17,
         });
+        setIsMapLoaded(true);
 
         // Add standard controls
         AMap.plugin(["AMap.ToolBar", "AMap.Scale"], function () {
@@ -313,11 +292,71 @@ export default function Page() {
       mapRef.current?.destroy();
     };
   }, []);
-  // }, [query.data, query.isSuccess]);
+
+  useEffect(() => {
+    if (!dataQuery.isSuccess || !dataQuery.data) return;
+    const { area, drones, waylines } = dataQuery.data;
+    console.log("area", area);
+    console.log("drones", drones);
+    // 如果是编辑或浏览模式，设置已选择的无人机和搜索区域
+    // 设置地图区域路径
+    if (!area || !area.points || !AMapRef.current) {
+      console.log("area or AMapRef is null");
+      console.log("area", area);
+      console.log("AMapRef", AMapRef.current);
+
+      return;
+    }
+    const areaPath = area.points.map(
+      (p) => new AMapRef.current!.LngLat(p.lng, p.lat)
+    );
+    console.log("areaPath", areaPath);
+
+    setPath(areaPath);
+
+    // 设置表单中的区域ID
+    form.setValue("area_id", area.id);
+    form.setValue("name", dataQuery.data.name || "");
+    form.setValue("description", dataQuery.data.description || "");
+
+    // 设置已选择的无人机
+    // 将API返回的无人机数据转换为组件使用的格式
+    const formattedDrones = drones.map((drone, index) => ({
+      ...drone,
+      color: drone.color || "#ffcc77",
+      variantion: drone.variantion || {
+        index: 0,
+        name: drone.model || "默认配置",
+        rtk_available: false,
+        thermal_available: false,
+      },
+    }));
+
+    setSelectedDrones(formattedDrones);
+
+    // 设置航线
+    const formattedWaylineAreas = waylines.map((wayline) => {
+      return {
+        droneId: 1,
+        callsign: "",
+        // height: wayline.height,
+        color: wayline.color,
+        path: wayline.points.map((p) => {
+          return new AMapRef.current!.LngLat(p.lng, p.lat);
+        }),
+      };
+    });
+    setWaylineAreas(formattedWaylineAreas);
+  }, [dataQuery.isSuccess, dataQuery.data, isMapLoaded]);
+
+  useEffect(() => {
+    console.log("path:", path);
+  }, [path]);
 
   // 选择区域时绘制选中的搜索区域多边形
   useEffect(() => {
-    if (!path || !AMapRef.current) return;
+    if (!path || !isMapLoaded) return;
+    console.log("path", path);
 
     // 清空已有图形
     mapRef.current?.clearMap();
@@ -334,7 +373,65 @@ export default function Page() {
 
     mapRef.current?.add(polygon);
     mapRef.current?.setFitView([polygon]);
-  }, [path]); // 直接依赖path状态值，每次变化都会触发
+  }, [path, isMapLoaded]);
+
+  // 绘制无人机航线
+  useEffect(() => {
+    if (!waylineAreas || !isMapLoaded || !AMapRef.current || !mapRef.current)
+      return;
+    for (let i = 0; i < waylineAreas.length; i++) {
+      const subPath = waylineAreas[i].path;
+      const drone = selectedDrones[i];
+
+      // 创建子区域多边形
+      const subPolygon = new AMapRef.current.Polygon();
+      subPolygon.setPath(subPath);
+
+      subPolygon.setOptions({
+        strokeColor: drone.color,
+        strokeWeight: 2,
+        strokeOpacity: 1,
+        fillColor: drone.color,
+        fillOpacity: 0.3,
+      });
+
+      // 添加无人机信息到多边形
+      const droneInfo = drone.callsign;
+      const infoWindow = new AMapRef.current.InfoWindow({
+        content: `<div>${droneInfo}</div>`,
+        offset: new AMapRef.current.Pixel(0, -25),
+      });
+
+      // 点击时显示信息窗口
+      AMapRef.current.Event.addListener(subPolygon, "click", () => {
+        if (!infoWindow || !mapRef.current) return;
+        // 关闭所有信息窗口
+        mapRef.current.clearInfoWindow();
+        // 打开当前信息窗口
+        const path = subPolygon.getPath();
+        if (!path) return;
+
+        const center = path
+          .reduce(
+            (acc, point) => {
+              // Ensure point is a LngLat object
+              if ("getLng" in point && "getLat" in point) {
+                return [acc[0] + point.getLng(), acc[1] + point.getLat()];
+              }
+              return acc;
+            },
+            [0, 0]
+          )
+          .map((val) => val / path.length);
+        infoWindow.open(mapRef.current, [center[0], center[1]]);
+      });
+
+      mapRef.current.add(subPolygon);
+
+      // 适应视图
+      mapRef.current.setFitView();
+    }
+  }, [waylineAreas, isMapLoaded]);
 
   return (
     <div className="px-4 mb-4">
@@ -343,579 +440,67 @@ export default function Page() {
           id="map"
           className="min-h-[720px] h-[calc(100vh-200px)] w-full border rounded-md shadow-sm"
         />
-        <div className="w-96 space-y-4">
+        <div className="w-96">
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)}>
-              <div className="space-y-2 p-3 border rounded-md shadow-sm">
-                <div className="flex items-center justify-between">
-                  <div className="text-md font-medium">任务信息</div>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <TaskInfoPanel
+                isTaskInfoCollapsed={isTaskInfoCollapsed}
+                setIsTaskInfoCollapsed={setIsTaskInfoCollapsed}
+                isEditing={isEditing}
+                isCreating={isCreating}
+                form={form}
+                optionsQuery={optionsQuery}
+                dataQuery={dataQuery}
+                setPath={setPath}
+                AMapRef={AMapRef}
+              />
+
+              <DroneSelectionPanel
+                selectedDrones={selectedDrones}
+                setSelectedDrones={setSelectedDrones}
+                isEditMode={isCreating || isEditing}
+                availableDrones={optionsQuery.data?.drones || []}
+                collapsed={isDronesCollapsed}
+                setCollapsed={setIsDronesCollapsed}
+              />
+
+              <WaylinePanel
+                isWaylinesCollapsed={isWaylinesCollapsed}
+                setIsWaylinesCollapsed={setIsWaylinesCollapsed}
+                selectedDrones={selectedDrones}
+                waylineAreas={waylineAreas}
+                setWaylineAreas={setWaylineAreas}
+                path={path}
+                AMapRef={AMapRef}
+                mapRef={mapRef}
+                dividePolygonAmongDrones={dividePolygonAmongDrones}
+                isEditMode={isCreating || isEditing}
+              />
+
+              <div className="mt-4 flex justify-end gap-4">
+                {!isEditing && !isCreating && (
                   <Button
-                    variant="ghost"
+                    variant="outline"
                     size="sm"
-                    className="h-8 w-8 p-0"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      setIsTaskInfoCollapsed(!isTaskInfoCollapsed);
+                    onClick={() => {
+                      setIsEditing(true);
                     }}
                   >
-                    {isTaskInfoCollapsed ? (
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <polyline points="6 9 12 15 18 9"></polyline>
-                      </svg>
-                    ) : (
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <polyline points="18 15 12 9 6 15"></polyline>
-                      </svg>
-                    )}
+                    编辑
                   </Button>
-                </div>
-                {!isTaskInfoCollapsed && (
-                  <>
-                    <FormField
-                      control={form.control}
-                      name="name"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>任务名称</FormLabel>
-                          <FormControl>
-                            <Input placeholder="请输入任务名称" {...field} />
-                          </FormControl>
-                          <FormDescription>
-                            该名称将用于对任务进行标识和说明，可以是任何信息。
-                          </FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="description"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>任务描述</FormLabel>
-                          <FormControl>
-                            <Input placeholder="请输入任务描述" {...field} />
-                          </FormControl>
-                          <FormDescription>
-                            描述用于对该任务进行标识和说明，可以是任何信息。
-                          </FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="area_id"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>区域</FormLabel>
-                          <FormControl>
-                            <Select
-                              onValueChange={(value) => {
-                                field.onChange(parseInt(value));
-                                // 设置当前区域路径
-                                setPath(
-                                  optionsQuery.data?.areas
-                                    .find((e) => e.id === parseInt(value))
-                                    ?.points.map((p) => {
-                                      return new AMapRef.current!.LngLat(
-                                        p.lng,
-                                        p.lat
-                                      );
-                                    }) || []
-                                );
-                              }}
-                            >
-                              <SelectTrigger>
-                                <SelectValue placeholder="请选择区域" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {optionsQuery.data?.areas.map((e) => (
-                                  <SelectItem
-                                    key={e.id}
-                                    value={e.id.toString()}
-                                  >
-                                    {e.name}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </>
                 )}
-              </div>
-
-              <div className="mt-4 space-y-2 p-3 border rounded-md shadow-sm">
-                <div className="flex items-center justify-between">
-                  <div className="text-md font-medium">执飞机型</div>
+                {isEditing && !isCreating && (
                   <Button
-                    variant="ghost"
+                    variant="outline"
                     size="sm"
-                    className="h-8 w-8 p-0"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      setIsDronesCollapsed(!isDronesCollapsed);
+                    onClick={() => {
+                      setIsEditing(false);
                     }}
                   >
-                    {isDronesCollapsed ? (
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <polyline points="6 9 12 15 18 9"></polyline>
-                      </svg>
-                    ) : (
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <polyline points="18 15 12 9 6 15"></polyline>
-                      </svg>
-                    )}
+                    取消编辑
                   </Button>
-                </div>
-                {!isDronesCollapsed && (
-                  <>
-                    {/* 一条用来创建的按钮 */}
-                    <div className="flex justify-between items-center">
-                      <FormItem className="flex-1 mr-4">
-                        <Select
-                          onValueChange={(value) => {
-                            setSelectedDroneKey(value);
-                          }}
-                        >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="请选择无人机" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {optionsQuery.data?.drones.map((e) => (
-                              <SelectGroup key={e.id} className="w-full">
-                                <SelectLabel className="w-full">
-                                  {e.callsign}
-                                </SelectLabel>
-                                {e.variantions.map((v) => (
-                                  <SelectItem
-                                    key={e.id + "-" + v.index}
-                                    value={`${e.id}-${v.index}` || ""}
-                                  >
-                                    {v.name}
-                                  </SelectItem>
-                                ))}
-                              </SelectGroup>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </FormItem>
-
-                      <Button
-                        variant="destructive"
-                        size="icon"
-                        className="mr-2 h-8 w-8"
-                        onClick={() => {
-                          setSelectedDrones([]);
-                        }}
-                      >
-                        <Trash className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="default"
-                        disabled={!selectedDroneKey}
-                        size="icon"
-                        type="button"
-                        className="h-8 w-8 bg-blue-400 text-gray-100 hover:bg-blue-500"
-                        onClick={() => {
-                          if (!selectedDroneKey) {
-                            toast({
-                              title: "请选择无人机",
-                              description: "请重新选择无人机",
-                            });
-                            return;
-                          }
-
-                          const droneId = parseInt(
-                            selectedDroneKey.split("-")[0]
-                          );
-                          const variantionIndex = parseInt(
-                            selectedDroneKey.split("-")[1]
-                          );
-
-                          const drone = optionsQuery.data?.drones.find(
-                            (d) => d.id === droneId
-                          );
-                          if (!drone) {
-                            toast({
-                              title: "无人机不存在",
-                              description: "请重新选择无人机",
-                            });
-                            return;
-                          }
-
-                          const variantion = drone.variantions.find(
-                            (v) => v.index === variantionIndex
-                          );
-                          if (!variantion) {
-                            toast({
-                              title: "无人机变体不存在",
-                              description: "请重新选择无人机",
-                            });
-                            return;
-                          }
-                          // 生成一个随机的16进制颜色
-                          const colors = [
-                            "#FF5733",
-                            "#33FF57",
-                            "#3357FF",
-                            "#F033FF",
-                            "#33FFF6",
-                            "#FF33A6",
-                            "#FFD700",
-                            "#4169E1",
-                            "#32CD32",
-                            "#8A2BE2",
-                            "#FF6347",
-                            "#20B2AA",
-                          ];
-                          const color =
-                            colors[Math.floor(Math.random() * colors.length)];
-                          console.log("color", color);
-
-                          setSelectedDrones((prev) => {
-                            return [
-                              ...prev,
-                              {
-                                ...drone,
-                                variantion: variantion,
-                                color: color,
-                              },
-                            ];
-                          });
-                        }}
-                      >
-                        <Plus className="h-4 w-4" />
-                      </Button>
-                    </div>
-                    {/* 渲染已选择的无人机机型 */}
-                    {selectedDrones?.map((d) => (
-                      <div className="mt-4 px-1" key={d.id}>
-                        <div className="flex justify-between items-start">
-                          <div className="text-sm">
-                            <p>{d.callsign}</p>
-                            <p className="mt-2 text-gray-500">
-                              {d.variantion.name}
-                            </p>
-                          </div>
-                          <div className="flex-1" />
-                          <div
-                            className={`rounded-full h-4 w-4 m-2 `}
-                            style={{ backgroundColor: d.color }}
-                          />
-
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            className="h-8 w-8"
-                            onClick={() => {
-                              setSelectedDrones((prev) =>
-                                prev.filter((dr) => dr.id !== d.id)
-                              );
-                            }}
-                          >
-                            <Trash className="h-4 w-4" />
-                          </Button>
-                        </div>
-                        <div className="text-xs text-gray-500 flex items-center">
-                          <div className="mr-2">
-                            {d.variantion.gimbal?.name}
-                          </div>
-
-                          <div
-                            className={`rounded-full h-3 w-3 mr-1 ${
-                              d.variantion.rtk_available
-                                ? "bg-green-500"
-                                : "bg-red-500"
-                            }`}
-                          />
-                          <div className="mr-2">
-                            {d.variantion.rtk_available
-                              ? "RTK可用"
-                              : "RTK不可用"}
-                          </div>
-
-                          <div
-                            className={`rounded-full h-3 w-3 mr-1 ${
-                              d.variantion.thermal_available
-                                ? "bg-green-500"
-                                : "bg-red-500"
-                            }`}
-                          />
-                          <div>
-                            {d.variantion.thermal_available
-                              ? "热成像可用"
-                              : "热成像不可用"}
-                          </div>
-                        </div>
-                        {
-                          // 判断是否为最后一个元素，不是最后一个元素都有分隔线
-                          selectedDrones?.length !== 1 ? (
-                            <Separator className="my-2" />
-                          ) : null
-                        }
-                      </div>
-                    ))}
-                    {selectedDrones?.length === 0 && (
-                      <div className="text-sm text-gray-500">
-                        请选择无人机机型
-                      </div>
-                    )}
-                  </>
                 )}
-              </div>
-
-              <div className="mt-4 space-y-2 p-3 border rounded-md shadow-sm">
-                <div className="flex items-center justify-between">
-                  <div className="text-md font-medium">航线信息</div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-8 w-8 p-0"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      setIsWaylinesCollapsed(!isWaylinesCollapsed);
-                    }}
-                  >
-                    {isWaylinesCollapsed ? (
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <polyline points="6 9 12 15 18 9"></polyline>
-                      </svg>
-                    ) : (
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <polyline points="18 15 12 9 6 15"></polyline>
-                      </svg>
-                    )}
-                  </Button>
-                </div>
-                {!isWaylinesCollapsed && (
-                  <>
-                    <div className="text-sm text-gray-500 flex items-center justify-between">
-                      <div>已选择{selectedDrones.length}架无人机</div>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => {
-                          if (
-                            path.length <= 0 ||
-                            !AMapRef.current ||
-                            !mapRef.current ||
-                            selectedDrones.length === 0
-                          ) {
-                            toast({
-                              title: "无法生成航线",
-                              description: "请确保已选择区域和无人机",
-                            });
-                            return;
-                          }
-
-                          const subPaths = dividePolygonAmongDrones(
-                            path,
-                            selectedDrones,
-                            AMapRef
-                          );
-                          if (!subPaths) {
-                            toast({
-                              title: "无法生成航线",
-                              description: "请确保已选择区域和无人机",
-                            });
-                            return;
-                          }
-                          for (let i = 0; i < subPaths.length; i++) {
-                            const subPath = subPaths[i];
-                            const drone = selectedDrones[i];
-                            setWaylineAreas((prev) => [
-                              ...prev,
-                              {
-                                droneId: drone.id,
-                                callsign: drone.callsign,
-                                color: drone.color,
-                                path: subPath,
-                              },
-                            ]);
-
-                            // 创建子区域多边形
-                            const subPolygon = new AMapRef.current.Polygon();
-                            subPolygon.setPath(subPath);
-                            subPolygon.setOptions({
-                              strokeColor: drone.color,
-                              strokeWeight: 2,
-                              strokeOpacity: 1,
-                              fillColor: drone.color,
-                              fillOpacity: 0.3,
-                            });
-
-                            // 添加无人机信息到多边形
-                            const droneInfo = drone.callsign;
-                            const infoWindow = new AMapRef.current.InfoWindow({
-                              content: `<div>${droneInfo}</div>`,
-                              offset: new AMapRef.current.Pixel(0, -25),
-                            });
-
-                            // 点击时显示信息窗口
-                            AMapRef.current.Event.addListener(
-                              subPolygon,
-                              "click",
-                              () => {
-                                if (!infoWindow || !mapRef.current) return;
-                                // 关闭所有信息窗口
-                                mapRef.current.clearInfoWindow();
-                                // 打开当前信息窗口
-                                const path = subPolygon.getPath();
-                                if (!path) return;
-
-                                const center = path
-                                  .reduce(
-                                    (acc, point) => {
-                                      // Ensure point is a LngLat object
-                                      if (
-                                        "getLng" in point &&
-                                        "getLat" in point
-                                      ) {
-                                        return [
-                                          acc[0] + point.getLng(),
-                                          acc[1] + point.getLat(),
-                                        ];
-                                      }
-                                      return acc;
-                                    },
-                                    [0, 0]
-                                  )
-                                  .map((val) => val / 4);
-                                infoWindow.open(mapRef.current, [
-                                  center[0],
-                                  center[1],
-                                ]);
-                              }
-                            );
-
-                            mapRef.current.add(subPolygon);
-                          }
-
-                          // 适应视图
-                          mapRef.current.setFitView();
-
-                          toast({
-                            title: "航线已生成",
-                            description: `已为${selectedDrones.length}架无人机分配区域`,
-                          });
-                        }}
-                      >
-                        生成航线
-                      </Button>
-                    </div>
-                    {
-                      // 渲染已选择的航线
-                      waylineAreas?.map((e) => (
-                        <>
-                          <div
-                            key={e.droneId}
-                            className="flex justify-between items-start"
-                          >
-                            <div className="text-sm">
-                              <p>{e.callsign}</p>
-                            </div>
-                            <div className="flex-1" />
-                            {/* 一个颜色指示器，方便快速识别 */}
-                            <div
-                              className={`rounded-full h-4 w-4 m-2`}
-                              style={{ backgroundColor: e.color }}
-                            />
-
-                            <Button
-                              variant="outline"
-                              size="icon"
-                              className="h-8 w-8"
-                              onClick={() => {
-                                setWaylineAreas((prev) =>
-                                  prev.filter((dr) => dr.droneId !== e.droneId)
-                                );
-                              }}
-                            >
-                              <Trash className="h-4 w-4" />
-                            </Button>
-                          </div>
-                          {
-                            // 判断是否为最后一个元素，不是最后一个元素都有分隔线
-                            waylineAreas?.length !== 1 ? (
-                              <Separator className="my-2" />
-                            ) : null
-                          }
-                        </>
-                      ))
-                    }
-                  </>
-                )}
-              </div>
-
-              <div className="mt-4 flex justify-end">
-                <Button size="sm">保存</Button>
+                {(isEditing || isCreating) && <Button size="sm">保存</Button>}
               </div>
             </form>
           </Form>
