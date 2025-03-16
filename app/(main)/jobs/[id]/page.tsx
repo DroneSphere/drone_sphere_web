@@ -1,146 +1,20 @@
 "use client";
 
 import { fetchJobDetail, fetchJobEditionData } from "@/api/job/request";
+import { JobDetailResult } from "@/api/job/types";
 import DroneSelectionPanel from "@/app/(main)/jobs/[id]/drone-selection-panel";
 import TaskInfoPanel from "@/app/(main)/jobs/[id]/task-info-panel";
 import WaylinePanel from "@/app/(main)/jobs/[id]/wayline-panel";
 import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
-import { useToast } from "@/hooks/use-toast";
 import { useIsCreateMode } from "@/lib/misc";
 import AMapLoader from "@amap/amap-jsapi-loader";
 import "@amap/amap-jsapi-types";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQuery } from "@tanstack/react-query";
-import * as turf from "@turf/turf";
 import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-
-function dividePolygonAmongDrones(
-  path: AMap.LngLat[],
-  selectedDrones: any[],
-  AMapRef: any
-) {
-  const droneCount = selectedDrones.length;
-  if (droneCount === 0) {
-    return;
-  }
-
-  const coordinates = path.map((p) => [p.getLng(), p.getLat()]);
-  // 确保多边形是闭合的
-  if (coordinates.length > 0) {
-    const firstCoordinate = coordinates[0];
-    const lastCoordinate = coordinates[coordinates.length - 1];
-    // 检查第一个和最后一个坐标是否相同
-    if (
-      firstCoordinate[0] !== lastCoordinate[0] ||
-      firstCoordinate[1] !== lastCoordinate[1]
-    ) {
-      coordinates.push(firstCoordinate); // 将第一个坐标添加到末尾
-    }
-  }
-  const turfPolygon = turf.polygon([coordinates]);
-  const totalArea = turf.area(turfPolygon);
-  const targetArea = totalArea / droneCount;
-
-  const bounds = turf.bbox(turfPolygon);
-  const minLng = bounds[0];
-  const maxLng = bounds[2];
-  const minLat = bounds[1];
-  const maxLat = bounds[3];
-
-  const droneSubRegions = [];
-  let currentMinLng = minLng;
-
-  for (let i = 0; i < droneCount - 1; i++) {
-    let lowLng = currentMinLng;
-    let highLng = maxLng;
-    let bestCutLng = -1;
-    let minAreaDiff = Infinity;
-
-    for (let j = 0; j < 50; j++) {
-      // Binary search for longitude
-      const midLng = (lowLng + highLng) / 2;
-      const rectangle = turf.polygon([
-        [
-          [currentMinLng, minLat],
-          [midLng, minLat],
-          [midLng, maxLat],
-          [currentMinLng, maxLat],
-          [currentMinLng, minLat],
-        ],
-      ]);
-      const intersection = turf.intersect(
-        turf.featureCollection([turfPolygon, rectangle])
-      );
-      if (intersection) {
-        const area = turf.area(intersection);
-        const diff = Math.abs(area - targetArea);
-        if (diff < minAreaDiff) {
-          minAreaDiff = diff;
-          bestCutLng = midLng;
-        }
-        if (area < targetArea) {
-          lowLng = midLng;
-        } else {
-          highLng = midLng;
-        }
-      } else {
-        highLng = midLng;
-      }
-    }
-
-    let cutLng =
-      bestCutLng !== -1
-        ? bestCutLng
-        : currentMinLng + ((maxLng - minLng) / droneCount) * (i + 1);
-    const cutRectangle = turf.polygon([
-      [
-        [currentMinLng, minLat],
-        [cutLng, minLat],
-        [cutLng, maxLat],
-        [currentMinLng, maxLat],
-        [currentMinLng, minLat],
-      ],
-    ]);
-    const intersection = turf.intersect(
-      turf.featureCollection([turfPolygon, cutRectangle])
-    );
-    if (intersection && intersection.geometry.coordinates.length > 0) {
-      droneSubRegions.push(
-        intersection.geometry.coordinates[0].map(
-          (coord: any) => new AMapRef.current.LngLat(coord[0], coord[1])
-        )
-      );
-    }
-    currentMinLng = cutLng;
-  }
-
-  const lastRectangle = turf.polygon([
-    [
-      [currentMinLng, minLat],
-      [maxLng, minLat],
-      [maxLng, maxLat],
-      [currentMinLng, maxLat],
-      [currentMinLng, minLat],
-    ],
-  ]);
-  const lastIntersection = turf.intersect(
-    turf.featureCollection([turfPolygon, lastRectangle])
-  );
-  // const lastIntersection = intersect(turfPolygon, lastRectangle);
-  // // const lastIntersection = turf.intersect(turfPolygon, lastRectangle);
-  if (lastIntersection && lastIntersection.geometry.coordinates.length > 0) {
-    droneSubRegions.push(
-      lastIntersection.geometry.coordinates[0].map(
-        (coord: any) => new AMapRef.current.LngLat(coord[0], coord[1])
-      )
-    );
-  }
-
-  return droneSubRegions;
-}
 
 const formSchema = z.object({
   name: z.string().optional(),
@@ -149,7 +23,6 @@ const formSchema = z.object({
 });
 
 export default function Page() {
-  const { toast } = useToast();
   const AMapRef = useRef<typeof AMap | null>(null);
   const [isMapLoaded, setIsMapLoaded] = useState(false);
   const mapRef = useRef<AMap.Map | null>(null);
@@ -161,47 +34,16 @@ export default function Page() {
     console.log("当前工作状态", isCreating, isEditing);
   }, [isCreating, isEditing]);
 
-  // 折叠状态
-  const [isTaskInfoCollapsed, setIsTaskInfoCollapsed] = useState(true);
-  const [isDronesCollapsed, setIsDronesCollapsed] = useState(false);
-  const [isWaylinesCollapsed, setIsWaylinesCollapsed] = useState(false);
-
   // 已选择的无人机
   const [selectedDrones, setSelectedDrones] = useState<
-    {
-      id: number;
-      callsign: string;
-      description?: string;
-      model?: string;
-      color: string;
-      variantion: {
-        index: number;
-        name: string;
-        gimbal?: {
-          id: number;
-          name: string;
-          description?: string;
-        };
-        payload?: {
-          id: number;
-          name: string;
-          description?: string;
-        };
-        rtk_available: boolean;
-        thermal_available: boolean;
-      };
-    }[]
+    JobDetailResult["drones"]
   >([]);
-
-  const [selectedDroneKey, setSelectedDroneKey] = useState<string | undefined>(
-    undefined
-  );
 
   // 生成的航线区域
   const [waylineAreas, setWaylineAreas] = useState<
     {
       droneId: number;
-      callsign: string;
+      name: string;
       color: string;
       path: AMap.LngLat[];
     }[]
@@ -239,24 +81,6 @@ export default function Page() {
     console.log("onSubmit", data);
   }
 
-  // const editionMutation = useMutation({
-  //   mutationFn: () => {
-  //     const req = {
-  //       id,
-  //       drone_ids: selectedDrones?.map((d) => d.id) || [],
-  //     } as JobModifyRequest;
-  //     console.log("editionMutation", req);
-  //     return modifyJob(req);
-  //   },
-  //   onSuccess: () => {
-  //     console.log("success");
-  //     toast({
-  //       title: "保存成功",
-  //       description: "任务已保存",
-  //     });
-  //   },
-  // });
-
   // 完成数据加载后开始处理挂载地图逻辑
   useEffect(() => {
     window._AMapSecurityConfig = {
@@ -268,13 +92,11 @@ export default function Page() {
       version: "2.0",
     })
       .then((AMap) => {
-        if (isMapLoaded) return;
         AMapRef.current = AMap;
         mapRef.current = new AMap.Map("map", {
           viewMode: "3D",
           zoom: 17,
         });
-        setIsMapLoaded(true);
 
         // Add standard controls
         AMap.plugin(["AMap.ToolBar", "AMap.Scale"], function () {
@@ -283,35 +105,38 @@ export default function Page() {
           const scale = new AMap.Scale();
           mapRef.current?.addControl(scale);
         });
+
+        setIsMapLoaded(true);
       })
       .catch((e) => {
         console.log(e);
       });
 
     return () => {
-      mapRef.current?.destroy();
-    };
+      // 清除地图实例
+      if (mapRef.current) {
+        mapRef.current.destroy();
+        mapRef.current = null;
+      }
+      // 清除AMap实例
+      if (AMapRef.current) {
+        AMapRef.current = null;
+      }
+    }
   }, []);
 
   useEffect(() => {
     if (!dataQuery.isSuccess || !dataQuery.data) return;
+
     const { area, drones, waylines } = dataQuery.data;
-    console.log("area", area);
-    console.log("drones", drones);
     // 如果是编辑或浏览模式，设置已选择的无人机和搜索区域
     // 设置地图区域路径
     if (!area || !area.points || !AMapRef.current) {
-      console.log("area or AMapRef is null");
-      console.log("area", area);
-      console.log("AMapRef", AMapRef.current);
-
       return;
     }
     const areaPath = area.points.map(
       (p) => new AMapRef.current!.LngLat(p.lng, p.lat)
     );
-    console.log("areaPath", areaPath);
-
     setPath(areaPath);
 
     // 设置表单中的区域ID
@@ -321,15 +146,13 @@ export default function Page() {
 
     // 设置已选择的无人机
     // 将API返回的无人机数据转换为组件使用的格式
-    const formattedDrones = drones.map((drone, index) => ({
-      ...drone,
-      color: drone.color || "#ffcc77",
-      variantion: drone.variantion || {
-        index: 0,
-        name: drone.model || "默认配置",
-        rtk_available: false,
-        thermal_available: false,
-      },
+    const formattedDrones: JobDetailResult["drones"] = drones.map((drone) => ({
+      id: drone.id,
+      name: drone.name,
+      description: drone.description,
+      model: drone.model,
+      color: drone.color,
+      variantion: drone.variantion,
     }));
 
     setSelectedDrones(formattedDrones);
@@ -338,7 +161,7 @@ export default function Page() {
     const formattedWaylineAreas = waylines.map((wayline) => {
       return {
         droneId: 1,
-        callsign: "",
+        name: "",
         // height: wayline.height,
         color: wayline.color,
         path: wayline.points.map((p) => {
@@ -347,20 +170,24 @@ export default function Page() {
       };
     });
     setWaylineAreas(formattedWaylineAreas);
-  }, [dataQuery.isSuccess, dataQuery.data, isMapLoaded]);
-
-  useEffect(() => {
-    console.log("path:", path);
-  }, [path]);
+  }, [dataQuery.isSuccess, dataQuery.data, isMapLoaded, form]);
 
   // 选择区域时绘制选中的搜索区域多边形
   useEffect(() => {
-    if (!path || !isMapLoaded) return;
+    if (
+      !path ||
+      path.length <= 0 ||
+      !isMapLoaded ||
+      !AMapRef.current ||
+      !mapRef.current
+    )
+      return;
     console.log("path", path);
 
-    // 清空已有图形
-    mapRef.current?.clearMap();
-    const polygon = new AMap.Polygon();
+    // 清除之前的多边形
+    mapRef.current.clearMap();
+
+    const polygon = new AMapRef.current.Polygon();
     polygon.setPath(path);
     polygon.setOptions({
       strokeColor: "#3366FF",
@@ -396,7 +223,7 @@ export default function Page() {
       });
 
       // 添加无人机信息到多边形
-      const droneInfo = drone.callsign;
+      const droneInfo = drone.name;
       const infoWindow = new AMapRef.current.InfoWindow({
         content: `<div>${droneInfo}</div>`,
         offset: new AMapRef.current.Pixel(0, -25),
@@ -431,7 +258,7 @@ export default function Page() {
       // 适应视图
       mapRef.current.setFitView();
     }
-  }, [waylineAreas, isMapLoaded]);
+  }, [waylineAreas, isMapLoaded, selectedDrones]);
 
   return (
     <div className="px-4 mb-4">
@@ -444,8 +271,6 @@ export default function Page() {
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
               <TaskInfoPanel
-                isTaskInfoCollapsed={isTaskInfoCollapsed}
-                setIsTaskInfoCollapsed={setIsTaskInfoCollapsed}
                 isEditing={isEditing}
                 isCreating={isCreating}
                 form={form}
@@ -460,20 +285,15 @@ export default function Page() {
                 setSelectedDrones={setSelectedDrones}
                 isEditMode={isCreating || isEditing}
                 availableDrones={optionsQuery.data?.drones || []}
-                collapsed={isDronesCollapsed}
-                setCollapsed={setIsDronesCollapsed}
               />
 
               <WaylinePanel
-                isWaylinesCollapsed={isWaylinesCollapsed}
-                setIsWaylinesCollapsed={setIsWaylinesCollapsed}
                 selectedDrones={selectedDrones}
                 waylineAreas={waylineAreas}
                 setWaylineAreas={setWaylineAreas}
                 path={path}
                 AMapRef={AMapRef}
                 mapRef={mapRef}
-                dividePolygonAmongDrones={dividePolygonAmongDrones}
                 isEditMode={isCreating || isEditing}
               />
 

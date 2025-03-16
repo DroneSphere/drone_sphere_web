@@ -1,18 +1,16 @@
 "use client";
 
+import { JobDetailResult, JobEditionResult } from "@/api/job/types";
 import { Button } from "@/components/ui/button";
+import { FormControl, FormItem } from "@/components/ui/form";
 import {
-    FormControl,
-    FormItem,
-} from "@/components/ui/form";
-import {
-    Select,
-    SelectContent,
-    SelectGroup,
-    SelectItem,
-    SelectLabel,
-    SelectTrigger,
-    SelectValue,
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
@@ -20,34 +18,12 @@ import { Plus, Trash } from "lucide-react";
 import { useState } from "react";
 
 interface DroneSelectProps {
-  selectedDrones: Array<{
-    id: number;
-    callsign: string;
-    description?: string;
-    model?: string;
-    color: string;
-    variantion: {
-      index: number;
-      name: string;
-      gimbal?: {
-        id: number;
-        name: string;
-        description?: string;
-      };
-      payload?: {
-        id: number;
-        name: string;
-        description?: string;
-      };
-      rtk_available: boolean;
-      thermal_available: boolean;
-    };
-  }>;
-  setSelectedDrones: React.Dispatch<React.SetStateAction<Array<any>>>;
+  selectedDrones: JobDetailResult["drones"];
+  setSelectedDrones: React.Dispatch<
+    React.SetStateAction<JobDetailResult["drones"]>
+  >;
   isEditMode: boolean; // Whether we're in edit or create mode
-  availableDrones: any[]; // Drones available for selection
-  collapsed: boolean;
-  setCollapsed: (collapsed: boolean) => void;
+  availableDrones: JobEditionResult["drones"]; // Drones available for selection
 }
 
 export default function DroneSelectionPanel({
@@ -55,10 +31,9 @@ export default function DroneSelectionPanel({
   setSelectedDrones,
   isEditMode,
   availableDrones,
-  collapsed,
-  setCollapsed,
 }: DroneSelectProps) {
   const { toast } = useToast();
+  const [collapsed, setCollapsed] = useState(false);
   const [selectedDroneKey, setSelectedDroneKey] = useState<string | undefined>(
     undefined
   );
@@ -96,7 +71,9 @@ export default function DroneSelectionPanel({
       return;
     }
 
-    const variantion = drone.variantions.find((v: any) => v.index === variantionIndex);
+    const variantion = drone.variantions.find(
+      (v) => v.index === variantionIndex
+    );
     if (!variantion) {
       toast({
         title: "无人机变体不存在",
@@ -104,12 +81,21 @@ export default function DroneSelectionPanel({
       });
       return;
     }
-    
+
     // Generate a random color from the predefined list
     const colors = [
-      "#FF5733", "#33FF57", "#3357FF", "#F033FF",
-      "#33FFF6", "#FF33A6", "#FFD700", "#4169E1",
-      "#32CD32", "#8A2BE2", "#FF6347", "#20B2AA",
+      "#FF5733",
+      "#33FF57",
+      "#3357FF",
+      "#F033FF",
+      "#33FFF6",
+      "#FF33A6",
+      "#FFD700",
+      "#4169E1",
+      "#32CD32",
+      "#8A2BE2",
+      "#FF6347",
+      "#20B2AA",
     ];
     const color = colors[Math.floor(Math.random() * colors.length)];
 
@@ -123,6 +109,9 @@ export default function DroneSelectionPanel({
         },
       ];
     });
+    console.log("drone", drone);
+
+    console.log("selectedDrones", selectedDrones);
   };
 
   // Remove a drone from the selection
@@ -171,7 +160,7 @@ export default function DroneSelectionPanel({
           )}
         </Button>
       </div>
-      
+
       {!collapsed && (
         <>
           {/* Only show the selection toolbar in edit mode */}
@@ -185,16 +174,28 @@ export default function DroneSelectionPanel({
                 >
                   <FormControl>
                     <SelectTrigger>
-                      <SelectValue placeholder="请选择无人机" />
+                      <SelectValue placeholder="请选择无人机">
+                        {selectedDroneKey
+                          ? availableDrones
+                              ?.find(
+                                (d) =>
+                                  d.id ===
+                                  parseInt(selectedDroneKey.split("-")[0])
+                              )
+                              ?.variantions.find(
+                                (v) =>
+                                  v.index ===
+                                  parseInt(selectedDroneKey.split("-")[1])
+                              )?.name
+                          : "请选择无人机"}
+                      </SelectValue>
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
                     {availableDrones?.map((e) => (
                       <SelectGroup key={e.id} className="w-full">
-                        <SelectLabel className="w-full">
-                          {e.callsign}
-                        </SelectLabel>
-                        {e.variantions.map((v: any) => (
+                        <SelectLabel className="w-full">{e.model}</SelectLabel>
+                        {e.variantions.map((v) => (
                           <SelectItem
                             key={e.id + "-" + v.index}
                             value={`${e.id}-${v.index}` || ""}
@@ -234,10 +235,8 @@ export default function DroneSelectionPanel({
             <div className="mt-4 px-1" key={d.id}>
               <div className="flex justify-between items-start">
                 <div className="text-sm">
-                  <p>{d.callsign}</p>
-                  <p className="mt-2 text-gray-500">
-                    {d.variantion.name}
-                  </p>
+                  <p>{d.name}</p>
+                  <p className="mt-2 text-gray-500">{d.variantion.name}</p>
                 </div>
                 <div className="flex-1" />
                 <div
@@ -257,21 +256,15 @@ export default function DroneSelectionPanel({
                 )}
               </div>
               <div className="text-xs text-gray-500 flex items-center">
-                <div className="mr-2">
-                  {d.variantion.gimbal?.name}
-                </div>
+                <div className="mr-2">{d.variantion.gimbal?.name}</div>
 
                 <div
                   className={`rounded-full h-3 w-3 mr-1 ${
-                    d.variantion.rtk_available
-                      ? "bg-green-500"
-                      : "bg-red-500"
+                    d.variantion.rtk_available ? "bg-green-500" : "bg-red-500"
                   }`}
                 />
                 <div className="mr-2">
-                  {d.variantion.rtk_available
-                    ? "RTK可用"
-                    : "RTK不可用"}
+                  {d.variantion.rtk_available ? "RTK可用" : "RTK不可用"}
                 </div>
 
                 <div
@@ -287,15 +280,11 @@ export default function DroneSelectionPanel({
                     : "热成像不可用"}
                 </div>
               </div>
-              {selectedDrones?.length > 1 && (
-                <Separator className="my-2" />
-              )}
+              {selectedDrones?.length > 1 && <Separator className="my-2" />}
             </div>
           ))}
           {selectedDrones?.length === 0 && (
-            <div className="text-sm text-gray-500">
-              请选择无人机机型
-            </div>
+            <div className="text-sm text-gray-500">请选择无人机机型</div>
           )}
         </>
       )}

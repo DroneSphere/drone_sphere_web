@@ -44,18 +44,27 @@ export interface JobSearchParams {
   createAtEnd?: string;
 }
 
-export interface JobCreationOptionsResult {
-  areas: {
-    id: number;
-    name: string;
-    description: string;
-  }[];
-}
-
 export interface JobCreationRequest {
   area_id: number;
   description?: string;
   name: string;
+}
+
+export interface JobDroneVariation {
+  index: number;
+  name: string;
+  gimbal?: {
+    id: number;
+    name: string;
+    description?: string;
+  };
+  payload?: {
+    id: number;
+    name: string;
+    description?: string;
+  };
+  rtk_available: boolean;
+  thermal_available: boolean;
 }
 
 export interface JobEditionResult {
@@ -70,25 +79,10 @@ export interface JobEditionResult {
   }[];
   drones: {
     id: number;
-    callsign: string;
+    name: string;
     description?: string;
     model?: string;
-    variantions: {
-      index: number;
-      name: string;
-      gimbal?: {
-        id: number;
-        name: string;
-        description?: string;
-      };
-      payload?: {
-        id: number;
-        name: string;
-        description?: string;
-      };
-      rtk_available: boolean;
-      thermal_available: boolean;
-    }[];
+    variantions: JobDroneVariation[];
   }[];
 }
 
@@ -114,26 +108,11 @@ export interface JobDetailResult {
   };
   drones: {
     id: number;
-    callsign: string;
+    name: string;
     description?: string;
     model?: string;
     color: string;
-    variantion: {
-      index: number;
-      name: string;
-      gimbal?: {
-        id: number;
-        name: string;
-        description?: string;
-      };
-      payload?: {
-        id: number;
-        name: string;
-        description?: string;
-      };
-      rtk_available: boolean;
-      thermal_available: boolean;
-    };
+    variantion: JobDroneVariation;
   }[];
   waylines: {
     // ${drone_id}-${variation_index}

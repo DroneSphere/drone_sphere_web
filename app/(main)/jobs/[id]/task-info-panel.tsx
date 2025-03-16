@@ -1,25 +1,24 @@
 import { Button } from "@/components/ui/button";
 import {
-    FormControl,
-    FormDescription,
-    FormField,
-    FormItem,
-    FormLabel,
-    FormMessage,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select";
+import { useState } from "react";
 import { UseFormReturn } from "react-hook-form";
 
 interface TaskInfoPanelProps {
-  isTaskInfoCollapsed: boolean;
-  setIsTaskInfoCollapsed: (value: boolean) => void;
   isEditing: boolean;
   isCreating: boolean;
   form: UseFormReturn<{
@@ -51,8 +50,6 @@ interface TaskInfoPanelProps {
 }
 
 export default function TaskInfoPanel({
-  isTaskInfoCollapsed,
-  setIsTaskInfoCollapsed,
   isEditing,
   isCreating,
   form,
@@ -61,6 +58,7 @@ export default function TaskInfoPanel({
   setPath,
   AMapRef,
 }: TaskInfoPanelProps) {
+  const [collapsed, setCollapsed] = useState<boolean>(false);
   return (
     <div className="space-y-2 p-3 border rounded-md shadow-sm">
       <div className="flex items-center justify-between">
@@ -71,10 +69,10 @@ export default function TaskInfoPanel({
           className="h-8 w-8 p-0"
           onClick={(e) => {
             e.preventDefault();
-            setIsTaskInfoCollapsed(!isTaskInfoCollapsed);
+            setCollapsed(!collapsed);
           }}
         >
-          {isTaskInfoCollapsed ? (
+          {collapsed ? (
             <svg
               xmlns="http://www.w3.org/2000/svg"
               width="16"
@@ -105,7 +103,7 @@ export default function TaskInfoPanel({
           )}
         </Button>
       </div>
-      {!isTaskInfoCollapsed && (
+      {!collapsed && (
         <>
           {isEditing || isCreating ? (
             <>

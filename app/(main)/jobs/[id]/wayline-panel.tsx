@@ -1,38 +1,143 @@
+import { JobDetailResult } from "@/api/job/types";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
+import * as turf from "@turf/turf";
 import { Trash } from "lucide-react";
-import { MutableRefObject } from "react";
+import { MutableRefObject, useState } from "react";
+
+function dividePolygonAmongDrones(
+  path: AMap.LngLat[],
+  selectedDrones: JobDetailResult["drones"],
+  AMapRef: MutableRefObject<typeof AMap | null>
+) {
+  const droneCount = selectedDrones.length;
+  if (droneCount === 0) {
+    return;
+  }
+
+  const coordinates = path.map((p) => [p.getLng(), p.getLat()]);
+  // 确保多边形是闭合的
+  if (coordinates.length > 0) {
+    const firstCoordinate = coordinates[0];
+    const lastCoordinate = coordinates[coordinates.length - 1];
+    // 检查第一个和最后一个坐标是否相同
+    if (
+      firstCoordinate[0] !== lastCoordinate[0] ||
+      firstCoordinate[1] !== lastCoordinate[1]
+    ) {
+      coordinates.push(firstCoordinate); // 将第一个坐标添加到末尾
+    }
+  }
+  const turfPolygon = turf.polygon([coordinates]);
+  const totalArea = turf.area(turfPolygon);
+  const targetArea = totalArea / droneCount;
+
+  const bounds = turf.bbox(turfPolygon);
+  const minLng = bounds[0];
+  const maxLng = bounds[2];
+  const minLat = bounds[1];
+  const maxLat = bounds[3];
+
+  const droneSubRegions = [];
+  let currentMinLng = minLng;
+
+  for (let i = 0; i < droneCount - 1; i++) {
+    let lowLng = currentMinLng;
+    let highLng = maxLng;
+    let bestCutLng = -1;
+    let minAreaDiff = Infinity;
+
+    for (let j = 0; j < 50; j++) {
+      // Binary search for longitude
+      const midLng = (lowLng + highLng) / 2;
+      const rectangle = turf.polygon([
+        [
+          [currentMinLng, minLat],
+          [midLng, minLat],
+          [midLng, maxLat],
+          [currentMinLng, maxLat],
+          [currentMinLng, minLat],
+        ],
+      ]);
+      const intersection = turf.intersect(
+        turf.featureCollection([turfPolygon, rectangle])
+      );
+      if (intersection) {
+        const area = turf.area(intersection);
+        const diff = Math.abs(area - targetArea);
+        if (diff < minAreaDiff) {
+          minAreaDiff = diff;
+          bestCutLng = midLng;
+        }
+        if (area < targetArea) {
+          lowLng = midLng;
+        } else {
+          highLng = midLng;
+        }
+      } else {
+        highLng = midLng;
+      }
+    }
+
+    const cutLng =
+      bestCutLng !== -1
+        ? bestCutLng
+        : currentMinLng + ((maxLng - minLng) / droneCount) * (i + 1);
+    const cutRectangle = turf.polygon([
+      [
+        [currentMinLng, minLat],
+        [cutLng, minLat],
+        [cutLng, maxLat],
+        [currentMinLng, maxLat],
+        [currentMinLng, minLat],
+      ],
+    ]);
+    const intersection = turf.intersect(
+      turf.featureCollection([turfPolygon, cutRectangle])
+    );
+    if (intersection && intersection.geometry.coordinates.length > 0) {
+      droneSubRegions.push(
+        intersection.geometry.coordinates[0].map(
+          (coord) =>
+            new AMapRef.current!.LngLat(Number(coord[0]), Number(coord[1]))
+        )
+      );
+    }
+    currentMinLng = cutLng;
+  }
+
+  const lastRectangle = turf.polygon([
+    [
+      [currentMinLng, minLat],
+      [maxLng, minLat],
+      [maxLng, maxLat],
+      [currentMinLng, maxLat],
+      [currentMinLng, minLat],
+    ],
+  ]);
+  const lastIntersection = turf.intersect(
+    turf.featureCollection([turfPolygon, lastRectangle])
+  );
+  // const lastIntersection = intersect(turfPolygon, lastRectangle);
+  // // const lastIntersection = turf.intersect(turfPolygon, lastRectangle);
+  if (lastIntersection && lastIntersection.geometry.coordinates.length > 0) {
+    droneSubRegions.push(
+      lastIntersection.geometry.coordinates[0].map(
+        (coord) =>
+          new AMapRef.current!.LngLat(Number(coord[0]), Number(coord[1]))
+      )
+    );
+  }
+
+  return droneSubRegions;
+}
 
 interface WaylinePanelProps {
-  isWaylinesCollapsed: boolean;
-  setIsWaylinesCollapsed: (collapsed: boolean) => void;
-  selectedDrones: {
-    id: number;
-    callsign: string;
-    color: string;
-    description?: string;
-    model?: string;
-    variantion: {
-      index: number;
-      name: string;
-      gimbal?: {
-        id: number;
-        name: string;
-        description?: string;
-      };
-      payload?: {
-        id: number;
-        name: string;
-        description?: string;
-      };
-      rtk_available: boolean;
-      thermal_available: boolean;
-    };
-  }[];
+  selectedDrones: JobDetailResult["drones"];
   waylineAreas: {
     droneId: number;
-    callsign: string;
+    name: string;
     color: string;
     path: AMap.LngLat[];
   }[];
@@ -40,7 +145,7 @@ interface WaylinePanelProps {
     React.SetStateAction<
       {
         droneId: number;
-        callsign: string;
+        name: string;
         color: string;
         path: AMap.LngLat[];
       }[]
@@ -49,28 +154,20 @@ interface WaylinePanelProps {
   path: AMap.LngLat[];
   AMapRef: MutableRefObject<typeof AMap | null>;
   mapRef: MutableRefObject<AMap.Map | null>;
-  dividePolygonAmongDrones: (
-    path: AMap.LngLat[],
-    selectedDrones: any[],
-    AMapRef: any
-  ) => AMap.LngLat[][] | undefined;
   isEditMode: boolean;
 }
 
 export default function WaylinePanel({
-  isWaylinesCollapsed,
-  setIsWaylinesCollapsed,
   selectedDrones,
   waylineAreas,
   setWaylineAreas,
   path,
   AMapRef,
   mapRef,
-  dividePolygonAmongDrones,
   isEditMode,
 }: WaylinePanelProps) {
   const { toast } = useToast();
-
+  const [collapsed, setCollapsed] = useState<boolean>(false);
   return (
     <div className="mt-4 space-y-2 p-3 border rounded-md shadow-sm">
       <div className="flex items-center justify-between">
@@ -81,10 +178,10 @@ export default function WaylinePanel({
           className="h-8 w-8 p-0"
           onClick={(e) => {
             e.preventDefault();
-            setIsWaylinesCollapsed(!isWaylinesCollapsed);
+            setCollapsed(!collapsed);
           }}
         >
-          {isWaylinesCollapsed ? (
+          {collapsed ? (
             <svg
               xmlns="http://www.w3.org/2000/svg"
               width="16"
@@ -115,7 +212,7 @@ export default function WaylinePanel({
           )}
         </Button>
       </div>
-      {!isWaylinesCollapsed && (
+      {!collapsed && (
         <>
           <div className="text-sm text-gray-500 flex items-center justify-between">
             <div>已选择{selectedDrones.length}架无人机</div>
@@ -156,7 +253,7 @@ export default function WaylinePanel({
                   // 创建新的航线区域
                   const newWaylineAreas = subPaths.map((subPath, i) => ({
                     droneId: selectedDrones[i].id,
-                    callsign: selectedDrones[i].callsign,
+                    name: selectedDrones[i].name,
                     color: selectedDrones[i].color,
                     path: subPath,
                   }));
@@ -179,7 +276,7 @@ export default function WaylinePanel({
               <div key={`${e.droneId}-${index}`}>
                 <div className="flex justify-between items-start">
                   <div className="text-sm">
-                    <p>{e.callsign}</p>
+                    <p>{e.name}</p>
                   </div>
                   <div className="flex-1" />
                   {/* 一个颜色指示器，方便快速识别 */}
