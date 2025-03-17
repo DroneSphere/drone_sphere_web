@@ -1,6 +1,6 @@
 "use client";
 
-import { JobDetailResult, JobEditionResult } from "@/api/job/types";
+import { JobDetailResult, JobEditionResult } from "@/app/(main)/jobs/[id]/type";
 import { Button } from "@/components/ui/button";
 import { FormControl, FormItem } from "@/components/ui/form";
 import {

@@ -1,7 +1,7 @@
 "use client";
 
-import { fetchAllJobs } from "@/api/job/request";
-import { JobItemResult, JobSearchParams } from "@/api/job/types";
+import { fetchAllJobs } from "@/app/(main)/jobs/[id]/request";
+import { JobItemResult, JobSearchParams } from "@/app/(main)/jobs/[id]/type";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import {

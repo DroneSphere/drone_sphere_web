@@ -1,5 +1,5 @@
-import httpClient from "../http_client";
-import { Response } from "../response";
+import httpClient from "@/api/http_client";
+import { Response } from "@/api/response";
 import {
   JobCreationRequest,
   JobDetailResult,
@@ -7,7 +7,7 @@ import {
   JobItemResult,
   JobModifyRequest,
   JobSearchParams,
-} from "./types";
+} from "./type";
 
 const prefix = "/job";
 
@@ -114,12 +114,14 @@ export async function fetchJobDetail(id: number): Promise<JobDetailResult> {
   });
 }
 
-export async function createJob(data: JobCreationRequest): Promise<number> {
-  const res = await httpClient.instance.post<Response<JobItemResult>>(
+export async function createJob(data: JobCreationRequest): Promise<JobDetailResult> {
+  console.log("createJob", data);
+  
+  const res = await httpClient.instance.post<Response<JobDetailResult>>(
     `${prefix}`,
     data
   );
-  return res.data.data.id;
+  return res.data.data;
 }
 
 export async function fetchJobEditionData(

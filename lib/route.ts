@@ -142,4 +142,5 @@ export const routeMap = {
 // 创建特殊路由映射表
 export const specialRouteMap: Record<string, string> = {
   creation: "创建",
+  new: "创建",
 };

@@ -1,6 +1,6 @@
 "use client";
 
-import { fetchJobDetail } from "@/api/job/request";
+import { fetchJobDetail } from "@/app/(main)/jobs/[id]/request";
 import AMapLoader from "@amap/amap-jsapi-loader";
 import "@amap/amap-jsapi-types";
 import { useQuery } from "@tanstack/react-query";

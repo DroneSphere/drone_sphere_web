@@ -1,9 +1,16 @@
 "use client";
 
-import { fetchJobDetail, fetchJobEditionData } from "@/api/job/request";
-import { JobDetailResult } from "@/api/job/types";
 import DroneSelectionPanel from "@/app/(main)/jobs/[id]/drone-selection-panel";
+import {
+  createJob,
+  fetchJobDetail,
+  fetchJobEditionData,
+} from "@/app/(main)/jobs/[id]/request";
 import TaskInfoPanel from "@/app/(main)/jobs/[id]/task-info-panel";
+import {
+  JobCreationRequest,
+  JobDetailResult,
+} from "@/app/(main)/jobs/[id]/type";
 import WaylinePanel from "@/app/(main)/jobs/[id]/wayline-panel";
 import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
@@ -11,7 +18,7 @@ import { useIsCreateMode } from "@/lib/misc";
 import AMapLoader from "@amap/amap-jsapi-loader";
 import "@amap/amap-jsapi-types";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -84,7 +91,34 @@ export default function Page() {
 
   function onSubmit(data: z.infer<typeof formSchema>) {
     console.log("onSubmit", data);
+    // 处理提交数据
+    if (isCreating) {
+      createMutation.mutate({
+        name: data.name ?? "",
+        description: data.description,
+        area_id: data.area_id ?? 0,
+        drones: selectedDrones,
+        waylines: waylineAreas.map((wayline) => ({
+          drone_key: `${wayline.droneId}-1`, // 这里假设只有一个变体
+          color: wayline.color,
+          height: 20, // TODO: 添加高度字段
+          points: wayline.path.map((p) => ({
+            lat: p.getLat(),
+            lng: p.getLng(),
+          })),
+        })),
+      });
+    } else {
+      // 编辑模式
+      console.log("编辑模式，提交数据", data);
+    }
   }
+
+  const createMutation = useMutation({
+    mutationFn: async (data: JobCreationRequest) => {
+      return await createJob(data);
+    },
+  });
 
   // 完成数据加载后开始处理挂载地图逻辑
   useEffect(() => {
@@ -213,7 +247,7 @@ export default function Page() {
       return;
 
     console.log("重新绘制航线区域，waylineAreas:", waylineAreas.length);
-    
+
     // Store current map to avoid referencing the changing state in event callbacks
     const currentMap = mapRef.current;
     const currentAMap = AMapRef.current;
@@ -326,37 +360,45 @@ export default function Page() {
           // 修复: 使用参考值来防止无限循环
           let lastUpdateTime = Date.now();
           let lastPathString = JSON.stringify(subPolygon.getPath());
-          
+
           // 监听编辑结束事件，更新waylineAreas
           currentAMap.Event.addListener(polygonEditor, "end", () => {
             const newPath = subPolygon.getPath();
             if (!newPath) return;
-            
+
             // 将路径转换为字符串以便比较
             const newPathString = JSON.stringify(newPath);
             // 确保路径确实发生了变化，并且两次更新间隔足够长
             const currentTime = Date.now();
-            
-            console.log(`编辑器${polygonIndex}结束编辑，距上次更新: ${currentTime - lastUpdateTime}ms`);
-            
-            if (newPathString !== lastPathString && currentTime - lastUpdateTime > 300) {
+
+            console.log(
+              `编辑器${polygonIndex}结束编辑，距上次更新: ${
+                currentTime - lastUpdateTime
+              }ms`
+            );
+
+            if (
+              newPathString !== lastPathString &&
+              currentTime - lastUpdateTime > 300
+            ) {
               lastUpdateTime = currentTime;
               lastPathString = newPathString;
-              
+
               // 确保newPath是LngLat[]类型
               const safeNewPath = Array.isArray(newPath)
                 ? newPath
                     .flat()
                     .filter(
-                      (p): p is AMap.LngLat =>
-                        p instanceof currentAMap.LngLat
+                      (p): p is AMap.LngLat => p instanceof currentAMap.LngLat
                     )
                 : [];
-              
-              console.log(`更新第${polygonIndex}个区域路径，点数量: ${safeNewPath.length}`);
-              
+
+              console.log(
+                `更新第${polygonIndex}个区域路径，点数量: ${safeNewPath.length}`
+              );
+
               // 使用函数式更新以避免依赖于当前状态
-              setWaylineAreas(prev => {
+              setWaylineAreas((prev) => {
                 return prev.map((area, idx) => {
                   if (idx === polygonIndex) {
                     return { ...area, path: safeNewPath };
@@ -365,7 +407,11 @@ export default function Page() {
                 });
               });
             } else {
-              console.log(`忽略更新: ${newPathString === lastPathString ? '路径未变' : '更新间隔太短'}`);
+              console.log(
+                `忽略更新: ${
+                  newPathString === lastPathString ? "路径未变" : "更新间隔太短"
+                }`
+              );
             }
           });
         });

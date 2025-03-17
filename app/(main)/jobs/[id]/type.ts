@@ -45,9 +45,27 @@ export interface JobSearchParams {
 }
 
 export interface JobCreationRequest {
-  area_id: number;
-  description?: string;
   name: string;
+  description?: string;
+  area_id: number;
+  drones?: {
+    id: number;
+    name: string;
+    description?: string;
+    model?: string;
+    color: string;
+    variantion: JobDroneVariation;
+  }[];
+  waylines?: {
+    // ${drone_id}-${variation_index}
+    drone_key: string;
+    height: number;
+    color: string;
+    points: {
+      lat: number;
+      lng: number;
+    }[];
+  }[];
 }
 
 export interface JobDroneVariation {

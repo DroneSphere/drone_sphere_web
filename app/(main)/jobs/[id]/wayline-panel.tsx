@@ -1,4 +1,4 @@
-import { JobDetailResult } from "@/api/job/types";
+import { JobDetailResult } from "@/app/(main)/jobs/[id]/type";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
