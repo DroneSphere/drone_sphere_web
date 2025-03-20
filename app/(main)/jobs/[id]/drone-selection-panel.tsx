@@ -59,8 +59,9 @@ export default function DroneSelectionPanel({
       return;
     }
 
-    const droneId = parseInt(selectedDroneKey.split("-")[0]);
-    const variantionIndex = parseInt(selectedDroneKey.split("-")[1]);
+    // const index =  parseInt(selectedDroneKey.split("-")[0]);
+    const droneId = parseInt(selectedDroneKey.split("-")[1]);
+    const variantionIndex = parseInt(selectedDroneKey.split("-")[2]);
 
     const drone = availableDrones?.find((d) => d.id === droneId);
     if (!drone) {
@@ -99,19 +100,28 @@ export default function DroneSelectionPanel({
     ];
     const color = colors[Math.floor(Math.random() * colors.length)];
 
+    // 获取当前的选中无人机的数量
+    const selectedDronesCount = selectedDrones.length;
+    const index = selectedDronesCount
+      ? Math.max(
+          ...selectedDrones.map((d) => d.index || 0),
+          selectedDronesCount
+        ) + 1
+      : 1;
+
     setSelectedDrones((prev) => {
       return [
         ...prev,
         {
           ...drone,
+          index: index,
+          id: droneId,
+          key: `${index}-${droneId}-${variantionIndex}`,
           variantion: variantion,
           color: color,
         },
       ];
     });
-    console.log("drone", drone);
-
-    console.log("selectedDrones", selectedDrones);
   };
 
   // Remove a drone from the selection
@@ -176,17 +186,25 @@ export default function DroneSelectionPanel({
                     <SelectTrigger>
                       <SelectValue placeholder="请选择无人机">
                         {selectedDroneKey
-                          ? availableDrones
-                              ?.find(
-                                (d) =>
-                                  d.id ===
-                                  parseInt(selectedDroneKey.split("-")[0])
-                              )
-                              ?.variantions.find(
-                                (v) =>
-                                  v.index ===
-                                  parseInt(selectedDroneKey.split("-")[1])
-                              )?.name
+                          ? (() => {
+                              console.log("selectedDroneKey", selectedDroneKey);
+
+                              const droneId = parseInt(
+                                selectedDroneKey.split("-")[1]
+                              );
+                              const variantIndex = parseInt(
+                                selectedDroneKey.split("-")[2]
+                              );
+                              const drone = availableDrones?.find(
+                                (d) => d.id === droneId
+                              );
+                              const variant = drone?.variantions.find(
+                                (v) => v.index === variantIndex
+                              );
+                              return drone && variant
+                                ? `${drone.model}-${variant.name}`
+                                : "请选择无人机";
+                            })()
                           : "请选择无人机"}
                       </SelectValue>
                     </SelectTrigger>
@@ -197,8 +215,8 @@ export default function DroneSelectionPanel({
                         <SelectLabel className="w-full">{e.model}</SelectLabel>
                         {e.variantions.map((v) => (
                           <SelectItem
-                            key={e.id + "-" + v.index}
-                            value={`${e.id}-${v.index}` || ""}
+                            key={"0-" + e.id + "-" + v.index}
+                            value={"0-" + e.id + "-" + v.index || ""}
                           >
                             {v.name}
                           </SelectItem>

@@ -125,6 +125,8 @@ export interface JobDetailResult {
     }[];
   };
   drones: {
+    index?: number;
+    key: string; // ${index}-${drone_id}-${variation_index}
     id: number;
     name: string;
     description?: string;
@@ -133,7 +135,7 @@ export interface JobDetailResult {
     variantion: JobDroneVariation;
   }[];
   waylines: {
-    // ${drone_id}-${variation_index}
+    // ${index}-${drone_id}-${variation_index}
     drone_key: string;
     height: number;
     color: string;

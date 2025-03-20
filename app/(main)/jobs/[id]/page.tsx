@@ -22,6 +22,9 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
+import DroneModelMappingPanel, {
+  DroneMapping,
+} from "./drone-model-mapping-panel";
 
 const formSchema = z.object({
   name: z.string().optional(),
@@ -51,6 +54,10 @@ export default function Page() {
     JobDetailResult["drones"]
   >([]);
 
+  useEffect(() => {
+    console.log("selectedDrones", selectedDrones);
+  }, [selectedDrones]);
+
   // 生成的航线区域
   const [waylineAreas, setWaylineAreas] = useState<
     {
@@ -63,6 +70,9 @@ export default function Page() {
 
   // 当前选中的搜索区域路径
   const [path, setPath] = useState<AMap.LngLat[]>([]);
+
+  // 机型和实际无人机的映射关系
+  const [droneMappings, setDroneMappings] = useState<DroneMapping[]>([]);
 
   // 编辑和创建需要的参数
   const optionsQuery = useQuery({
@@ -186,6 +196,8 @@ export default function Page() {
     // 设置已选择的无人机
     // 将API返回的无人机数据转换为组件使用的格式
     const formattedDrones: JobDetailResult["drones"] = drones.map((drone) => ({
+      key: drone.key,
+      index: drone.index,
       id: drone.id,
       name: drone.name,
       description: drone.description,
@@ -221,7 +233,6 @@ export default function Page() {
       !mapRef.current
     )
       return;
-    console.log("path", path);
 
     // 清除之前的多边形
     mapRef.current.clearMap();
@@ -235,7 +246,6 @@ export default function Page() {
       fillColor: "#3366FF",
       fillOpacity: 0.3,
     });
-    console.log("polygon", polygon);
 
     mapRef.current?.add(polygon);
     mapRef.current?.setFitView([polygon]);
@@ -245,8 +255,6 @@ export default function Page() {
   useEffect(() => {
     if (!waylineAreas || !isMapLoaded || !AMapRef.current || !mapRef.current)
       return;
-
-    console.log("重新绘制航线区域，waylineAreas:", waylineAreas.length);
 
     // Store current map to avoid referencing the changing state in event callbacks
     const currentMap = mapRef.current;
@@ -335,13 +343,11 @@ export default function Page() {
             activeEditorRef.current !== -1 &&
             editorsRef.current[activeEditorRef.current]
           ) {
-            console.log(`关闭编辑器 ${activeEditorRef.current}`);
             editorsRef.current[activeEditorRef.current].close();
           }
 
           // Open this editor
           if (editorsRef.current[polygonIndex]) {
-            console.log(`打开编辑器 ${polygonIndex}`);
             editorsRef.current[polygonIndex].open();
             activeEditorRef.current = polygonIndex;
           }
@@ -371,12 +377,6 @@ export default function Page() {
             // 确保路径确实发生了变化，并且两次更新间隔足够长
             const currentTime = Date.now();
 
-            console.log(
-              `编辑器${polygonIndex}结束编辑，距上次更新: ${
-                currentTime - lastUpdateTime
-              }ms`
-            );
-
             if (
               newPathString !== lastPathString &&
               currentTime - lastUpdateTime > 300
@@ -392,11 +392,6 @@ export default function Page() {
                       (p): p is AMap.LngLat => p instanceof currentAMap.LngLat
                     )
                 : [];
-
-              console.log(
-                `更新第${polygonIndex}个区域路径，点数量: ${safeNewPath.length}`
-              );
-
               // 使用函数式更新以避免依赖于当前状态
               setWaylineAreas((prev) => {
                 return prev.map((area, idx) => {
@@ -407,11 +402,7 @@ export default function Page() {
                 });
               });
             } else {
-              console.log(
-                `忽略更新: ${
-                  newPathString === lastPathString ? "路径未变" : "更新间隔太短"
-                }`
-              );
+              console.log("路径未发生变化或更新间隔过短");
             }
           });
         });
@@ -470,6 +461,13 @@ export default function Page() {
                 AMapRef={AMapRef}
                 mapRef={mapRef}
                 isEditMode={isCreating || isEditing}
+              />
+
+              <DroneModelMappingPanel
+                selectedDrones={selectedDrones}
+                isEditMode={isCreating || isEditing}
+                droneMappings={droneMappings}
+                setDroneMappings={setDroneMappings}
               />
 
               <div className="mt-4 flex justify-end gap-4">
