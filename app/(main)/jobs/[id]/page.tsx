@@ -14,6 +14,7 @@ import {
 import WaylinePanel from "@/app/(main)/jobs/[id]/wayline-panel";
 import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
+import { toast } from "@/hooks/use-toast";
 import { useIsCreateMode } from "@/lib/misc";
 import AMapLoader from "@amap/amap-jsapi-loader";
 import "@amap/amap-jsapi-types";
@@ -54,14 +55,10 @@ export default function Page() {
     JobDetailResult["drones"]
   >([]);
 
-  useEffect(() => {
-    console.log("selectedDrones", selectedDrones);
-  }, [selectedDrones]);
-
   // 生成的航线区域
   const [waylineAreas, setWaylineAreas] = useState<
     {
-      droneId: number;
+      droneKey: string;
       name: string;
       color: string;
       path: AMap.LngLat[];
@@ -73,6 +70,21 @@ export default function Page() {
 
   // 机型和实际无人机的映射关系
   const [droneMappings, setDroneMappings] = useState<DroneMapping[]>([]);
+
+  useEffect(() => {
+    // 更新无人机映射关系
+    const newDroneMappings = selectedDrones.map((drone, index) => {
+      return {
+        selectedDroneIndex: index,
+        selectedDroneKey: drone.key,
+        seletedDroneId: drone.id,
+        physicalDroneId: 0,
+        physicalDroneSN: "",
+        color: drone.color,
+      };
+    });
+    setDroneMappings(newDroneMappings);
+  }, [selectedDrones]);
 
   // 编辑和创建需要的参数
   const optionsQuery = useQuery({
@@ -103,19 +115,61 @@ export default function Page() {
     console.log("onSubmit", data);
     // 处理提交数据
     if (isCreating) {
+      console.log("创建模式，提交数据", data);
+      console.log("选中的无人机", selectedDrones);
+      console.log("航线区域", waylineAreas);
+      console.log("无人机映射关系", droneMappings);
+      if (!selectedDrones || selectedDrones.length <= 0) {
+        toast({
+          title: "操作失败",
+          description: "请至少选择一台无人机",
+        });
+        return;
+      }
+
+      if (!waylineAreas || waylineAreas.length <= 0) {
+        toast({
+          title: "操作失败",
+          description: "请至少选择一条航线",
+        });
+        return;
+      }
+
+      if (!droneMappings || droneMappings.length <= 0) {
+        toast({
+          title: "操作失败",
+          description: "请至少选择一台实际无人机",
+        });
+        return;
+      }
+
       createMutation.mutate({
-        name: data.name ?? "",
+        name: data.name || "",
         description: data.description,
-        area_id: data.area_id ?? 0,
-        drones: selectedDrones,
+        area_id: data.area_id || 0,
+        drones: selectedDrones.map((drone) => ({
+          id: drone.id,
+          index: drone.index || 0, // Provide default value of 0 when index is undefined
+          key: drone.key,
+          name: drone.name,
+          description: drone.description,
+          model: drone.model,
+          color: drone.color,
+          variantion: drone.variantion,
+        })),
         waylines: waylineAreas.map((wayline) => ({
-          drone_key: `${wayline.droneId}-1`, // 这里假设只有一个变体
+          droneKey: wayline.droneKey,
+          height: 0,
           color: wayline.color,
-          height: 20, // TODO: 添加高度字段
           points: wayline.path.map((p) => ({
             lat: p.getLat(),
             lng: p.getLng(),
           })),
+        })),
+        mappings: droneMappings.map((mapping) => ({
+          selectedDroneKey: mapping.selectedDroneKey,
+          physicalDroneId: mapping.physicalDroneId,
+          physicalDroneSN: mapping.physicalDroneSN,
         })),
       });
     } else {
@@ -127,6 +181,20 @@ export default function Page() {
   const createMutation = useMutation({
     mutationFn: async (data: JobCreationRequest) => {
       return await createJob(data);
+    },
+    onSuccess: (data) => {
+      console.log("创建任务成功", data);
+      toast({
+        title: "操作成功",
+        description: "任务创建成功",
+      });
+    },
+    onError: (error) => {
+      console.error("创建任务失败", error);
+      toast({
+        title: "操作失败",
+        description: "任务创建失败",
+      });
     },
   });
 
@@ -211,7 +279,7 @@ export default function Page() {
     // 设置航线
     const formattedWaylineAreas = waylines.map((wayline) => {
       return {
-        droneId: 1,
+        droneKey: wayline.drone_key,
         name: "",
         // height: wayline.height,
         color: wayline.color,

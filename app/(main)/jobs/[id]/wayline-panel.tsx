@@ -136,7 +136,7 @@ function dividePolygonAmongDrones(
 interface WaylinePanelProps {
   selectedDrones: JobDetailResult["drones"];
   waylineAreas: {
-    droneId: number;
+    droneKey: string;
     name: string;
     color: string;
     path: AMap.LngLat[];
@@ -144,7 +144,7 @@ interface WaylinePanelProps {
   setWaylineAreas: React.Dispatch<
     React.SetStateAction<
       {
-        droneId: number;
+        droneKey: string;
         name: string;
         color: string;
         path: AMap.LngLat[];
@@ -252,7 +252,7 @@ export default function WaylinePanel({
 
                   // 创建新的航线区域
                   const newWaylineAreas = subPaths.map((subPath, i) => ({
-                    droneId: selectedDrones[i].id,
+                    droneKey: selectedDrones[i].key,
                     name: selectedDrones[i].name,
                     color: selectedDrones[i].color,
                     path: subPath,
@@ -273,7 +273,7 @@ export default function WaylinePanel({
           {
             // 渲染已选择的航线
             waylineAreas.map((e, index) => (
-              <div key={`${e.droneId}-${index}`}>
+              <div key={e.droneKey}>
                 <div className="flex justify-between items-start">
                   <div className="text-sm">
                     <p>{e.name}</p>
@@ -292,7 +292,8 @@ export default function WaylinePanel({
                       className="h-8 w-8"
                       onClick={() => {
                         setWaylineAreas((prev) =>
-                          prev.filter((dr) => dr.droneId !== e.droneId)
+                          // prev.filter((dr) => dr.droneId !== e.droneId)
+                          prev.filter((dr) => dr.droneKey !== e.droneKey)
                         );
                       }}
                     >

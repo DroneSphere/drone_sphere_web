@@ -125,8 +125,14 @@ export default function DroneSelectionPanel({
   };
 
   // Remove a drone from the selection
-  const handleRemoveDrone = (droneId: number) => {
-    setSelectedDrones((prev) => prev.filter((dr) => dr.id !== droneId));
+  const handleRemoveDrone = (droneKey: string) => {
+    const updatedDrones = selectedDrones.filter((d) => d.key !== droneKey);
+    setSelectedDrones(updatedDrones);
+    toast({
+      title: "无人机已移除",
+      description: "请重新选择无人机",
+    });
+  
   };
 
   return (
@@ -250,7 +256,7 @@ export default function DroneSelectionPanel({
 
           {/* Display selected drones */}
           {selectedDrones?.map((d) => (
-            <div className="mt-4 px-1" key={d.id}>
+            <div className="mt-4 px-1" key={d.key}>
               <div className="flex justify-between items-start">
                 <div className="text-sm">
                   <p>{d.name}</p>
@@ -267,7 +273,7 @@ export default function DroneSelectionPanel({
                     variant="outline"
                     size="icon"
                     className="h-8 w-8"
-                    onClick={() => handleRemoveDrone(d.id)}
+                    onClick={() => handleRemoveDrone(d.key)}
                   >
                     <Trash className="h-4 w-4" />
                   </Button>

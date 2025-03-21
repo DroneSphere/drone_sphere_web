@@ -45,6 +45,7 @@ export async function fetchJobDetail(id: number): Promise<JobDetailResult> {
     drones: [
       {
         id: 1,
+        key: "1-1-2",
         name: "无人机1",
         description: "无人机描述",
         model: "无人机型号",
@@ -68,6 +69,7 @@ export async function fetchJobDetail(id: number): Promise<JobDetailResult> {
       },
       {
         id: 2,
+        key: "2-2-1",
         name: "无人机2",
         description: "无人机描述",
         model: "无人机型号",
@@ -88,7 +90,7 @@ export async function fetchJobDetail(id: number): Promise<JobDetailResult> {
     waylines: [
       {
         // ${drone_id}-${variation_index}
-        drone_key: "1-2",
+        drone_key: "1-1-2",
         color: "#ffcc77",
         height: 50,
         points: [
@@ -99,7 +101,7 @@ export async function fetchJobDetail(id: number): Promise<JobDetailResult> {
       },
       {
         // ${drone_id}-${variation_index}
-        drone_key: "2-1",
+        drone_key: "2-2-1",
         color: "#ff77cc",
         height: 30,
         points: [
@@ -114,14 +116,17 @@ export async function fetchJobDetail(id: number): Promise<JobDetailResult> {
   });
 }
 
-export async function createJob(data: JobCreationRequest): Promise<JobDetailResult> {
+export async function createJob(
+  data: JobCreationRequest
+): Promise<JobDetailResult> {
   console.log("createJob", data);
-  
+
   const res = await httpClient.instance.post<Response<JobDetailResult>>(
     `${prefix}`,
     data
   );
   return res.data.data;
+  // return Promise.resolve({} as JobDetailResult);
 }
 
 export async function fetchJobEditionData(
