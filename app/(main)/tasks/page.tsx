@@ -117,7 +117,7 @@ const columns = [
           className="h-8 w-8 bg-blue-400 text-gray-100 hover:bg-blue-500"
           onClick={() => {
             console.log(row.row.original);
-            window.location.href = `/tasks/8`;
+            window.location.href = `/tasks/${row.row.original.job_id}`;
           }}
         >
           <View className="h-4 w-4" />

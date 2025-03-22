@@ -3,8 +3,8 @@
 import DroneSelectionPanel from "@/app/(main)/jobs/[id]/drone-selection-panel";
 import {
   createJob,
-  fetchJobDetail,
-  fetchJobEditionData,
+  getJobCreateOpytions,
+  getJobDetailById,
 } from "@/app/(main)/jobs/[id]/request";
 import TaskInfoPanel from "@/app/(main)/jobs/[id]/task-info-panel";
 import {
@@ -59,7 +59,6 @@ export default function Page() {
   const [waylineAreas, setWaylineAreas] = useState<
     {
       droneKey: string;
-      name: string;
       color: string;
       path: AMap.LngLat[];
     }[]
@@ -72,6 +71,7 @@ export default function Page() {
   const [droneMappings, setDroneMappings] = useState<DroneMapping[]>([]);
 
   useEffect(() => {
+    if (!isCreating && !isEditing) return;
     // 更新无人机映射关系
     const newDroneMappings = selectedDrones.map((drone, index) => {
       return {
@@ -84,12 +84,12 @@ export default function Page() {
       };
     });
     setDroneMappings(newDroneMappings);
-  }, [selectedDrones]);
+  }, [selectedDrones, isCreating, isEditing]);
 
   // 编辑和创建需要的参数
   const optionsQuery = useQuery({
     queryKey: ["job-creation-options"],
-    queryFn: () => fetchJobEditionData(parseInt(idPart)),
+    queryFn: () => getJobCreateOpytions(parseInt(idPart)),
     enabled: isCreating || isEditing,
   });
   useEffect(() => {
@@ -98,7 +98,7 @@ export default function Page() {
   // 编辑或浏览时查询已有的数据
   const dataQuery = useQuery({
     queryKey: ["job-edition-data", parseInt(idPart)],
-    queryFn: () => fetchJobDetail(parseInt(idPart)),
+    queryFn: () => getJobDetailById(parseInt(idPart)),
     enabled: !isCreating,
   });
 
@@ -245,7 +245,7 @@ export default function Page() {
   useEffect(() => {
     if (!dataQuery.isSuccess || !dataQuery.data) return;
 
-    const { area, drones, waylines } = dataQuery.data;
+    const { area, drones, waylines, mappings } = dataQuery.data;
     // 如果是编辑或浏览模式，设置已选择的无人机和搜索区域
     // 设置地图区域路径
     if (!area || !area.points || !AMapRef.current) {
@@ -280,8 +280,6 @@ export default function Page() {
     const formattedWaylineAreas = waylines.map((wayline) => {
       return {
         droneKey: wayline.drone_key,
-        name: "",
-        // height: wayline.height,
         color: wayline.color,
         path: wayline.points.map((p) => {
           return new AMapRef.current!.LngLat(p.lng, p.lat);
@@ -289,6 +287,25 @@ export default function Page() {
       };
     });
     setWaylineAreas(formattedWaylineAreas);
+
+    // 设置映射关系
+    const formattedMappings = mappings.map((mapping) => {
+      console.log("mapping", mapping);
+      
+      return {
+        selectedDroneIndex: Number(mapping.selected_drone_key.split("-")[0]) || 0,
+        seletedDroneId: Number(mapping.selected_drone_key.split("-")[1]) || 0,
+        selectedDroneKey: mapping.selected_drone_key,
+        physicalDroneId: mapping.physical_drone_id,
+        physicalDroneSN: mapping.physical_drone_sn,
+        color:
+          selectedDrones.find((dr) => dr.key === mapping.selected_drone_key)
+            ?.color || "",
+      };
+    });
+    console.log("formattedMappings", formattedMappings);
+    
+    setDroneMappings(formattedMappings);
   }, [dataQuery.isSuccess, dataQuery.data, isMapLoaded, form]);
 
   // 选择区域时绘制选中的搜索区域多边形

@@ -99,7 +99,7 @@ export interface JobDroneVariation {
   thermal_available: boolean;
 }
 
-export interface JobEditionResult {
+export interface JobCreationResult {
   areas: {
     id: number;
     name: string;
@@ -116,13 +116,6 @@ export interface JobEditionResult {
     model?: string;
     variantions: JobDroneVariation[];
   }[];
-}
-
-export interface JobModifyRequest {
-  id: number;
-  description?: string;
-  drone_ids?: number[];
-  name?: string;
 }
 
 export interface JobDetailResult {
@@ -157,5 +150,10 @@ export interface JobDetailResult {
       lat: number;
       lng: number;
     }[];
+  }[];
+  mappings: {
+    selected_drone_key: string;
+    physical_drone_id: number;
+    physical_drone_sn: string;
   }[];
 }

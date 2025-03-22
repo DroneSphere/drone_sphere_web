@@ -137,7 +137,6 @@ interface WaylinePanelProps {
   selectedDrones: JobDetailResult["drones"];
   waylineAreas: {
     droneKey: string;
-    name: string;
     color: string;
     path: AMap.LngLat[];
   }[];
@@ -145,7 +144,6 @@ interface WaylinePanelProps {
     React.SetStateAction<
       {
         droneKey: string;
-        name: string;
         color: string;
         path: AMap.LngLat[];
       }[]
@@ -276,7 +274,9 @@ export default function WaylinePanel({
               <div key={e.droneKey}>
                 <div className="flex justify-between items-start">
                   <div className="text-sm">
-                    <p>{e.name}</p>
+                    <p>
+                      {selectedDrones.find((dr) => dr.key === e.droneKey)?.name}
+                    </p>
                   </div>
                   <div className="flex-1" />
                   {/* 一个颜色指示器，方便快速识别 */}

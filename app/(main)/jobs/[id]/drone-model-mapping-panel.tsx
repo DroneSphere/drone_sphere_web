@@ -4,12 +4,12 @@ import { JobDetailResult } from "@/app/(main)/jobs/[id]/type";
 import { Button } from "@/components/ui/button";
 import { FormItem } from "@/components/ui/form";
 import {
-    Select,
-    SelectContent,
-    SelectGroup,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
@@ -135,6 +135,8 @@ export default function DroneModelMappingPanel({
   const [availablePhysicalDrones, setAvailablePhysicalDrones] = useState<
     PhysicalDrone[]
   >([]);
+  console.log("droneMappings", droneMappings);
+  
 
   // Fetch available drones on component mount
   useEffect(() => {

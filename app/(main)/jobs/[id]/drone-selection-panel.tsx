@@ -1,6 +1,6 @@
 "use client";
 
-import { JobDetailResult, JobEditionResult } from "@/app/(main)/jobs/[id]/type";
+import { JobCreationResult, JobDetailResult } from "@/app/(main)/jobs/[id]/type";
 import { Button } from "@/components/ui/button";
 import { FormControl, FormItem } from "@/components/ui/form";
 import {
@@ -23,7 +23,7 @@ interface DroneSelectProps {
     React.SetStateAction<JobDetailResult["drones"]>
   >;
   isEditMode: boolean; // Whether we're in edit or create mode
-  availableDrones: JobEditionResult["drones"]; // Drones available for selection
+  availableDrones: JobCreationResult["drones"]; // Drones available for selection
 }
 
 export default function DroneSelectionPanel({

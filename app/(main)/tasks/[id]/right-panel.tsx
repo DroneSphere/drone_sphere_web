@@ -2,25 +2,22 @@
 
 import { DroneState } from "@/api/drone/types";
 import { baseURL } from "@/api/http_client";
-import { Button } from "@/components/ui/button";
 import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
 } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import {
-    Activity,
-    ArrowRight,
-    ArrowUp,
-    Battery,
-    BatteryCharging,
-    Compass,
-    Monitor,
-    MonitorOff,
-    Navigation,
+  Activity,
+  ArrowRight,
+  ArrowUp,
+  Battery,
+  BatteryCharging,
+  Compass,
+  Navigation,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -41,7 +38,6 @@ export default function DroneMonitorPanel({
   mapRef,
   AMapRef,
 }: DroneMonitorPanelProps) {
-  const [isCollapsed, setIsCollapsed] = useState(true);
   const [droneStates, setDroneStates] = useState<Record<string, DroneState>>(
     {}
   );
@@ -115,32 +111,15 @@ export default function DroneMonitorPanel({
   return (
     <div
       id="right-panel"
-      className={`flex flex-col gap-4 transition-all duration-300 ${
-        isCollapsed ? "w-10 overflow-hidden" : "w-auto min-w-32"
-      }`}
+      className={`flex flex-col gap-4 transition-all duration-300 ${"w-auto min-w-32"}`}
     >
-      <Button
-        onClick={() => setIsCollapsed(!isCollapsed)}
-        size="icon"
-        className="absolute right-4 top-12 z-999 p-2 rounded-full shadow-md"
-      >
-        {isCollapsed ? (
-          <MonitorOff className="h-4 w-4" />
-        ) : (
-          <Monitor className="h-4 w-4" />
-        )}
-      </Button>
-      {
-        // 没有数据时显示提示
-        !isCollapsed && !drones && (
-          <div className="flex items-center justify-center w-auto h-full">
-            <span className="text-gray-500">没有数据</span>
-          </div>
-        )
-      }
-      {!isCollapsed && drones && <div className="text-xl pt-3">实时数据</div>}
-      {!isCollapsed &&
-        drones &&
+      {!drones && (
+        <div className="flex items-center justify-center w-auto h-full">
+          <span className="text-gray-500">没有数据</span>
+        </div>
+      )}
+      {drones && <div className="text-xl pt-3">实时数据</div>}
+      {drones &&
         drones.map((drone, index) => (
           <Card key={index} className="w-auto h-min">
             <CardHeader className="p-4">
