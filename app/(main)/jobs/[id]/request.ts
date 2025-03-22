@@ -6,6 +6,7 @@ import {
   JobDetailResult,
   JobItemResult,
   JobSearchParams,
+  PhysicalDrone,
 } from "./type";
 
 const prefix = "/job";
@@ -26,6 +27,15 @@ export async function getJobDetailById(id: number): Promise<JobDetailResult> {
     `${prefix}/${id}`
   );
   console.log("getJobDetailById", res.data.data);
+  
+  return res.data.data;
+}
+
+export async function getJobPhysicalDrones(): Promise<PhysicalDrone[]> {
+  const res = await httpClient.instance.get<Response<PhysicalDrone[]>>(
+    `${prefix}/creation/drones`
+  );
+  console.log("getJobPhysicalDrones", res.data.data);
   
   return res.data.data;
 }

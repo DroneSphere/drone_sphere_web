@@ -99,6 +99,22 @@ export interface JobDroneVariation {
   thermal_available: boolean;
 }
 
+export interface PhysicalDrone {
+  id: number;
+  sn: string;
+  callsign: string;
+  model: {
+    id: number;
+    name: string;
+  };
+  gimbal?: {
+    name: string;
+  }[];
+  payload?: {
+    name: string;
+  }[];
+}
+
 export interface JobCreationResult {
   areas: {
     id: number;

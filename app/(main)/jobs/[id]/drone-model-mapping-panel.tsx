@@ -1,6 +1,6 @@
 "use client";
 
-import { JobDetailResult } from "@/app/(main)/jobs/[id]/type";
+import { JobDetailResult, PhysicalDrone } from "@/app/(main)/jobs/[id]/type";
 import { Button } from "@/components/ui/button";
 import { FormItem } from "@/components/ui/form";
 import {
@@ -13,30 +13,15 @@ import {
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
-import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
+import { getJobPhysicalDrones } from "./request";
 
 interface DroneModelMappingProps {
   selectedDrones: JobDetailResult["drones"];
   isEditMode: boolean;
   droneMappings: DroneMapping[];
   setDroneMappings: React.Dispatch<React.SetStateAction<DroneMapping[]>>;
-}
-
-// Mock data for available physical drones with SNs
-export interface PhysicalDrone {
-  id: number;
-  sn: string;
-  callsign: string;
-  model: {
-    id: number;
-    name: string;
-  };
-  gimbal?: {
-    name: string;
-  }[];
-  payload?: {
-    name: string;
-  }[];
 }
 
 /**
@@ -58,72 +43,6 @@ export interface DroneMapping {
   color: string;
 }
 
-// Mock function to get available drones
-const mockGetAvailableDrones = (): PhysicalDrone[] => {
-  return [
-    {
-      id: 1,
-      sn: "DJI0001",
-      callsign: "Drone #1",
-      model: {
-        id: 1,
-        name: "Mavic 3",
-      },
-
-      payload: [
-        {
-          name: "RTK 定位",
-        },
-      ],
-    },
-    {
-      id: 2,
-      sn: "DJI0002",
-      callsign: "Drone #2",
-      model: {
-        id: 1,
-        name: "Mavic 3",
-      },
-      payload: [
-        {
-          name: "红外热成像",
-        },
-      ],
-    },
-    {
-      id: 3,
-      sn: "DJI0006",
-      callsign: "Drone #6",
-      model: {
-        id: 3,
-        name: "Matrice 350",
-      },
-      gimbal: [
-        {
-          name: "Zenmuse H20",
-        },
-        {
-          name: "Zenmuse X7",
-        },
-      ],
-    },
-    {
-      id: 4,
-      sn: "DJI0007",
-      callsign: "Drone #7",
-      model: {
-        id: 3,
-        name: "Matrice 350",
-      },
-      gimbal: [
-        {
-          name: "Zenmuse H20",
-        },
-      ],
-    },
-  ];
-};
-
 export default function DroneModelMappingPanel({
   selectedDrones,
   isEditMode,
@@ -132,18 +51,10 @@ export default function DroneModelMappingPanel({
 }: DroneModelMappingProps) {
   const { toast } = useToast();
   const [collapsed, setCollapsed] = useState(false);
-  const [availablePhysicalDrones, setAvailablePhysicalDrones] = useState<
-    PhysicalDrone[]
-  >([]);
-  console.log("droneMappings", droneMappings);
-  
-
-  // Fetch available drones on component mount
-  useEffect(() => {
-    // In a real application, this would be an API call
-    const drones = mockGetAvailableDrones();
-    setAvailablePhysicalDrones(drones);
-  }, []);
+  const physicalQuery = useQuery({
+    queryKey: ["physicalDrones"],
+    queryFn: getJobPhysicalDrones,
+  });
 
   // Toggle collapsed state
   const handleToggleCollapse = (e: React.MouseEvent) => {
@@ -164,7 +75,7 @@ export default function DroneModelMappingPanel({
     // 根据无人机型号的key（格式为"index-drone_id-variation_index"）查找对应的无人机模型
     const droneModel = selectedDrones.find((d) => d.key === droneModelKey);
     // 根据ID查找对应的物理无人机
-    const physicalDrone = availablePhysicalDrones.find(
+    const physicalDrone = physicalQuery.data?.find(
       (d) => d.id === Number(physicalDroneId)
     );
     console.log("handleDroneSelection", droneModel, physicalDrone);
@@ -251,9 +162,7 @@ export default function DroneModelMappingPanel({
     droneModelId: number
   ): PhysicalDrone[] => {
     // 筛选出与指定模型ID匹配的所有物理无人机
-    return availablePhysicalDrones.filter(
-      (drone) => drone.model.id == droneModelId
-    );
+    return physicalQuery.data?.filter((d) => d.model.id === droneModelId) || [];
   };
 
   return (
