@@ -167,7 +167,12 @@ export default function Page() {
           droneKey: wayline.droneKey,
           height: 0,
           color: wayline.color,
-          points: wayline.path.map((p) => ({
+          path: wayline.path.map((p) => ({
+            lat: p.getLat(),
+            lng: p.getLng(),
+          })),
+          points: wayline.points?.map((p, idx) => ({
+            index: idx,
             lat: p.getLat(),
             lng: p.getLng(),
           })),

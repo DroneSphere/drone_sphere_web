@@ -70,7 +70,12 @@ export interface JobCreationRequest {
     droneKey: string; // ${index}-${drone_id}-${variation_index}
     height: number;
     color: string;
-    points: {
+    path: {
+      lat: number;
+      lng: number;
+    }[];
+    points?: {
+      index: number;
       lat: number;
       lng: number;
     }[];
