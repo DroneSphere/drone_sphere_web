@@ -42,6 +42,10 @@ export default function Page() {
   const infoWindowsRef = useRef<AMap.InfoWindow[]>([]);
   const polygonsRef = useRef<AMap.Polygon[]>([]);
   const editorsRef = useRef<AMap.PolygonEditor[]>([]);
+  // Add new ref for polylines
+  const polylinesRef = useRef<AMap.Polyline[]>([]);
+  // Add new ref for markers
+  const markersRef = useRef<AMap.Marker[][]>([]);
 
   // 计算工作状态
   const { isCreateMode: isCreating, idPart } = useIsCreateMode();
@@ -61,6 +65,8 @@ export default function Page() {
       droneKey: string;
       color: string;
       path: AMap.LngLat[];
+      points?: AMap.LngLat[];
+      visible?: boolean; // Make visible property optional
     }[]
   >([]);
 
@@ -284,6 +290,7 @@ export default function Page() {
         path: wayline.points.map((p) => {
           return new AMapRef.current!.LngLat(p.lng, p.lat);
         }),
+        visible: true, // Initialize as visible
       };
     });
     setWaylineAreas(formattedWaylineAreas);
@@ -291,9 +298,10 @@ export default function Page() {
     // 设置映射关系
     const formattedMappings = mappings.map((mapping) => {
       console.log("mapping", mapping);
-      
+
       return {
-        selectedDroneIndex: Number(mapping.selected_drone_key.split("-")[0]) || 0,
+        selectedDroneIndex:
+          Number(mapping.selected_drone_key.split("-")[0]) || 0,
         seletedDroneId: Number(mapping.selected_drone_key.split("-")[1]) || 0,
         selectedDroneKey: mapping.selected_drone_key,
         physicalDroneId: mapping.physical_drone_id,
@@ -304,7 +312,7 @@ export default function Page() {
       };
     });
     console.log("formattedMappings", formattedMappings);
-    
+
     setDroneMappings(formattedMappings);
   }, [dataQuery.isSuccess, dataQuery.data, isMapLoaded, form]);
 
@@ -352,6 +360,8 @@ export default function Page() {
     infoWindowsRef.current = [];
     polygonsRef.current = [];
     editorsRef.current = [];
+    polylinesRef.current = []; // Clear polylines ref
+    markersRef.current = []; // Clear markers ref
 
     // Redraw search area if available
     if (path && path.length > 0) {
@@ -374,6 +384,9 @@ export default function Page() {
         name: "未知无人机",
       };
 
+      // Skip if not visible
+      if (!waylineAreas[i].visible) continue;
+
       // 创建子区域多边形
       const subPolygon = new currentAMap.Polygon();
       subPolygon.setPath(subPath);
@@ -387,6 +400,72 @@ export default function Page() {
 
       polygonsRef.current.push(subPolygon);
       currentMap.add(subPolygon);
+
+      // 如果有飞行路径点，绘制为折线
+      if (waylineAreas[i].points && waylineAreas[i].points!.length > 0) {
+        const points = waylineAreas[i].points!;
+
+        // 创建折线
+        const polyline = new currentAMap.Polyline({
+          path: points,
+          strokeColor: drone.color,
+          strokeWeight: 4,
+          strokeOpacity: 0.9,
+          strokeStyle: "solid",
+          strokeDasharray: [10, 5],
+          lineJoin: "round",
+          lineCap: "round",
+          showDir: true,
+        });
+        polylinesRef.current.push(polyline);
+        currentMap.add(polyline);
+
+        // 在每个转折点添加圆形标记
+        const waylineMarkers: AMap.Marker[] = [];
+        markersRef.current[i] = waylineMarkers;
+
+        points.forEach((point, pointIndex) => {
+          const marker = new currentAMap.Marker({
+            position: point,
+            offset: new currentAMap.Pixel(-8, -8), // 居中偏移
+            content: `<div style="
+              background-color: ${drone.color};
+              width: 16px;
+              height: 16px;
+              border-radius: 50%;
+              border: 2px solid white;
+              box-shadow: 0 0 5px rgba(0,0,0,0.3);
+              display: flex;
+              justify-content: center;
+              align-items: center;
+              color: white;
+              font-size: 10px;
+              font-weight: bold;
+            ">${pointIndex + 1}</div>`,
+          });
+
+          // 为每个标记添加鼠标悬停信息窗口
+          const markerInfo = new currentAMap.InfoWindow({
+            content: `<div style="padding: 5px;">
+                      <p>航点 ${pointIndex + 1}</p>
+                      <p>经度: ${point.getLng().toFixed(6)}</p>
+                      <p>纬度: ${point.getLat().toFixed(6)}</p>
+                    </div>`,
+            offset: new currentAMap.Pixel(0, -20),
+          });
+
+          currentAMap.Event.addListener(marker, "mouseover", () => {
+            markerInfo.open(currentMap, [point.getLng(), point.getLat()]);
+          });
+
+          currentAMap.Event.addListener(marker, "mouseout", () => {
+            markerInfo.close();
+          });
+
+          waylineMarkers.push(marker);
+          currentMap.add(marker);
+        });
+      }
 
       // 创建信息窗口但不立即打开
       const infoWindow = new currentAMap.InfoWindow({
