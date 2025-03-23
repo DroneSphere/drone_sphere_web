@@ -363,7 +363,7 @@ export default function DroneMonitorPanel({
             {drone.sn && !collapsedCards[drone.sn] && (
               <CardContent className="px-3 mb-3">
                 {/* 基本信息卡片 - 始终显示的信息 */}
-                <div className="mb-3 bg-muted/30 p-2 rounded-md">
+                <div className="mb-3 bg-muted/100 p-2 rounded-md">
                   <div className="flex items-center gap-1 mb-1">
                     <Info className="h-3 w-3 opacity-75" />
                     <span className="font-medium text-xs">基本信息</span>
@@ -415,11 +415,12 @@ export default function DroneMonitorPanel({
 
                 {/* 实时遥测数据 */}
                 <div
-                  className={`grid grid-cols-12 gap-1 text-xs ${
+                  className={`flex flex-col gap-2 text-xs ${
                     !droneConnections[drone.sn] ? "opacity-50" : ""
                   }`}
                 >
-                  <div className="col-span-3 space-y-1">
+                  {/* 位置信息 - 修改为占据整行以显示长经纬度 */}
+                  <div className="w-full space-y-1">
                     <div className="flex items-center gap-1">
                       <Compass className="h-3 w-3 opacity-75" />
                       <span className="font-medium">位置</span>
@@ -427,91 +428,98 @@ export default function DroneMonitorPanel({
                     <div className="flex flex-col gap-1">
                       <div className="flex items-center">
                         <span className="w-10 min-w-[2.5rem]">经度:</span>
-                        <span className="font-mono">
+                        <span className="font-mono overflow-x-auto whitespace-nowrap">
                           {(drone.sn &&
-                            droneStates[drone.sn]?.lng.toFixed(6)) ??
+                            droneStates[drone.sn]?.lng.toFixed(12)) ??
+                            "--"}
+                        </span>
+                      </div>
+                      <div className="flex items-center">
+                        <span className="w-10 min-w-[2.5rem]">纬度:</span>
+                        <span className="font-mono overflow-x-auto whitespace-nowrap">
+                          {(drone.sn && droneStates[drone.sn]?.lat.toFixed(12)) ??
                             "--"}
                         </span>
                       </div>
                     </div>
-                    <div className="flex items-center">
-                      <span className="w-10 min-w-[2.5rem]">纬度:</span>
-                      <span className="font-mono">
-                        {(drone.sn && droneStates[drone.sn]?.lat.toFixed(6)) ??
-                          "--"}
-                      </span>
-                    </div>
                   </div>
-                  <Separator className="col-span-1 h-full w-[1px] bg-muted" />
-                  <div className="col-span-4 space-y-1">
-                    <div className="flex items-center gap-1">
-                      <Activity className="h-3 w-3 opacity-75" />
-                      <span className="font-medium">飞行状态</span>
-                    </div>
-                    <div className="grid grid-cols-1 gap-1">
-                      <div className="flex items-center gap-1">
-                        <ArrowUp className="h-3 w-3" />
-                        <span className="w-10 min-w-[2.5rem]">高度:</span>
-                        <span className="font-mono">
-                          {(drone.sn && droneStates[drone.sn]?.height) ?? "--"}m
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <ArrowRight className="h-3 w-3" />
-                        <span className="w-10 min-w-[2.5rem]">速度:</span>
-                        <span className="font-mono">
-                          {(drone.sn && droneStates[drone.sn]?.speed) ?? "--"}
-                          m/s
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Navigation className="h-3 w-3" />
-                        <span className="w-10 min-w-[2.5rem]">航向:</span>
-                        <span className="font-mono">
-                          {(drone.sn && droneStates[drone.sn]?.heading) ?? "--"}
-                          °
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                  <Separator className="col-span-1 h-full w-[1px] bg-muted" />
-                  <div className="col-span-3 flex flex-col items-end space-y-1">
-                    <div className="flex items-center gap-1">
-                      <Battery className="h-3 w-3 opacity-75" />
-                      <span className="font-medium">电量</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <BatteryCharging className="h-3 w-3 opacity-75" />
-                      <span className="font-medium">
-                        {(drone.sn && droneStates[drone.sn]?.battery) ?? "--"}%
-                      </span>
-                    </div>
-                    <div className="h-4 w-full rounded bg-gradient-to-r from-green-400 to-green-600/80 p-0">
-                      <div
-                        className="h-full rounded-r bg-background/80"
-                        style={{
-                          width: `${
-                            100 -
-                            (Number(
-                              drone.sn && droneStates[drone.sn]?.battery
-                            ) || 0)
-                          }%`,
-                          marginLeft: "auto",
-                        }}
-                      />
-                    </div>
-                  </div>
-                </div>
 
-                {/* 连接状态提示 */}
-                {drone.sn && !droneConnections[drone.sn] && (
-                  <div className="mt-2 p-2 bg-amber-50 rounded-md text-[10px] text-amber-600 flex items-center gap-1">
-                    <WifiOff className="h-2 w-2" />
-                    <span>
-                      尚未收到该无人机的实时数据，请确认无人机已通电并连接网络
-                    </span>
+                  <Separator className="w-full h-[1px] bg-muted" />
+
+                  {/* 飞行状态和电量信息 - 并排显示 */}
+                  <div className="grid grid-cols-2 gap-2">
+                    {/* 飞行状态 */}
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-1">
+                        <Activity className="h-3 w-3 opacity-75" />
+                        <span className="font-medium">飞行状态</span>
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <div className="flex items-center gap-1">
+                          <ArrowUp className="h-3 w-3" />
+                          <span className="w-10 min-w-[2.5rem]">高度:</span>
+                          <span className="font-mono">
+                            {(drone.sn && droneStates[drone.sn]?.height) ?? "--"}m
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <ArrowRight className="h-3 w-3" />
+                          <span className="w-10 min-w-[2.5rem]">速度:</span>
+                          <span className="font-mono">
+                            {(drone.sn && droneStates[drone.sn]?.speed) ?? "--"}
+                            m/s
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Navigation className="h-3 w-3" />
+                          <span className="w-10 min-w-[2.5rem]">航向:</span>
+                          <span className="font-mono">
+                            {(drone.sn && droneStates[drone.sn]?.heading) ?? "--"}
+                            °
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* 电量信息 */}
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-1">
+                        <Battery className="h-3 w-3 opacity-75" />
+                        <span className="font-medium">电量</span>
+                      </div>
+                      <div className="flex items-center gap-1 mb-1">
+                        <BatteryCharging className="h-3 w-3 opacity-75" />
+                        <span className="font-medium">
+                          {(drone.sn && droneStates[drone.sn]?.battery) ?? "--"}%
+                        </span>
+                      </div>
+                      <div className="h-4 w-full rounded bg-gradient-to-r from-green-400 to-green-600/80 p-0">
+                        <div
+                          className="h-full rounded-r bg-background/80"
+                          style={{
+                            width: `${
+                              100 -
+                              (Number(
+                                drone.sn && droneStates[drone.sn]?.battery
+                              ) || 0)
+                            }%`,
+                            marginLeft: "auto",
+                          }}
+                        />
+                      </div>
+                    </div>
                   </div>
-                )}
+
+                  {/* 连接状态提示 */}
+                  {drone.sn && !droneConnections[drone.sn] && (
+                    <div className="mt-2 p-2 bg-amber-50 rounded-md text-[10px] text-amber-600 flex items-center gap-1">
+                      <WifiOff className="h-2 w-2" />
+                      <span>
+                        尚未收到该无人机的实时数据，请确认无人机已通电并连接网络
+                      </span>
+                    </div>
+                  )}
+                </div>
               </CardContent>
             )}
           </Card>
