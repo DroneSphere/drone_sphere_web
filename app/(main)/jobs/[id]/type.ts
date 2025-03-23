@@ -167,7 +167,12 @@ export interface JobDetailResult {
     drone_key: string;
     height: number;
     color: string;
+    path: {
+      lat: number;
+      lng: number;
+    }[];
     points: {
+      index: number;  
       lat: number;
       lng: number;
     }[];

@@ -12,7 +12,7 @@ export default function JobDetailPage() {
   const pathname = usePathname();
   const id = pathname.split("/")[2];
   console.log("JobDetailPage", id);
-  
+
   const query = useQuery({
     queryKey: ["jobs", id],
     queryFn: () => {
@@ -21,6 +21,11 @@ export default function JobDetailPage() {
   });
   const AMapRef = useRef<typeof AMap | null>(null);
   const mapRef = useRef<AMap.Map | null>(null);
+
+  // 记录所有地图元素的引用，以便清除
+  const polygonsRef = useRef<AMap.Polygon[]>([]);
+  const polylinesRef = useRef<AMap.Polyline[]>([]);
+  const markersRef = useRef<AMap.Marker[][]>([]);
 
   // 完成数据加载后开始处理挂载地图逻辑
   // 首次渲染时挂载地图，并添加AMapRef
@@ -65,24 +70,138 @@ export default function JobDetailPage() {
     console.log("map", area, drones, waylines, mappings);
     if (!area || !area.points || !drones) return;
 
+    // 清除之前的地图元素
+    mapRef.current.clearMap();
+    polygonsRef.current = [];
+    polylinesRef.current = [];
+    markersRef.current = [];
+
     // 添加区域
     const points = area.points?.map((point) => {
       return new AMap.LngLat(point.lng, point.lat);
     });
-    const polygon = new AMap.Polygon();
-    polygon.setPath(points);
-    polygon.setMap(mapRef.current);
+    const polygon = new AMapRef.current.Polygon();
+    polygon.setOptions({
+      path: points,
+      strokeColor: "#3366FF",
+      strokeWeight: 2,
+      strokeOpacity: 0.8,
+      fillColor: "#3366FF",
+      fillOpacity: 0.3,
+      zIndex: 50,
+    });
+    polygonsRef.current.push(polygon);
+    mapRef.current.add(polygon);
+
+    // 添加航线
+    if (waylines && waylines.length > 0) {
+      waylines.forEach((wayline, index) => {
+        const drone = drones.find((d) => d.key === wayline.drone_key) || {
+          color: "#FF0000",
+          name: "未知无人机",
+        };
+
+        // 创建航线区域多边形
+        const waylinePath = wayline.path.map((point) => {
+          return new AMapRef.current!.LngLat(point.lng, point.lat);
+        });
+        const waylinePolygon = new AMapRef.current!.Polygon();
+        waylinePolygon.setOptions({
+          path: waylinePath,
+          strokeColor: drone.color,
+          strokeWeight: 2,
+          strokeOpacity: 1,
+          fillColor: drone.color,
+          fillOpacity: 0.3,
+          zIndex: 100,
+        });
+        polygonsRef.current.push(waylinePolygon);
+        mapRef.current!.add(waylinePolygon);
+
+        // 如果有具体航点，绘制为折线
+        if (wayline.points && wayline.points.length > 0) {
+          const points = wayline.points.map((point) => {
+            return new AMapRef.current!.LngLat(point.lng, point.lat);
+          });
+
+          // 创建折线
+          const polyline = new AMapRef.current!.Polyline({
+            path: points,
+            strokeColor: drone.color,
+            strokeWeight: 4,
+            strokeOpacity: 0.9,
+            strokeStyle: "solid",
+            strokeDasharray: [10, 5],
+            lineJoin: "round",
+            lineCap: "round",
+            showDir: true,
+          });
+          polylinesRef.current.push(polyline);
+          mapRef.current!.add(polyline);
+
+          // 在每个转折点添加圆形标记
+          const waylineMarkers: AMap.Marker[] = [];
+          markersRef.current[index] = waylineMarkers;
+
+          points.forEach((point, pointIndex) => {
+            const marker = new AMapRef.current!.Marker({
+              position: point,
+              offset: new AMapRef.current!.Pixel(-8, -8), // 居中偏移
+              content: `<div style="
+                background-color: ${drone.color};
+                width: 16px;
+                height: 16px;
+                border-radius: 50%;
+                border: 2px solid white;
+                box-shadow: 0 0 5px rgba(0,0,0,0.3);
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                color: white;
+                font-size: 10px;
+                font-weight: bold;
+              ">${pointIndex + 1}</div>`,
+            });
+
+            // 为每个标记添加鼠标悬停信息窗口
+            const markerInfo = new AMapRef.current!.InfoWindow({
+              content: `<div style="padding: 5px;">
+                        <p>航点 ${pointIndex + 1}</p>
+                        <p>经度: ${point.getLng().toFixed(6)}</p>
+                        <p>纬度: ${point.getLat().toFixed(6)}</p>
+                      </div>`,
+              offset: new AMapRef.current!.Pixel(0, -20),
+            });
+
+            AMapRef.current!.Event.addListener(marker, "mouseover", () => {
+              markerInfo.open(mapRef.current!, [
+                point.getLng(),
+                point.getLat(),
+              ]);
+            });
+
+            AMapRef.current!.Event.addListener(marker, "mouseout", () => {
+              markerInfo.close();
+            });
+
+            waylineMarkers.push(marker);
+            mapRef.current!.add(marker);
+          });
+        }
+      });
+    }
+
     mapRef.current.setFitView();
   }, [query.data]);
 
   return (
     <div className="px-4">
-      <div className="flex space-x-4 mb-4">
+      <div className="flex gap-4">
         <div
           id="map"
           className="h-[calc(100vh-160px)] flex-1 border rounded-md shadow-sm"
         />
-        {/* 右侧边栏组件 */}
+        {/* 右侧边栏组件 - 添加间距 */}
         <DroneMonitorPanel
           drones={query.data?.drones}
           mapRef={mapRef}
