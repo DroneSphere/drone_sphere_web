@@ -40,6 +40,8 @@ export default function JobDetailPage() {
         (d) => d.key === mapping.selected_drone_key
       );
       if (!droneType) return mapping; // 如果没找到对应型号，直接返回mapping数据
+      console.log("droneType", droneType, mapping);
+      
 
       // 合并drone型号数据和mapping中的具体无人机数据
       return {
@@ -47,8 +49,8 @@ export default function JobDetailPage() {
         ...mapping,
         // 确保保留mapping中的重要字段，如sn等
         sn: mapping.physical_drone_sn,
-        callsign: "callsign",
-        // callsign: mapping.callsign || droneType.name, // 如果mapping没有callsign，使用型号名称
+        callsign: mapping.physical_drone_callsign,
+        model: droneType.name,
       };
     });
   };

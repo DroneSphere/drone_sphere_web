@@ -181,5 +181,6 @@ export interface JobDetailResult {
     selected_drone_key: string;
     physical_drone_id: number;
     physical_drone_sn: string;
+    physical_drone_callsign: string;
   }[];
 }

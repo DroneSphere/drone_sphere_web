@@ -95,7 +95,6 @@ export default function DroneMonitorPanel({
   // SSE处理逻辑
   useEffect(() => {
     if (!drones) return;
-    console.log("drones", drones);
 
     // 初始化连接状态，但不要覆盖已有的连接
     setDroneConnections((prev) => {
@@ -121,13 +120,11 @@ export default function DroneMonitorPanel({
       const droneSN = drone.sn;
       const sseUrl = `${baseURL}/drone/state/sse?sn=${droneSN}`;
 
-      console.log(`Creating new EventSource for ${droneSN}`);
       const source = new EventSource(sseUrl);
       eventSourcesRef.current[droneSN] = source;
 
       // 连接成功时更新连接状态
       source.onopen = () => {
-        console.log(`SSE connection opened for drone ${droneSN}`);
         setDroneConnections((prev) => ({
           ...prev,
           [droneSN]: true,
@@ -137,7 +134,6 @@ export default function DroneMonitorPanel({
       source.onmessage = (event) => {
         try {
           const newState: DroneState = JSON.parse(event.data);
-          console.log(`SSE message for drone ${droneSN}:`, newState);
 
           // 更新飞机状态
           setDroneStates((prev) => ({
@@ -171,8 +167,6 @@ export default function DroneMonitorPanel({
         // 这里不关闭连接，让浏览器自动重连
       };
     });
-
-    console.log("Current EventSources:", Object.keys(eventSourcesRef.current));
 
     // 清理函数 - 只在组件完全卸载时执行
     return () => {
@@ -240,9 +234,6 @@ export default function DroneMonitorPanel({
         existingMarker.setPosition([lng, lat]);
         // 更新marker内容，以反映新的航向角度
         existingMarker.setContent(markerContent);
-        console.log(
-          `Updated marker for drone ${droneSN} at position: ${lng}, ${lat}`
-        );
       } else {
         // 如果不存在，则创建新marker
         try {
@@ -258,10 +249,10 @@ export default function DroneMonitorPanel({
           mapRef.current!.add(marker);
 
           // 添加点击事件
-          marker.on("click", () => {
-            console.log(`Drone ${drone.callsign || droneSN} marker clicked`);
-            // 可以在此添加点击处理，例如展示详细信息
-          });
+          // marker.on("click", () => {
+          //   console.log(`Drone ${drone.callsign || droneSN} marker clicked`);
+          //   // 可以在此添加点击处理，例如展示详细信息
+          // });
 
           // 更新marker记录
           setDroneMarkers((prev) => ({
@@ -293,25 +284,20 @@ export default function DroneMonitorPanel({
   }, [droneStates, drones, AMapRef, mapRef, droneMarkers]);
 
   // 添加组件卸载时清理所有标记的逻辑
-  useEffect(() => {
-    return () => {
-      // 清理所有地图标记
-      Object.values(droneMarkers).forEach((marker) => {
-        if (marker && mapRef.current) {
-          mapRef.current.remove(marker);
-        }
-      });
-      setDroneMarkers({});
-    };
-  }, [mapRef, droneMarkers]);
-
-  // 添加调试用的状态日志
-  useEffect(() => {
-    console.log("Current drone connections:", droneConnections);
-  }, [droneConnections]);
+  // useEffect(() => {
+  //   return () => {
+  //     // 清理所有地图标记
+  //     Object.values(droneMarkers).forEach((marker) => {
+  //       if (marker && mapRef.current) {
+  //         mapRef.current.remove(marker);
+  //       }
+  //     });
+  //     setDroneMarkers({});
+  //   };
+  // }, [mapRef, droneMarkers]);
 
   return (
-    <div className="flex flex-col gap-3 w-96">
+    <div className="flex flex-col gap-3 w-96 max-h-[calc(100vh-4rem)]">
       <div className="flex-1 h-auto overflow-y-auto flex flex-col gap-3 p-3 border rounded-md shadow-sm bg-background">
         {!drones && (
           <div className="flex items-center justify-center w-auto h-full">
