@@ -27,6 +27,32 @@ export default function JobDetailPage() {
   const polylinesRef = useRef<AMap.Polyline[]>([]);
   const markersRef = useRef<AMap.Marker[][]>([]);
 
+  // 处理drones和mappings数据，生成合并后的无人机数据
+  const processedDrones = () => {
+    if (!query.data || !query.data.drones || !query.data.mappings) return [];
+
+    const { drones, mappings } = query.data;
+
+    // 将mappings中的信息合并到对应的drone型号中
+    return mappings.map((mapping) => {
+      // 查找对应的drone型号数据
+      const droneType = drones.find(
+        (d) => d.key === mapping.selected_drone_key
+      );
+      if (!droneType) return mapping; // 如果没找到对应型号，直接返回mapping数据
+
+      // 合并drone型号数据和mapping中的具体无人机数据
+      return {
+        ...droneType,
+        ...mapping,
+        // 确保保留mapping中的重要字段，如sn等
+        sn: mapping.physical_drone_sn,
+        callsign: "callsign",
+        // callsign: mapping.callsign || droneType.name, // 如果mapping没有callsign，使用型号名称
+      };
+    });
+  };
+
   // 完成数据加载后开始处理挂载地图逻辑
   // 首次渲染时挂载地图，并添加AMapRef
   useEffect(() => {
@@ -201,9 +227,9 @@ export default function JobDetailPage() {
           id="map"
           className="h-[calc(100vh-160px)] flex-1 border rounded-md shadow-sm"
         />
-        {/* 右侧边栏组件 - 添加间距 */}
+        {/* 右侧边栏组件 - 传递合并后的drones数据 */}
         <DroneMonitorPanel
-          drones={query.data?.drones}
+          drones={processedDrones()}
           mapRef={mapRef}
           AMapRef={AMapRef}
         />

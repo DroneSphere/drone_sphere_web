@@ -5,9 +5,8 @@ import { baseURL } from "@/api/http_client";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
-  CardTitle,
+  CardTitle
 } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -24,14 +23,27 @@ import {
   Wifi,
   WifiOff,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 
+// 更新DroneData接口以匹配processedDrones返回的数据结构
 interface DroneData {
   sn?: string;
   callsign?: string;
   model?: string;
   color?: string;
   key?: string;
+  // 添加mappings中可能包含的额外字段
+  selected_drone_key?: string;
+  physical_drone_id?: number;
+  physical_drone_sn?: string;
+  // 添加其他可能的字段，使用可选属性
+  name?: string;
+  manufacturer?: string;
+  firmware?: string;
+  id?: number;
+  variation?: any; // 或者定义更具体的类型
+  // 通用索引签名，允许包含其他未明确列出的属性
+  [key: string]: any;
 }
 
 interface DroneMonitorPanelProps {
@@ -58,6 +70,9 @@ export default function DroneMonitorPanel({
   const [collapsedCards, setCollapsedCards] = useState<Record<string, boolean>>(
     {}
   );
+
+  // 添加一个ref来保存EventSource实例，防止重复创建
+  const eventSourcesRef = React.useRef<Record<string, EventSource>>({});
 
   // 初始化卡片折叠状态（默认全部折叠）
   useEffect(() => {
@@ -87,28 +102,37 @@ export default function DroneMonitorPanel({
     if (!drones) return;
     console.log("drones", drones);
 
-    const eventSources: EventSource[] = [];
-
-    // 初始化连接状态为断开
-    const initialConnections: Record<string, boolean> = {};
-    drones.forEach((drone) => {
-      if (drone.sn) {
-        initialConnections[drone.sn] = false;
-      }
+    // 初始化连接状态，但不要覆盖已有的连接
+    setDroneConnections((prev) => {
+      const updatedConnections = { ...prev };
+      drones.forEach((drone) => {
+        if (drone.sn && updatedConnections[drone.sn] === undefined) {
+          updatedConnections[drone.sn] = false;
+        }
+      });
+      return updatedConnections;
     });
-    setDroneConnections(initialConnections);
 
+    // 创建和保存所有要使用的EventSource
     drones.forEach((drone) => {
       if (!drone.sn) return; // 确保有sn
+      
+      // 如果已经有连接，不要重复创建
+      if (eventSourcesRef.current[drone.sn]) {
+        console.log(`EventSource for drone ${drone.sn} already exists`);
+        return;
+      }
 
       const droneSN = drone.sn;
       const sseUrl = `${baseURL}/drone/state/sse?sn=${droneSN}`;
 
+      console.log(`Creating new EventSource for ${droneSN}`);
       const source = new EventSource(sseUrl);
-      eventSources.push(source);
+      eventSourcesRef.current[droneSN] = source;
 
       // 连接成功时更新连接状态
       source.onopen = () => {
+        console.log(`SSE connection opened for drone ${droneSN}`);
         setDroneConnections((prev) => ({
           ...prev,
           [droneSN]: true,
@@ -116,100 +140,135 @@ export default function DroneMonitorPanel({
       };
 
       source.onmessage = (event) => {
-        const newState: DroneState = JSON.parse(event.data);
+        try {
+          const newState: DroneState = JSON.parse(event.data);
+          console.log(`SSE message for drone ${droneSN}:`, newState);
 
-        setDroneStates((prev) => ({
-          ...prev,
-          [droneSN]: newState,
-        }));
+          // 更新飞机状态
+          setDroneStates((prev) => ({
+            ...prev,
+            [droneSN]: newState,
+          }));
 
-        // 更新连接状态为已连接
-        setDroneConnections((prev) => ({
-          ...prev,
-          [droneSN]: true,
-        }));
+          // 确保标记为已连接
+          setDroneConnections((prev) => ({
+            ...prev,
+            [droneSN]: true,
+          }));
 
-        // 绘制飞机位置
-        if (!AMapRef.current || !mapRef.current) return;
-        const lng = newState.lng;
-        const lat = newState.lat;
-
-        // 使用自定义HTML内容创建带颜色标识的标记
-        const droneColor = drone.color || "#3366FF";
-        const markerContent = `
-          <div style="position: relative;">
-            <div style="
-              width: 28px; 
-              height: 28px; 
-              background-color: ${droneColor}; 
-              border-radius: 50%; 
-              border: 2px solid white;
-              display: flex;
-              justify-content: center;
-              align-items: center;
-              box-shadow: 0 3px 6px rgba(0,0,0,0.3);
-            ">
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M12 2L4.5 20.29l.71.71L12 18l6.79 3 .71-.71z"></path>
-              </svg>
-            </div>
-            <div style="
-              position: absolute;
-              top: -20px;
-              left: 50%;
-              transform: translateX(-50%);
-              background-color: rgba(0,0,0,0.7);
-              color: white;
-              padding: 2px 6px;
-              border-radius: 3px;
-              font-size: 10px;
-              white-space: nowrap;
-            ">${drone.callsign || droneSN}</div>
-          </div>
-        `;
-
-        const marker = new AMapRef.current.Marker({
-          position: new AMapRef.current.LngLat(lng, lat),
-          title: drone.callsign || droneSN,
-          angle: newState.heading || 0, // 设置标记的旋转角度为航向
-          content: markerContent,
-          anchor: "center",
-        });
-
-        // 更新marker
-        setDroneMarkers((prev) => ({
-          ...prev,
-          [droneSN]: marker,
-        }));
-
-        // 如果是首次渲染，则添加marker
-        if (!droneMarkers[droneSN]) {
-          mapRef.current.add(marker);
-        } else {
-          // 如果不是首次渲染，则先移除marker再添加
-          droneMarkers[droneSN]?.setMap(null);
-          mapRef.current.add(marker);
-          marker.setMap(mapRef.current);
+          // 绘制飞机位置
+          // ...existing code...
+        } catch (error) {
+          console.error(`Error processing message for ${droneSN}:`, error);
         }
-
-        console.log(`SSE message for drone ${droneSN}:`, newState);
       };
 
       source.onerror = (error) => {
         console.error(`SSE error for drone ${droneSN}:`, error);
-        // 更新连接状态为断开
+        // 只在真正错误时更新状态为断开
         setDroneConnections((prev) => ({
           ...prev,
           [droneSN]: false,
         }));
-        source.close();
+        
+        // 尝试重新连接而不是直接关闭
+        console.log(`Attempting to reconnect for ${droneSN}...`);
+        // 这里不关闭连接，让浏览器自动重连
       };
     });
 
+    console.log("Current EventSources:", Object.keys(eventSourcesRef.current));
+    
+    // 清理函数 - 只在组件完全卸载时执行
     return () => {
-      eventSources.forEach((source) => source.close());
+      console.log("Component unmounting, closing all SSE connections");
+      Object.keys(eventSourcesRef.current).forEach(key => {
+        console.log(`Closing EventSource for ${key}`);
+        eventSourcesRef.current[key]?.close();
+        delete eventSourcesRef.current[key];
+      });
     };
-  }, [drones, mapRef, AMapRef, droneMarkers]);
+  }, [drones]); // 从依赖项中移除 mapRef, AMapRef, droneMarkers
+
+  // 单独处理地图标记的更新，与SSE连接分开
+  useEffect(() => {
+    if (!AMapRef.current || !mapRef.current) return;
+    
+    // 处理地图标记的更新逻辑
+    Object.entries(droneStates).forEach(([droneSN, state]) => {
+      const drone = drones?.find(d => d.sn === droneSN);
+      if (!drone) return;
+      
+      const lng = state.lng;
+      const lat = state.lat;
+      
+      // 使用自定义HTML内容创建带颜色标识的标记
+      const droneColor = drone.color || "#3366FF";
+      const markerContent = `
+        <div style="position: relative;">
+          <div style="
+            width: 28px; 
+            height: 28px; 
+            background-color: ${droneColor}; 
+            border-radius: 50%; 
+            border: 2px solid white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 3px 6px rgba(0,0,0,0.3);
+          ">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 2L4.5 20.29l.71.71L12 18l6.79 3 .71-.71z"></path>
+            </svg>
+          </div>
+          <div style="
+            position: absolute;
+            top: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(0,0,0,0.7);
+            color: white;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 10px;
+            white-space: nowrap;
+          ">${drone.callsign || droneSN}</div>
+        </div>
+      `;
+
+      const marker = new AMapRef.current!.Marker({
+        position: new AMapRef.current!.LngLat(lng, lat),
+        title: drone.callsign || droneSN,
+        angle: state.heading || 0,
+        content: markerContent,
+        anchor: "center",
+      });
+
+      // 更新marker
+      setDroneMarkers((prev) => {
+        // 如果存在旧的标记，先从地图中移除
+        if (prev[droneSN]) {
+          prev[droneSN]?.setMap(null);
+        }
+        
+        // 将新标记添加到地图
+        if (mapRef.current) {
+          mapRef.current.add(marker);
+        }
+        
+        // 返回更新后的marker对象
+        return {
+          ...prev,
+          [droneSN]: marker
+        };
+      });
+    });
+  }, [droneStates, drones, AMapRef, mapRef]);
+
+  // 添加调试用的状态日志
+  useEffect(() => {
+    console.log("Current drone connections:", droneConnections);
+  }, [droneConnections]);
 
   return (
     <div
@@ -275,12 +334,6 @@ export default function DroneMonitorPanel({
               </div>
 
               <div className="flex items-center justify-between">
-                <CardDescription className="text-xs">
-                  <span>
-                    {drone.sn || "无序列号"} - {drone.model || "未知型号"}
-                  </span>
-                </CardDescription>
-
                 {/* 显示电量和高度的简要信息，仅在折叠状态下显示 */}
                 {drone.sn &&
                   collapsedCards[drone.sn] &&
@@ -308,20 +361,16 @@ export default function DroneMonitorPanel({
 
             {/* 扩展内容，只在非折叠状态下显示 */}
             {drone.sn && !collapsedCards[drone.sn] && (
-              <CardContent className="p-3">
+              <CardContent className="px-3 mb-3">
                 {/* 基本信息卡片 - 始终显示的信息 */}
                 <div className="mb-3 bg-muted/30 p-2 rounded-md">
                   <div className="flex items-center gap-1 mb-1">
                     <Info className="h-3 w-3 opacity-75" />
                     <span className="font-medium text-xs">基本信息</span>
                   </div>
-                  <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-xs">
-                    <div className="flex items-center">
-                      <span className="min-w-[3.5rem] text-muted-foreground">
-                        序列号:
-                      </span>
-                      <span className="font-mono">{drone.sn || "未知"}</span>
-                    </div>
+                  
+                  {/* 修改呼号和序列号的显示结构 */}
+                  <div className="mb-2 flex flex-col gap-1 text-xs">
                     <div className="flex items-center">
                       <span className="min-w-[3.5rem] text-muted-foreground">
                         呼号:
@@ -330,6 +379,15 @@ export default function DroneMonitorPanel({
                         {drone.callsign || "未设置"}
                       </span>
                     </div>
+                    <div className="flex items-center">
+                      <span className="min-w-[3.5rem] text-muted-foreground">
+                        序列号:
+                      </span>
+                      <span className="font-mono">{drone.sn || "未知"}</span>
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-xs">
                     <div className="flex items-center">
                       <span className="min-w-[3.5rem] text-muted-foreground">
                         型号:
