@@ -41,9 +41,9 @@ interface DroneData {
   manufacturer?: string;
   firmware?: string;
   id?: number;
-  variation?: any; // 或者定义更具体的类型
+  variation?: unknown; // 根据实际数据类型进行调整
   // 通用索引签名，允许包含其他未明确列出的属性
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 interface DroneMonitorPanelProps {
@@ -216,6 +216,7 @@ export default function DroneMonitorPanel({
             justify-content: center;
             align-items: center;
             box-shadow: 0 3px 6px rgba(0,0,0,0.3);
+            transform: rotate(${state.heading || 0}deg);
           ">
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M12 2L4.5 20.29l.71.71L12 18l6.79 3 .71-.71z"></path>
@@ -236,34 +237,75 @@ export default function DroneMonitorPanel({
         </div>
       `;
 
-      const marker = new AMapRef.current!.Marker({
-        position: new AMapRef.current!.LngLat(lng, lat),
-        title: drone.callsign || droneSN,
-        angle: state.heading || 0,
-        content: markerContent,
-        anchor: "center",
-      });
-
-      // 更新marker
-      setDroneMarkers((prev) => {
-        // 如果存在旧的标记，先从地图中移除
-        if (prev[droneSN]) {
-          prev[droneSN]?.setMap(null);
+      // 检查是否已存在该无人机的marker
+      const existingMarker = droneMarkers[droneSN];
+      
+      if (existingMarker) {
+        // 如果已存在marker，则更新位置和角度
+        existingMarker.setPosition([lng, lat]);
+        // 更新marker内容，以反映新的航向角度
+        existingMarker.setContent(markerContent);
+        console.log(`Updated marker for drone ${droneSN} at position: ${lng}, ${lat}`);
+      } else {
+        // 如果不存在，则创建新marker
+        try {
+          const marker = new AMapRef.current!.Marker({
+            position: new AMapRef.current!.LngLat(lng, lat),
+            title: drone.callsign || droneSN,
+            content: markerContent,
+            anchor: "center", // 将锚点设为中心
+            zIndex: 100, // 确保无人机标记在其他标记之上
+          });
+          
+          // 将新标记添加到地图
+          mapRef.current!.add(marker);
+          
+          // 添加点击事件
+          marker.on('click', () => {
+            console.log(`Drone ${drone.callsign || droneSN} marker clicked`);
+            // 可以在此添加点击处理，例如展示详细信息
+          });
+          
+          // 更新marker记录
+          setDroneMarkers(prev => ({
+            ...prev,
+            [droneSN]: marker
+          }));
+          
+          console.log(`Created new marker for drone ${droneSN} at position: ${lng}, ${lat}`);
+        } catch (error) {
+          console.error(`Error creating marker for drone ${droneSN}:`, error);
         }
-        
-        // 将新标记添加到地图
-        if (mapRef.current) {
-          mapRef.current.add(marker);
-        }
-        
-        // 返回更新后的marker对象
-        return {
-          ...prev,
-          [droneSN]: marker
-        };
-      });
+      }
     });
-  }, [droneStates, drones, AMapRef, mapRef]);
+    
+    // 清理不再需要的marker
+    Object.entries(droneMarkers).forEach(([sn, marker]) => {
+      if (!droneStates[sn] && marker) {
+        console.log(`Removing marker for inactive drone ${sn}`);
+        mapRef.current?.remove(marker);
+        setDroneMarkers(prev => {
+          const updated = { ...prev };
+          delete updated[sn];
+          return updated;
+        });
+      }
+    });
+    
+  }, [droneStates, drones, AMapRef, mapRef, droneMarkers]);
+
+  // 添加组件卸载时清理所有标记的逻辑
+  useEffect(() => {
+    return () => {
+      // 清理所有地图标记
+      Object.values(droneMarkers).forEach(marker => {
+        if (marker && mapRef.current) {
+          mapRef.current.remove(marker);
+        }
+      });
+      setDroneMarkers({});
+    };
+  }, [mapRef, droneMarkers]);
 
   // 添加调试用的状态日志
   useEffect(() => {
@@ -273,7 +315,7 @@ export default function DroneMonitorPanel({
   return (
     <div
       id="right-panel"
-      className="w-80 min-w-[300px] max-w-[350px] h-[calc(100vh-160px)] overflow-y-auto flex flex-col gap-3 p-3 border rounded-md shadow-sm bg-background"
+      className="w-96 h-[calc(100vh-160px)] overflow-y-auto flex flex-col gap-3 p-3 border rounded-md shadow-sm bg-background"
     >
       {!drones && (
         <div className="flex items-center justify-center w-auto h-full">
