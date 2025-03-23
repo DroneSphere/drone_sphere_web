@@ -2,12 +2,7 @@
 
 import { DroneState } from "@/api/drone/types";
 import { baseURL } from "@/api/http_client";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import {
   Activity,
@@ -116,7 +111,7 @@ export default function DroneMonitorPanel({
     // 创建和保存所有要使用的EventSource
     drones.forEach((drone) => {
       if (!drone.sn) return; // 确保有sn
-      
+
       // 如果已经有连接，不要重复创建
       if (eventSourcesRef.current[drone.sn]) {
         console.log(`EventSource for drone ${drone.sn} already exists`);
@@ -170,7 +165,7 @@ export default function DroneMonitorPanel({
           ...prev,
           [droneSN]: false,
         }));
-        
+
         // 尝试重新连接而不是直接关闭
         console.log(`Attempting to reconnect for ${droneSN}...`);
         // 这里不关闭连接，让浏览器自动重连
@@ -178,11 +173,11 @@ export default function DroneMonitorPanel({
     });
 
     console.log("Current EventSources:", Object.keys(eventSourcesRef.current));
-    
+
     // 清理函数 - 只在组件完全卸载时执行
     return () => {
       console.log("Component unmounting, closing all SSE connections");
-      Object.keys(eventSourcesRef.current).forEach(key => {
+      Object.keys(eventSourcesRef.current).forEach((key) => {
         console.log(`Closing EventSource for ${key}`);
         eventSourcesRef.current[key]?.close();
         delete eventSourcesRef.current[key];
@@ -193,15 +188,15 @@ export default function DroneMonitorPanel({
   // 单独处理地图标记的更新，与SSE连接分开
   useEffect(() => {
     if (!AMapRef.current || !mapRef.current) return;
-    
+
     // 处理地图标记的更新逻辑
     Object.entries(droneStates).forEach(([droneSN, state]) => {
-      const drone = drones?.find(d => d.sn === droneSN);
+      const drone = drones?.find((d) => d.sn === droneSN);
       if (!drone) return;
-      
+
       const lng = state.lng;
       const lat = state.lat;
-      
+
       // 使用自定义HTML内容创建带颜色标识的标记
       const droneColor = drone.color || "#3366FF";
       const markerContent = `
@@ -239,13 +234,15 @@ export default function DroneMonitorPanel({
 
       // 检查是否已存在该无人机的marker
       const existingMarker = droneMarkers[droneSN];
-      
+
       if (existingMarker) {
         // 如果已存在marker，则更新位置和角度
         existingMarker.setPosition([lng, lat]);
         // 更新marker内容，以反映新的航向角度
         existingMarker.setContent(markerContent);
-        console.log(`Updated marker for drone ${droneSN} at position: ${lng}, ${lat}`);
+        console.log(
+          `Updated marker for drone ${droneSN} at position: ${lng}, ${lat}`
+        );
       } else {
         // 如果不存在，则创建新marker
         try {
@@ -256,49 +253,50 @@ export default function DroneMonitorPanel({
             anchor: "center", // 将锚点设为中心
             zIndex: 100, // 确保无人机标记在其他标记之上
           });
-          
+
           // 将新标记添加到地图
           mapRef.current!.add(marker);
-          
+
           // 添加点击事件
-          marker.on('click', () => {
+          marker.on("click", () => {
             console.log(`Drone ${drone.callsign || droneSN} marker clicked`);
             // 可以在此添加点击处理，例如展示详细信息
           });
-          
+
           // 更新marker记录
-          setDroneMarkers(prev => ({
+          setDroneMarkers((prev) => ({
             ...prev,
-            [droneSN]: marker
+            [droneSN]: marker,
           }));
-          
-          console.log(`Created new marker for drone ${droneSN} at position: ${lng}, ${lat}`);
+
+          console.log(
+            `Created new marker for drone ${droneSN} at position: ${lng}, ${lat}`
+          );
         } catch (error) {
           console.error(`Error creating marker for drone ${droneSN}:`, error);
         }
       }
     });
-    
+
     // 清理不再需要的marker
     Object.entries(droneMarkers).forEach(([sn, marker]) => {
       if (!droneStates[sn] && marker) {
         console.log(`Removing marker for inactive drone ${sn}`);
         mapRef.current?.remove(marker);
-        setDroneMarkers(prev => {
+        setDroneMarkers((prev) => {
           const updated = { ...prev };
           delete updated[sn];
           return updated;
         });
       }
     });
-    
   }, [droneStates, drones, AMapRef, mapRef, droneMarkers]);
 
   // 添加组件卸载时清理所有标记的逻辑
   useEffect(() => {
     return () => {
       // 清理所有地图标记
-      Object.values(droneMarkers).forEach(marker => {
+      Object.values(droneMarkers).forEach((marker) => {
         if (marker && mapRef.current) {
           mapRef.current.remove(marker);
         }
@@ -313,259 +311,270 @@ export default function DroneMonitorPanel({
   }, [droneConnections]);
 
   return (
-    <div
-      id="right-panel"
-      className="w-96 h-[calc(100vh-160px)] overflow-y-auto flex flex-col gap-3 p-3 border rounded-md shadow-sm bg-background"
-    >
-      {!drones && (
-        <div className="flex items-center justify-center w-auto h-full">
-          <span className="text-gray-500 text-xs">没有数据</span>
-        </div>
-      )}
+    <div className="flex flex-col gap-3 w-96">
+      <div className="flex-1 h-auto overflow-y-auto flex flex-col gap-3 p-3 border rounded-md shadow-sm bg-background">
+        {!drones && (
+          <div className="flex items-center justify-center w-auto h-full">
+            <span className="text-gray-500 text-xs">没有数据</span>
+          </div>
+        )}
 
-      {drones && <div className="text-sm font-medium">实时数据</div>}
+        {drones && <div className="text-sm font-medium">实时数据</div>}
 
-      {drones &&
-        drones.map((drone, index) => (
-          <Card
-            key={index}
-            className={`w-full h-min ${
-              !droneConnections[drone.sn || ""] ? "border-dashed" : ""
-            } text-xs`}
-          >
-            <CardHeader className="p-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  {/* 添加颜色标识 */}
-                  <div
-                    className="w-3 h-3 rounded-full flex-shrink-0"
-                    style={{ backgroundColor: drone.color || "#3366FF" }}
-                  ></div>
-                  <CardTitle className="text-sm">
-                    {drone.callsign || "未命名无人机"}
-                  </CardTitle>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  {/* 连接状态指示 */}
-                  {drone.sn && droneConnections[drone.sn] ? (
-                    <Wifi className="h-3 w-3 text-green-500" />
-                  ) : (
-                    <WifiOff className="h-3 w-3 text-gray-400" />
-                  )}
-
-                  {/* 展开/折叠按钮 - 修改为专门的按钮元素并添加明确的点击处理 */}
-                  {drone.sn && (
-                    <button
-                      onClick={(e) =>
-                        drone.sn && toggleCardCollapse(drone.sn, e)
-                      }
-                      className="p-1 rounded hover:bg-gray-100 focus:outline-none"
-                      aria-label={
-                        collapsedCards[drone.sn] ? "展开详情" : "折叠详情"
-                      }
-                    >
-                      {collapsedCards[drone.sn] ? (
-                        <ChevronDown className="h-3 w-3" />
-                      ) : (
-                        <ChevronUp className="h-3 w-3" />
-                      )}
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between">
-                {/* 显示电量和高度的简要信息，仅在折叠状态下显示 */}
-                {drone.sn &&
-                  collapsedCards[drone.sn] &&
-                  droneConnections[drone.sn] && (
-                    <div className="flex items-center gap-3 text-[10px]">
-                      <div className="flex items-center gap-1" title="电量">
-                        <Battery className="h-2.5 w-2.5 text-green-500" />
-                        <span>{droneStates[drone.sn]?.battery ?? "--"}%</span>
-                      </div>
-                      <div className="flex items-center gap-1" title="高度">
-                        <ArrowUp className="h-2.5 w-2.5 text-sky-500" />
-                        <span>{droneStates[drone.sn]?.height ?? "--"}m</span>
-                      </div>
-                    </div>
-                  )}
-
-                {/* 等待连接提示 */}
-                {drone.sn && !droneConnections[drone.sn] && (
-                  <span className="text-[10px] text-amber-500">
-                    等待连接...
-                  </span>
-                )}
-              </div>
-            </CardHeader>
-
-            {/* 扩展内容，只在非折叠状态下显示 */}
-            {drone.sn && !collapsedCards[drone.sn] && (
-              <CardContent className="px-3 mb-3">
-                {/* 基本信息卡片 - 始终显示的信息 */}
-                <div className="mb-3 bg-muted/100 p-2 rounded-md">
-                  <div className="flex items-center gap-1 mb-1">
-                    <Info className="h-3 w-3 opacity-75" />
-                    <span className="font-medium text-xs">基本信息</span>
+        {drones &&
+          drones.map((drone, index) => (
+            <Card
+              key={index}
+              className={`w-full h-min ${
+                !droneConnections[drone.sn || ""] ? "border-dashed" : ""
+              } text-xs`}
+            >
+              <CardHeader className="p-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    {/* 添加颜色标识 */}
+                    <div
+                      className="w-3 h-3 rounded-full flex-shrink-0"
+                      style={{ backgroundColor: drone.color || "#3366FF" }}
+                    ></div>
+                    <CardTitle className="text-sm">
+                      {drone.callsign || "未命名无人机"}
+                    </CardTitle>
                   </div>
-                  
-                  {/* 修改呼号和序列号的显示结构 */}
-                  <div className="mb-2 flex flex-col gap-1 text-xs">
-                    <div className="flex items-center">
-                      <span className="min-w-[3.5rem] text-muted-foreground">
-                        呼号:
-                      </span>
-                      <span className="font-mono">
-                        {drone.callsign || "未设置"}
-                      </span>
-                    </div>
-                    <div className="flex items-center">
-                      <span className="min-w-[3.5rem] text-muted-foreground">
-                        序列号:
-                      </span>
-                      <span className="font-mono">{drone.sn || "未知"}</span>
-                    </div>
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-xs">
-                    <div className="flex items-center">
-                      <span className="min-w-[3.5rem] text-muted-foreground">
-                        型号:
-                      </span>
-                      <span className="font-mono">{drone.model || "未知"}</span>
-                    </div>
-                    <div className="flex items-center">
-                      <span className="min-w-[3.5rem] text-muted-foreground">
-                        状态:
-                      </span>
-                      <span
-                        className={`font-mono ${
-                          drone.sn && droneConnections[drone.sn]
-                            ? "text-green-600"
-                            : "text-amber-600"
-                        }`}
+
+                  <div className="flex items-center gap-2">
+                    {/* 连接状态指示 */}
+                    {drone.sn && droneConnections[drone.sn] ? (
+                      <Wifi className="h-3 w-3 text-green-500" />
+                    ) : (
+                      <WifiOff className="h-3 w-3 text-gray-400" />
+                    )}
+
+                    {/* 展开/折叠按钮 - 修改为专门的按钮元素并添加明确的点击处理 */}
+                    {drone.sn && (
+                      <button
+                        onClick={(e) =>
+                          drone.sn && toggleCardCollapse(drone.sn, e)
+                        }
+                        className="p-1 rounded hover:bg-gray-100 focus:outline-none"
+                        aria-label={
+                          collapsedCards[drone.sn] ? "展开详情" : "折叠详情"
+                        }
                       >
-                        {drone.sn && droneConnections[drone.sn]
-                          ? "已连接"
-                          : "未连接"}
-                      </span>
-                    </div>
+                        {collapsedCards[drone.sn] ? (
+                          <ChevronDown className="h-3 w-3" />
+                        ) : (
+                          <ChevronUp className="h-3 w-3" />
+                        )}
+                      </button>
+                    )}
                   </div>
                 </div>
 
-                {/* 实时遥测数据 */}
-                <div
-                  className={`flex flex-col gap-2 text-xs ${
-                    !droneConnections[drone.sn] ? "opacity-50" : ""
-                  }`}
-                >
-                  {/* 位置信息 - 修改为占据整行以显示长经纬度 */}
-                  <div className="w-full space-y-1">
-                    <div className="flex items-center gap-1">
-                      <Compass className="h-3 w-3 opacity-75" />
-                      <span className="font-medium">位置</span>
+                <div className="flex items-center justify-between">
+                  {/* 显示电量和高度的简要信息，仅在折叠状态下显示 */}
+                  {drone.sn &&
+                    collapsedCards[drone.sn] &&
+                    droneConnections[drone.sn] && (
+                      <div className="flex items-center gap-3 text-[10px]">
+                        <div className="flex items-center gap-1" title="电量">
+                          <Battery className="h-2.5 w-2.5 text-green-500" />
+                          <span>{droneStates[drone.sn]?.battery ?? "--"}%</span>
+                        </div>
+                        <div className="flex items-center gap-1" title="高度">
+                          <ArrowUp className="h-2.5 w-2.5 text-sky-500" />
+                          <span>{droneStates[drone.sn]?.height ?? "--"}m</span>
+                        </div>
+                      </div>
+                    )}
+
+                  {/* 等待连接提示 */}
+                  {drone.sn && !droneConnections[drone.sn] && (
+                    <span className="text-[10px] text-amber-500">
+                      等待连接...
+                    </span>
+                  )}
+                </div>
+              </CardHeader>
+
+              {/* 扩展内容，只在非折叠状态下显示 */}
+              {drone.sn && !collapsedCards[drone.sn] && (
+                <CardContent className="px-3 mb-3">
+                  {/* 基本信息卡片 - 始终显示的信息 */}
+                  <div className="mb-3 bg-muted/100 p-2 rounded-md">
+                    <div className="flex items-center gap-1 mb-1">
+                      <Info className="h-3 w-3 opacity-75" />
+                      <span className="font-medium text-xs">基本信息</span>
                     </div>
-                    <div className="flex flex-col gap-1">
+
+                    {/* 修改呼号和序列号的显示结构 */}
+                    <div className="mb-2 flex flex-col gap-1 text-xs">
                       <div className="flex items-center">
-                        <span className="w-10 min-w-[2.5rem]">经度:</span>
-                        <span className="font-mono overflow-x-auto whitespace-nowrap">
-                          {(drone.sn &&
-                            droneStates[drone.sn]?.lng.toFixed(12)) ??
-                            "--"}
+                        <span className="min-w-[3.5rem] text-muted-foreground">
+                          呼号:
+                        </span>
+                        <span className="font-mono">
+                          {drone.callsign || "未设置"}
                         </span>
                       </div>
                       <div className="flex items-center">
-                        <span className="w-10 min-w-[2.5rem]">纬度:</span>
-                        <span className="font-mono overflow-x-auto whitespace-nowrap">
-                          {(drone.sn && droneStates[drone.sn]?.lat.toFixed(12)) ??
-                            "--"}
+                        <span className="min-w-[3.5rem] text-muted-foreground">
+                          序列号:
+                        </span>
+                        <span className="font-mono">{drone.sn || "未知"}</span>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-xs">
+                      <div className="flex items-center">
+                        <span className="min-w-[3.5rem] text-muted-foreground">
+                          型号:
+                        </span>
+                        <span className="font-mono">
+                          {drone.model || "未知"}
+                        </span>
+                      </div>
+                      <div className="flex items-center">
+                        <span className="min-w-[3.5rem] text-muted-foreground">
+                          状态:
+                        </span>
+                        <span
+                          className={`font-mono ${
+                            drone.sn && droneConnections[drone.sn]
+                              ? "text-green-600"
+                              : "text-amber-600"
+                          }`}
+                        >
+                          {drone.sn && droneConnections[drone.sn]
+                            ? "已连接"
+                            : "未连接"}
                         </span>
                       </div>
                     </div>
                   </div>
 
-                  <Separator className="w-full h-[1px] bg-muted" />
-
-                  {/* 飞行状态和电量信息 - 并排显示 */}
-                  <div className="grid grid-cols-2 gap-2">
-                    {/* 飞行状态 */}
-                    <div className="space-y-1">
+                  {/* 实时遥测数据 */}
+                  <div
+                    className={`flex flex-col gap-2 text-xs ${
+                      !droneConnections[drone.sn] ? "opacity-50" : ""
+                    }`}
+                  >
+                    {/* 位置信息 - 修改为占据整行以显示长经纬度 */}
+                    <div className="w-full space-y-1">
                       <div className="flex items-center gap-1">
-                        <Activity className="h-3 w-3 opacity-75" />
-                        <span className="font-medium">飞行状态</span>
+                        <Compass className="h-3 w-3 opacity-75" />
+                        <span className="font-medium">位置</span>
                       </div>
                       <div className="flex flex-col gap-1">
-                        <div className="flex items-center gap-1">
-                          <ArrowUp className="h-3 w-3" />
-                          <span className="w-10 min-w-[2.5rem]">高度:</span>
-                          <span className="font-mono">
-                            {(drone.sn && droneStates[drone.sn]?.height) ?? "--"}m
+                        <div className="flex items-center">
+                          <span className="w-10 min-w-[2.5rem]">经度:</span>
+                          <span className="font-mono overflow-x-auto whitespace-nowrap">
+                            {(drone.sn &&
+                              droneStates[drone.sn]?.lng.toFixed(12)) ??
+                              "--"}
                           </span>
                         </div>
-                        <div className="flex items-center gap-1">
-                          <ArrowRight className="h-3 w-3" />
-                          <span className="w-10 min-w-[2.5rem]">速度:</span>
-                          <span className="font-mono">
-                            {(drone.sn && droneStates[drone.sn]?.speed) ?? "--"}
-                            m/s
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Navigation className="h-3 w-3" />
-                          <span className="w-10 min-w-[2.5rem]">航向:</span>
-                          <span className="font-mono">
-                            {(drone.sn && droneStates[drone.sn]?.heading) ?? "--"}
-                            °
+                        <div className="flex items-center">
+                          <span className="w-10 min-w-[2.5rem]">纬度:</span>
+                          <span className="font-mono overflow-x-auto whitespace-nowrap">
+                            {(drone.sn &&
+                              droneStates[drone.sn]?.lat.toFixed(12)) ??
+                              "--"}
                           </span>
                         </div>
                       </div>
                     </div>
 
-                    {/* 电量信息 */}
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-1">
-                        <Battery className="h-3 w-3 opacity-75" />
-                        <span className="font-medium">电量</span>
+                    <Separator className="w-full h-[1px] bg-muted" />
+
+                    {/* 飞行状态和电量信息 - 并排显示 */}
+                    <div className="grid grid-cols-2 gap-2">
+                      {/* 飞行状态 */}
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-1">
+                          <Activity className="h-3 w-3 opacity-75" />
+                          <span className="font-medium">飞行状态</span>
+                        </div>
+                        <div className="flex flex-col gap-1">
+                          <div className="flex items-center gap-1">
+                            <ArrowUp className="h-3 w-3" />
+                            <span className="w-10 min-w-[2.5rem]">高度:</span>
+                            <span className="font-mono">
+                              {(drone.sn && droneStates[drone.sn]?.height) ??
+                                "--"}
+                              m
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <ArrowRight className="h-3 w-3" />
+                            <span className="w-10 min-w-[2.5rem]">速度:</span>
+                            <span className="font-mono">
+                              {(drone.sn && droneStates[drone.sn]?.speed) ??
+                                "--"}
+                              m/s
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Navigation className="h-3 w-3" />
+                            <span className="w-10 min-w-[2.5rem]">航向:</span>
+                            <span className="font-mono">
+                              {(drone.sn && droneStates[drone.sn]?.heading) ??
+                                "--"}
+                              °
+                            </span>
+                          </div>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-1 mb-1">
-                        <BatteryCharging className="h-3 w-3 opacity-75" />
-                        <span className="font-medium">
-                          {(drone.sn && droneStates[drone.sn]?.battery) ?? "--"}%
+
+                      {/* 电量信息 */}
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-1">
+                          <Battery className="h-3 w-3 opacity-75" />
+                          <span className="font-medium">电量</span>
+                        </div>
+                        <div className="flex items-center gap-1 mb-1">
+                          <BatteryCharging className="h-3 w-3 opacity-75" />
+                          <span className="font-medium">
+                            {(drone.sn && droneStates[drone.sn]?.battery) ??
+                              "--"}
+                            %
+                          </span>
+                        </div>
+                        <div className="h-4 w-full rounded bg-gradient-to-r from-green-400 to-green-600/80 p-0">
+                          <div
+                            className="h-full rounded-r bg-background/80"
+                            style={{
+                              width: `${
+                                100 -
+                                (Number(
+                                  drone.sn && droneStates[drone.sn]?.battery
+                                ) || 0)
+                              }%`,
+                              marginLeft: "auto",
+                            }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* 连接状态提示 */}
+                    {drone.sn && !droneConnections[drone.sn] && (
+                      <div className="mt-2 p-2 bg-amber-50 rounded-md text-[10px] text-amber-600 flex items-center gap-1">
+                        <WifiOff className="h-2 w-2" />
+                        <span>
+                          尚未收到该无人机的实时数据，请确认无人机已通电并连接网络
                         </span>
                       </div>
-                      <div className="h-4 w-full rounded bg-gradient-to-r from-green-400 to-green-600/80 p-0">
-                        <div
-                          className="h-full rounded-r bg-background/80"
-                          style={{
-                            width: `${
-                              100 -
-                              (Number(
-                                drone.sn && droneStates[drone.sn]?.battery
-                              ) || 0)
-                            }%`,
-                            marginLeft: "auto",
-                          }}
-                        />
-                      </div>
-                    </div>
+                    )}
                   </div>
-
-                  {/* 连接状态提示 */}
-                  {drone.sn && !droneConnections[drone.sn] && (
-                    <div className="mt-2 p-2 bg-amber-50 rounded-md text-[10px] text-amber-600 flex items-center gap-1">
-                      <WifiOff className="h-2 w-2" />
-                      <span>
-                        尚未收到该无人机的实时数据，请确认无人机已通电并连接网络
-                      </span>
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            )}
-          </Card>
-        ))}
+                </CardContent>
+              )}
+            </Card>
+          ))}
+      </div>
+      <div className="h-[300px] overflow-y-auto flex flex-col gap-3 p-3 border rounded-md shadow-sm bg-background">
+        <div className="text-sm font-medium">搜索结果</div>
+      </div>
     </div>
   );
 }
