@@ -50,7 +50,7 @@ export default function Home() {
     onSuccess: (data) => {
       console.log(data);
 
-      router.push("/zh/pilot");
+      router.push("/pilot");
     },
   });
 
