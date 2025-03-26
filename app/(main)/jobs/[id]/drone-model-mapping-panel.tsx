@@ -168,7 +168,7 @@ export default function DroneModelMappingPanel({
   return (
     <div className="space-y-2 p-3 border rounded-md shadow-sm">
       <div className="flex items-center justify-between">
-        <div className="text-md font-medium">执飞机型映射</div>
+        <div className="text-md font-medium">无人机绑定</div>
         <Button
           variant="ghost"
           size="sm"
