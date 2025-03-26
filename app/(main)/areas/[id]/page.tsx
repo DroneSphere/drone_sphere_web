@@ -1,7 +1,15 @@
 "use client";
 
-import { createArea, fetchArea } from "@/api/search_area/search_area";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import {
   Form,
   FormControl,
@@ -26,6 +34,7 @@ import { useIsCreateMode } from "@/lib/misc";
 import AMapLoader from "@amap/amap-jsapi-loader";
 import "@amap/amap-jsapi-types";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { DialogTitle } from "@radix-ui/react-dialog";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   createColumnHelper,
@@ -37,38 +46,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-
-const deleteArea = async (id: number) => {
-  // mock
-  console.log("deleteArea", id);
-
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve(true);
-    }, 1000);
-  });
-};
-
-interface UpdateAreaParams {
-  id: number;
-  name: string;
-  description?: string;
-  points: Array<{
-    lng?: number;
-    lat?: number;
-  }>;
-}
-
-const updateArea = async (data: UpdateAreaParams): Promise<boolean> => {
-  // mock
-  console.log("updateArea", data);
-
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve(true);
-    }, 1000);
-  });
-};
+import { createArea, deleteArea, fetchArea, updateArea } from "./requests";
 
 const columnHelper = createColumnHelper<{
   lng?: number;
@@ -100,6 +78,7 @@ export default function AreaDetailPage() {
   const queryClient = useQueryClient();
   const AMapRef = useRef<typeof AMap | null>(null);
   const mapRef = useRef<AMap.Map | null>(null);
+  const placeSearchRef = useRef<unknown | null>(null);
   const polygonRef = useRef<AMap.Polygon | null>(null);
   const polygonEditorRef = useRef<AMap.PolygonEditor | null>(null);
   const [amapLoaded, setAmapLoaded] = useState(false);
@@ -170,22 +149,69 @@ export default function AreaDetailPage() {
     },
   });
 
+  // 处理多边形点数据，过滤无效点并返回有效点数组
+  const processPolygonPoints = (
+    polygonPoints: { lng?: number; lat?: number }[]
+  ) => {
+    // 过滤掉没有经纬度的点，并确保所有值都是非可选的
+    const validPoints = polygonPoints
+      .filter((point) => point.lng !== undefined && point.lat !== undefined)
+      .map((point) => ({
+        lng: point.lng!,
+        lat: point.lat!,
+      }));
+
+    return validPoints;
+  };
+
+  // 验证多边形数据是否有效，至少需要3个有效点
+  const validatePolygonData = (
+    pointsData: { lng?: number; lat?: number }[]
+  ) => {
+    if (!pointsData || pointsData.length < 3) {
+      toast({
+        title: "区域数据错误",
+        description: "请至少绘制三个点以形成一个有效的区域",
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    const validPoints = processPolygonPoints(pointsData);
+
+    if (validPoints.length < 3) {
+      toast({
+        title: "区域数据错误",
+        description: "有效的点数量不足，请确保所有点都有经纬度值",
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    return true;
+  };
+
   // 表单提交回调函数
   const onSubmit = (data: z.infer<typeof formSchema>) => {
-    if (isCreating) {
-      // 添加点序列
-      console.log("onSubmit", data);
-      data.points = polygonPoints.map((point) => ({
-        lng: point.lng,
-        lat: point.lat,
-      }));
-      console.log("onSubmit", data);
+    // 验证多边形数据
+    if (!validatePolygonData(polygonPoints)) {
+      return;
+    }
+    // 获取有效点位数据
+    const validPoints = processPolygonPoints(polygonPoints);
 
-      createMutation.mutate(data);
+    if (isCreating) {
+      // 创建区域
+      createMutation.mutate({
+        ...data,
+        points: validPoints,
+      });
     } else {
+      // 更新区域 - 确保传递正确的类型
       updateMutation.mutate({
         id: Number(idPart),
         ...data,
+        points: validPoints,
       });
     }
   };
@@ -300,6 +326,7 @@ export default function AreaDetailPage() {
             "AMap.PolygonEditor",
             "AMap.MouseTool",
             "AMap.Geolocation",
+            "AMap.PlaceSearch",
           ],
           function () {
             const tool = new AMap.ToolBar();
@@ -307,6 +334,16 @@ export default function AreaDetailPage() {
 
             const scale = new AMap.Scale();
             mapRef.current?.addControl(scale);
+
+            const placeSearch = new AMap.PlaceSearch({
+              pageSize: 5, //单页显示结果条数
+              pageIndex: 1, //页码
+              citylimit: false, //是否强制限制在设置的城市内搜索
+              map: mapRef.current, //展示结果的地图实例
+              panel: "search-panel", //参数值为你页面定义容器的 id 值<div id="my-panel"></div>，结果列表将在此容器中进行展示。
+              autoFitView: true, //是否自动调整地图视野使绘制的 Marker 点都处于视口的可见范围
+            });
+            placeSearchRef.current = placeSearch;
 
             // 初始化多边形编辑器
             polygonEditorRef.current = new AMap.PolygonEditor(mapRef.current);
@@ -562,12 +599,37 @@ export default function AreaDetailPage() {
           <div className="flex space-x-4">
             <div
               id="map"
-              className="h-[calc(100vh-120px)] w-full border rounded-md shadow-sm"
+              className="h-[calc(100vh-200px)] w-full border rounded-md shadow-sm"
             ></div>
 
-            {polygonPoints.length > 0 && (
-              <div className="flex flex-col w-auto">
-                <div className="space-y-2 border rounded-md shadow-sm">
+            <div className="flex flex-col w-[400px] gap-4">
+              <div>
+                <div className="space-y-2 pb-2 border-t border-l border-r rounded-t-md shadow-sm">
+                  <div className="px-3 mt-3 text-sm font-medium">地图搜索</div>
+                  <div className="px-3 pb-2">
+                    <Input 
+                      placeholder="输入地点名称搜索" 
+                      onChange={(e) => {
+                        if (placeSearchRef.current && e.target.value.trim()) {
+                          // @ts-expect-error - PlaceSearch type not properly defined
+                          placeSearchRef.current.search(e.target.value);
+                        }
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && placeSearchRef.current) {
+                          e.preventDefault();
+                          // @ts-expect-error - PlaceSearch type not properly defined
+                          placeSearchRef.current.search(e.currentTarget.value);
+                        }
+                      }}
+                      className="p-2 border rounded-md shadow-sm"
+                    />
+                  </div>
+                </div>
+                <div id="search-panel" className="w-full h-full" />
+              </div>
+              {polygonPoints.length > 0 && (
+                <div className="space-y-2 overflow-auto border rounded-md shadow-sm">
                   <div className="px-3 mt-3 text-sm font-medium">节点信息</div>
                   <Table className="">
                     <TableHeader className="bg-gray-100">
@@ -612,7 +674,9 @@ export default function AreaDetailPage() {
                     </TableBody>
                   </Table>
                 </div>
-                <div className="mt-4 space-y-2 p-3 border rounded-md shadow-sm">
+              )}
+              {polygonPoints.length > 0 && (
+                <div className="space-y-2 p-3 border rounded-md shadow-sm">
                   <div className="text-sm font-medium">区域信息</div>
                   <div className="grid grid-cols-2 gap-1">
                     <span className="text-sm text-gray-500">总面积:</span>
@@ -630,24 +694,28 @@ export default function AreaDetailPage() {
                       {areaLengthDisplay}
                     </span>
 
-                    <span className="text-sm text-gray-500">创建日期:</span>
-                    <span className="text-sm font-medium">
-                      {new Date().toLocaleDateString()}
-                    </span>
-
-                    {isEditing && (
+                    {query.data?.created_at && (
+                      <>
+                        <span className="text-sm text-gray-500">创建日期:</span>
+                        <span className="text-sm font-medium">
+                          {query.data.created_at}
+                        </span>
+                      </>
+                    )}
+                    {query.data?.updated_at && (
                       <>
                         <span className="text-sm text-gray-500">编辑日期:</span>
                         <span className="text-sm font-medium">
-                          {new Date().toLocaleDateString()}
+                          {query.data.updated_at}
                         </span>
                       </>
                     )}
                   </div>
                 </div>
-                <div className="flex-1" />
+              )}
 
-                {/* 控制按钮 */}
+              {/* 控制按钮 */}
+              {polygonPoints.length > 0 && (
                 <div className="flex space-x-2 justify-end">
                   {/* 创建模式 */}
                   {isCreating && !isEditing && (
@@ -700,19 +768,43 @@ export default function AreaDetailPage() {
                       >
                         编辑
                       </Button>
-                      {/* <Button
-                        variant="destructive"
-                        type="button"
-                        size="sm"
-                        onClick={() => setShowDeleteDialog(true)}
-                      >
-                        删除
-                      </Button> */}
+                      <Dialog>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          type="button"
+                          asChild
+                        >
+                          <DialogTrigger>删除</DialogTrigger>
+                        </Button>
+                        <DialogContent>
+                          <DialogHeader>
+                            <DialogTitle>删除区域</DialogTitle>
+                            <DialogDescription>
+                              您确定要删除这个区域吗？此操作不可撤销。
+                            </DialogDescription>
+                          </DialogHeader>
+                          <DialogFooter>
+                            <Button
+                              variant="destructive"
+                              onClick={() => deleteMutation.mutate(idPart)}
+                              disabled={deleteMutation.isPending}
+                            >
+                              {deleteMutation.isPending
+                                ? "删除中..."
+                                : "确认删除"}
+                            </Button>
+                            <DialogClose asChild>
+                              <Button variant="outline">取消</Button>
+                            </DialogClose>
+                          </DialogFooter>
+                        </DialogContent>
+                      </Dialog>
                     </>
                   )}
                 </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </form>
       </Form>

@@ -1,12 +1,18 @@
 "use client";
 
-import {
-  AreaItemResult,
-  AreaSearchParams,
-  fetchAllAreas,
-} from "@/api/search_area/search_area";
+import { selectAllAreas } from "@/app/(main)/areas/requests";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import {
   HoverCard,
   HoverCardContent,
@@ -26,8 +32,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   createColumnHelper,
   flexRender,
@@ -35,9 +42,11 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import { format } from "date-fns";
-import { CalendarIcon, View } from "lucide-react";
+import { CalendarIcon, Trash, View } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { deleteArea } from "./[id]/requests";
+import { AreaItemResult, AreaSearchParams } from "./types";
 
 const columnHelper = createColumnHelper<AreaItemResult>();
 
@@ -46,14 +55,26 @@ export default function AreasPage() {
   const [searchParams, setSearchParams] = useState<AreaSearchParams | null>(
     null
   );
-  const queryKey = ["areas", "list"];
-  const listQuery = useQuery({
+  const queryClient = useQueryClient();
+  const queryKey = ["areas"];
+  const query = useQuery({
     queryKey: queryKey,
     queryFn: () => {
-      return fetchAllAreas(searchParams);
+      return selectAllAreas(searchParams);
     },
   });
 
+  // 删除区域的mutation
+  const deleteMutation = useMutation({
+    mutationFn: deleteArea,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["areas"] });
+      toast({
+        title: "删除成功",
+        description: "区域已删除",
+      });
+    },
+  });
   const columns = [
     columnHelper.accessor("id", {
       header: () => "ID",
@@ -71,7 +92,7 @@ export default function AreasPage() {
       cell: (info) => info.getValue()?.toFixed(8),
     }),
     columnHelper.accessor("center_lng", {
-      header: () => <div className="text-center min-w-32">区域中心点净度</div>,
+      header: () => <div className="text-center min-w-32">区域中心点经度</div>,
       cell: (info) => info.getValue()?.toFixed(8),
     }),
     columnHelper.accessor("created_at", {
@@ -110,13 +131,47 @@ export default function AreasPage() {
           >
             <View className="h-4 w-4" />
           </Button>
+          <Dialog>
+            <Button
+              size="icon"
+              variant="destructive"
+              className="h-8 w-8 bg-red-400 text-gray-100 hover:bg-red-500"
+            >
+              <DialogTrigger>
+                <Trash className="h-4 w-4" />
+              </DialogTrigger>
+            </Button>
+
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>删除区域</DialogTitle>
+                <DialogDescription>
+                  您确定要删除这个区域吗？此操作不可撤销。
+                </DialogDescription>
+              </DialogHeader>
+              <DialogFooter>
+                <Button
+                  variant="destructive"
+                  onClick={() =>
+                    deleteMutation.mutate(info.row.original.id.toString())
+                  }
+                  disabled={deleteMutation.isPending}
+                >
+                  {deleteMutation.isPending ? "删除中..." : "确认删除"}
+                </Button>
+                <DialogClose asChild>
+                  <Button variant="outline">取消</Button>
+                </DialogClose>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
       ),
     }),
   ];
 
   const table = useReactTable({
-    data: listQuery.data || [],
+    data: query.data || [],
     columns,
     getCoreRowModel: getCoreRowModel(),
   });
@@ -129,8 +184,12 @@ export default function AreasPage() {
           placeholder="区域名称"
           className="px-4 py-2 border rounded-md w-[200px]"
           onChange={(e) =>
-            setSearchParams((prev) => ({ ...prev, name: e.target.value }))
+            setSearchParams((prev) => ({
+              ...(prev || {}),
+              name: e.target.value,
+            }))
           }
+          value={searchParams?.name || ''}
         />
         <div className="flex gap-2 items-center">
           <span>开始时间:</span>
@@ -208,15 +267,17 @@ export default function AreasPage() {
         </div>
         <div className="flex-1"></div>
         <Button
-          onClick={() => listQuery.refetch()}
-          disabled={listQuery.isPending}
+          onClick={() => {
+            queryClient.invalidateQueries({ queryKey: ["areas"] });
+          }}
+          disabled={query.isPending}
         >
           搜索
         </Button>
         {/* 创建 */}
         <Button
           onClick={() => router.push("/areas/new")}
-          disabled={listQuery.isPending}
+          disabled={query.isPending}
           variant="outline"
         >
           创建
@@ -224,7 +285,7 @@ export default function AreasPage() {
       </div>
       {
         // 加载中
-        listQuery.isPending && (
+        query.isLoading && (
           <div className="my-16 space-y-4 items-center justify-center flex flex-col">
             <div role="status">
               <svg
@@ -248,7 +309,7 @@ export default function AreasPage() {
           </div>
         )
       }
-      {listQuery.isSuccess && (
+      {query.isSuccess && (
         <div className="my-4">
           <Table className="border border-gray-200 rounded-md">
             <TableHeader className="bg-gray-100">
@@ -287,15 +348,17 @@ export default function AreasPage() {
       )}
       {
         // 无数据
-        !listQuery.isPending &&
-          listQuery.isSuccess &&
-          listQuery.data?.length === 0 && (
-            <div className="text-center text-gray-500">暂无数据</div>
+        !query.isLoading &&
+          query.isSuccess &&
+          (!query.data || query.data.length === 0) && (
+            <div className="text-center text-gray-500">
+              未找到符合条件的区域
+            </div>
           )
       }
       {
         // 加载失败
-        listQuery.isError && <div className="text-center">加载失败</div>
+        query.isError && <div className="text-center">加载失败</div>
       }
     </div>
   );
