@@ -15,6 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { useState } from "react";
 import { UseFormReturn } from "react-hook-form";
 
@@ -24,6 +25,7 @@ interface TaskInfoPanelProps {
   form: UseFormReturn<{
     name?: string | undefined;
     description?: string | undefined;
+    schedule_time?: string | undefined;
     area_id?: number | undefined;
   }>;
   optionsQuery: {
@@ -58,7 +60,7 @@ export default function TaskInfoPanel({
   setPath,
   AMapRef,
 }: TaskInfoPanelProps) {
-  const [collapsed, setCollapsed] = useState<boolean>(false);
+  const [collapsed, setCollapsed] = useState<boolean>(true);
   return (
     <div className="space-y-2 p-3 border rounded-md shadow-sm">
       <div className="flex items-center justify-between">
@@ -130,7 +132,7 @@ export default function TaskInfoPanel({
                   <FormItem>
                     <FormLabel>任务描述</FormLabel>
                     <FormControl>
-                      <Input placeholder="请输入任务描述" {...field} />
+                      <Textarea placeholder="请输入任务描述" {...field} className="resize-none" />
                     </FormControl>
                     <FormDescription>
                       描述用于对该任务进行标识和说明，可以是任何信息。
@@ -139,6 +141,22 @@ export default function TaskInfoPanel({
                   </FormItem>
                 )}
               />
+               {/* <FormField
+                control={form.control}
+                name="schedule_time"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>计划执行时间</FormLabel>
+                    <FormControl>
+                      
+                    </FormControl>
+                    <FormDescription>
+                      描述用于对该任务进行标识和说明，可以是任何信息。
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              /> */}
               <FormField
                 control={form.control}
                 name="area_id"

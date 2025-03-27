@@ -263,7 +263,7 @@ export default function WaylinePanel({
   isEditMode,
 }: WaylinePanelProps) {
   const { toast } = useToast();
-  const [collapsed, setCollapsed] = useState<boolean>(false);
+  const [collapsed, setCollapsed] = useState<boolean>(true);
   
   // 添加无人机飞行参数状态
   const [droneParams, setDroneParams] = useState({

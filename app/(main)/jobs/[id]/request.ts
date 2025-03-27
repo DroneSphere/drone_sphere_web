@@ -9,55 +9,69 @@ import {
   PhysicalDrone,
 } from "./type";
 
+// API路径前缀
 const prefix = "/job";
 
+/**
+ * 获取所有任务列表
+ * @param params 任务搜索参数，可为空
+ * @returns 任务列表数据
+ */
 export async function fetchAllJobs(
   params: JobSearchParams | null = null
 ): Promise<JobItemResult[]> {
-  console.log("fetchAllJobs", params);
-
   const res = await httpClient.instance.get<Response<JobItemResult[]>>(
     `${prefix}`
   );
   return res.data.data;
 }
 
+/**
+ * 通过ID获取任务详情
+ * @param id 任务ID
+ * @returns 任务详情数据
+ */
 export async function getJobDetailById(id: number): Promise<JobDetailResult> {
   const res = await httpClient.instance.get<Response<JobDetailResult>>(
     `${prefix}/${id}`
-  );
-  console.log("getJobDetailById", res.data.data);
-  
+  );  
   return res.data.data;
 }
 
+/**
+ * 获取任务可用的物理无人机列表
+ * @returns 物理无人机列表
+ */
 export async function getJobPhysicalDrones(): Promise<PhysicalDrone[]> {
   const res = await httpClient.instance.get<Response<PhysicalDrone[]>>(
     `${prefix}/creation/drones`
-  );
-  console.log("getJobPhysicalDrones", res.data.data);
-  
+  );  
   return res.data.data;
 }
 
+/**
+ * 创建新任务
+ * @param data 创建任务的请求数据
+ * @returns 创建的任务详情
+ */
 export async function createJob(
   data: JobCreationRequest
 ): Promise<JobDetailResult> {
-  console.log("createJob", data);
-
   const res = await httpClient.instance.post<Response<JobDetailResult>>(
     `${prefix}`,
     data
   );
   return res.data.data;
-  // return Promise.resolve({} as JobDetailResult);
 }
 
+/**
+ * 获取创建任务的选项数据
+ * @param id 相关ID
+ * @returns 任务创建选项数据
+ */
 export async function getJobCreateOpytions(
   id: number
 ): Promise<JobCreationResult> {
-  console.log(id);
-
   const res = await httpClient.instance.get<Response<JobCreationResult>>(
     `${prefix}/creation/options`
   );

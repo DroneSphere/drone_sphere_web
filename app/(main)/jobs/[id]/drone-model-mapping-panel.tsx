@@ -50,7 +50,7 @@ export default function DroneModelMappingPanel({
   setDroneMappings,
 }: DroneModelMappingProps) {
   const { toast } = useToast();
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(true);
   const physicalQuery = useQuery({
     queryKey: ["physicalDrones"],
     queryFn: getJobPhysicalDrones,
@@ -264,17 +264,25 @@ export default function DroneModelMappingPanel({
                                   <SelectItem
                                     key={physicalDrone.id}
                                     value={String(physicalDrone.id)}
-                                    // disabled={droneMappings.some(
-                                    //   (m) =>
-                                    //     m.physicalDroneId ===
-                                    //       physicalDrone.id &&
-                                    //     m.droneModelId !== drone.id
-                                    // )}
+                                    disabled={
+                                      droneMappings.some(
+                                        (m) =>
+                                          m.physicalDroneId === physicalDrone.id
+                                      ) &&
+                                      mapping?.physicalDroneId !==
+                                        physicalDrone.id
+                                    }
                                   >
                                     {physicalDrone.callsign} -{" "}
                                     {physicalDrone.sn}
                                   </SelectItem>
                                 )
+                              )}
+                              {availablePhysicalDronesByModelId(drone.id)
+                                .length === 0 && (
+                                <SelectItem disabled value="0">
+                                  无可用物理无人机
+                                </SelectItem>
                               )}
                             </SelectGroup>
                           </SelectContent>

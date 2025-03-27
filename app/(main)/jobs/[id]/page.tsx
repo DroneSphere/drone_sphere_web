@@ -30,6 +30,7 @@ import DroneModelMappingPanel, {
 const formSchema = z.object({
   name: z.string().optional(),
   description: z.string().optional(),
+  schedule_time: z.string().optional(),
   area_id: z.number().optional(),
 });
 
@@ -113,6 +114,7 @@ export default function Page() {
     defaultValues: {
       name: "",
       description: "",
+      schedule_time: "",
       area_id: 0,
     },
   });
@@ -596,13 +598,13 @@ export default function Page() {
   }, [waylineAreas, isMapLoaded, selectedDrones, path, isCreating, isEditing]);
 
   return (
-    <div className="px-4 mb-4">
+    <div className="px-4 mb-4 h-max-screen">
       <div className="flex gap-4">
         <div
           id="map"
           className="min-h-[720px] h-[calc(100vh-200px)] w-full border rounded-md shadow-sm"
         />
-        <div className="w-96">
+        <div className="w-[460px]">
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
               <TaskInfoPanel

@@ -1,6 +1,9 @@
 "use client";
 
-import { JobCreationResult, JobDetailResult } from "@/app/(main)/jobs/[id]/type";
+import {
+  JobCreationResult,
+  JobDetailResult,
+} from "@/app/(main)/jobs/[id]/type";
 import { Button } from "@/components/ui/button";
 import { FormControl, FormItem } from "@/components/ui/form";
 import {
@@ -14,7 +17,7 @@ import {
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Trash } from "lucide-react";
+import { Plus, Trash, Trash2 } from "lucide-react";
 import { useState } from "react";
 
 interface DroneSelectProps {
@@ -33,7 +36,7 @@ export default function DroneSelectionPanel({
   availableDrones,
 }: DroneSelectProps) {
   const { toast } = useToast();
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(true);
   const [selectedDroneKey, setSelectedDroneKey] = useState<string | undefined>(
     undefined
   );
@@ -72,9 +75,7 @@ export default function DroneSelectionPanel({
       return;
     }
 
-    const variantion = drone.variantions.find(
-      (v) => v.index === variantionIndex
-    );
+    const variantion = drone.variantions.find((v) => v.id === variantionIndex);
     if (!variantion) {
       toast({
         title: "无人机变体不存在",
@@ -132,7 +133,6 @@ export default function DroneSelectionPanel({
       title: "无人机已移除",
       description: "请重新选择无人机",
     });
-  
   };
 
   return (
@@ -205,24 +205,24 @@ export default function DroneSelectionPanel({
                                 (d) => d.id === droneId
                               );
                               const variant = drone?.variantions.find(
-                                (v) => v.index === variantIndex
+                                (v) => v.id === variantIndex
                               );
                               return drone && variant
-                                ? `${drone.model}-${variant.name}`
+                                ? `${drone.name}-${variant.name}`
                                 : "请选择无人机";
                             })()
                           : "请选择无人机"}
                       </SelectValue>
                     </SelectTrigger>
                   </FormControl>
-                  <SelectContent>
+                  <SelectContent className="max-h-[300px] overflow-y-auto">
                     {availableDrones?.map((e) => (
                       <SelectGroup key={e.id} className="w-full">
-                        <SelectLabel className="w-full">{e.model}</SelectLabel>
+                        <SelectLabel className="w-full">{e.name}</SelectLabel>
                         {e.variantions.map((v) => (
                           <SelectItem
-                            key={"0-" + e.id + "-" + v.index}
-                            value={"0-" + e.id + "-" + v.index || ""}
+                            key={"0-" + e.id + "-" + v.id}
+                            value={"0-" + e.id + "-" + v.id || ""}
                           >
                             {v.name}
                           </SelectItem>
@@ -238,8 +238,10 @@ export default function DroneSelectionPanel({
                 size="icon"
                 className="mr-2 h-8 w-8"
                 onClick={handleClearDrones}
+                disabled={!selectedDrones?.length}
+                title="清空所有已选无人机"
               >
-                <Trash className="h-4 w-4" />
+                <Trash2 className="h-4 w-4" />
               </Button>
               <Button
                 variant="default"
@@ -248,6 +250,7 @@ export default function DroneSelectionPanel({
                 type="button"
                 className="h-8 w-8 bg-blue-400 text-gray-100 hover:bg-blue-500"
                 onClick={handleAddDrone}
+                title="添加无人机"
               >
                 <Plus className="h-4 w-4" />
               </Button>
@@ -255,22 +258,21 @@ export default function DroneSelectionPanel({
           )}
 
           {/* Display selected drones */}
-          {selectedDrones?.map((d) => (
-            <div className="mt-4 px-1" key={d.key}>
-              <div className="flex justify-between items-start">
-                <div className="text-sm">
-                  <p>{d.name}</p>
-                  <p className="mt-2 text-gray-500">{d.variantion.name}</p>
-                </div>
-                <div className="flex-1" />
+          {selectedDrones?.map((d, idx) => (
+            <div className="mt-4 px-1 space-y-2" key={d.key}>
+              {d.index != 1 && <Separator className="my-2" />}
+              {/* 第一行 */}
+              {/* 显示无人机名称和变体 */}
+              <div className="flex justify-between items-center">
+                <div className="text-sm overflow-auto">{d.name}</div>
                 <div
                   className="rounded-full h-4 w-4 m-2"
                   style={{ backgroundColor: d.color }}
                 />
-
                 {isEditMode && (
                   <Button
-                    variant="outline"
+                    variant="destructive"
+                    title="删除无人机"
                     size="icon"
                     className="h-8 w-8"
                     onClick={() => handleRemoveDrone(d.key)}
@@ -279,9 +281,22 @@ export default function DroneSelectionPanel({
                   </Button>
                 )}
               </div>
-              <div className="text-xs text-gray-500 flex items-center">
-                <div className="mr-2">{d.variantion.gimbal?.name}</div>
 
+              {/* 显示无人机变体名称 */}
+              <div className="text-xs text-gray-500">{d.variantion.name}</div>
+
+              {/* 显示携带的云台信息 */}
+              <div className="text-xs text-gray-500">
+                {d.variantion.gimbal?.name ?? "机载云台"}
+              </div>
+
+              {/* 显示携带的载荷信息 */}
+              <div className="text-xs text-gray-500">
+                {d.variantion.payload?.name ?? "无载荷"}
+              </div>
+
+              {/* 显示无人机变体的可用性状态 */}
+              <div className="text-xs text-gray-500 flex items-center">
                 <div
                   className={`rounded-full h-3 w-3 mr-1 ${
                     d.variantion.rtk_available ? "bg-green-500" : "bg-red-500"
@@ -304,11 +319,10 @@ export default function DroneSelectionPanel({
                     : "热成像不可用"}
                 </div>
               </div>
-              {selectedDrones?.length > 1 && <Separator className="my-2" />}
             </div>
           ))}
           {selectedDrones?.length === 0 && (
-            <div className="text-sm text-gray-500">请选择无人机机型</div>
+            <div className="text-sm text-gray-500">请选择无人机</div>
           )}
         </>
       )}
