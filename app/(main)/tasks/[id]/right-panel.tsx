@@ -409,9 +409,7 @@ export default function DroneMonitorPanel({
                         </span>
                         <span className="font-mono">{drone.sn || "未知"}</span>
                       </div>
-                    </div>
 
-                    <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-xs">
                       <div className="flex items-center">
                         <span className="min-w-[3.5rem] text-muted-foreground">
                           型号:
