@@ -1,6 +1,7 @@
 export const keyMappings: Record<string, string> = {
   id: "无人机ID",
   callsign: "呼号",
+  description: "描述",
   domain: "领域",
   is_rtk_available: "是否支持RTK",
   is_thermal_available: "是否支持热成像",
