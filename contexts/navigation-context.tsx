@@ -89,8 +89,12 @@ export function NavigationProvider({
           specialRouteMap[segment] ||
           segment.charAt(0).toUpperCase() + segment.slice(1);
 
+        // 检查段是否为数字，如果是则显示为"详细信息"
+        const isNumber = !isNaN(Number(segment));
+        const processedTitle = isNumber ? "详细信息" : title;
+
         breadcrumbs.push({
-          title,
+          title: processedTitle,
           url: currentPath,
         });
       }
