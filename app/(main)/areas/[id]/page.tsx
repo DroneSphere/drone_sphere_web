@@ -546,7 +546,7 @@ export default function AreaDetailPage() {
     deleteMutation.isPending;
 
   return (
-    <div className="px-4 mb-4">
+    <div className="px-4 mb-2">
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
           {/* 标题与描述 */}
@@ -603,31 +603,37 @@ export default function AreaDetailPage() {
             ></div>
 
             <div className="flex flex-col w-[400px] gap-4">
-              <div>
-                <div className="space-y-2 pb-2 border-t border-l border-r rounded-t-md shadow-sm">
-                  <div className="px-3 mt-3 text-sm font-medium">地图搜索</div>
-                  <div className="px-3 pb-2">
-                    <Input 
-                      placeholder="输入地点名称搜索" 
-                      onChange={(e) => {
-                        if (placeSearchRef.current && e.target.value.trim()) {
-                          // @ts-expect-error - PlaceSearch type not properly defined
-                          placeSearchRef.current.search(e.target.value);
-                        }
-                      }}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' && placeSearchRef.current) {
-                          e.preventDefault();
-                          // @ts-expect-error - PlaceSearch type not properly defined
-                          placeSearchRef.current.search(e.currentTarget.value);
-                        }
-                      }}
-                      className="p-2 border rounded-md shadow-sm"
-                    />
+              {(isCreating || isEditing) && (
+                <div>
+                  <div className="space-y-2 pb-2 border-t border-l border-r rounded-t-md shadow-sm">
+                    <div className="px-3 mt-3 text-sm font-medium">
+                      地图搜索
+                    </div>
+                    <div className="px-3 pb-2">
+                      <Input
+                        placeholder="输入地点名称搜索"
+                        onChange={(e) => {
+                          if (placeSearchRef.current && e.target.value.trim()) {
+                            // @ts-expect-error - PlaceSearch type not properly defined
+                            placeSearchRef.current.search(e.target.value);
+                          }
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" && placeSearchRef.current) {
+                            e.preventDefault();
+                            // @ts-expect-error - PlaceSearch type not properly defined
+                            placeSearchRef.current.search(
+                              e.currentTarget.value
+                            );
+                          }
+                        }}
+                        className="p-2 border rounded-md shadow-sm"
+                      />
+                    </div>
                   </div>
+                  <div id="search-panel" className="w-full h-full" />
                 </div>
-                <div id="search-panel" className="w-full h-full" />
-              </div>
+              )}
               {polygonPoints.length > 0 && (
                 <div className="space-y-2 overflow-auto border rounded-md shadow-sm">
                   <div className="px-3 mt-3 text-sm font-medium">节点信息</div>

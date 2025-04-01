@@ -18,13 +18,14 @@ class HttpClient {
     });
 
     this.setupInterceptors();
-    // this.loadTokenFromLocalStorage();
+    this.loadTokenFromLocalStorage();
   }
 
   private loadTokenFromLocalStorage() {
-    // const token = localStorage.getItem("auth_token");
     const token = getLocalStorage("auth_token");
     if (token) {
+      console.log(`Loading token from localStorage: ${token}`);
+      
       this.instance.defaults.headers.common[
         "Authorization"
       ] = `Bearer ${token}`;

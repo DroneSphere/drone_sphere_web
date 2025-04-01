@@ -9,6 +9,9 @@ export const AUTH_TOKEN_KEY = "auth_token";
  */
 export const getLocalStorage = (key: string): string | null => {
   if (typeof window !== "undefined") {
+    // 在客户端环境中获取localStorage的值
+    console.log(`getLocalStorage: ${key}`, localStorage.getItem(key));
+    
     return localStorage.getItem(key);
   }
   return null;
