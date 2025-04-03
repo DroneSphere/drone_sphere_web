@@ -1,6 +1,6 @@
 "use client";
 
-import { fetchAllJobs } from "@/app/(main)/jobs/[id]/request";
+import { deleteJob, fetchAllJobs } from "@/app/(main)/jobs/[id]/request";
 import { JobItemResult, JobSearchParams } from "@/app/(main)/jobs/[id]/type";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -24,7 +24,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import {
   createColumnHelper,
   flexRender,
@@ -37,86 +37,102 @@ import { useState } from "react";
 
 const columnHelper = createColumnHelper<JobItemResult>();
 
-const columns = [
-  columnHelper.accessor("id", {
-    header: () => "ID",
-  }),
-  columnHelper.accessor("name", {
-    header: () => <div className="min-w-8">任务名称</div>,
-  }),
-  columnHelper.accessor("area_name", {
-    header: "搜索区域",
-  }),
-  columnHelper.accessor("drones", {
-    header: () => <div className="min-w-8">无人机</div>,
-    cell: (info) =>
-      info.getValue() || <span className="text-gray-400">未指定</span>,
-  }),
-  columnHelper.accessor("description", {
-    header: () => <div className="min-w-12">描述</div>,
-    cell: (info) => (
-      <HoverCard>
-        <HoverCardTrigger>
-          <div className="text-left overflow-hidden text-ellipsis whitespace-nowrap max-w-36">
-            {info.getValue() || <span className="text-gray-400">无</span>}
-          </div>
-        </HoverCardTrigger>
-        <HoverCardContent>
-          <div className="text-left max-w-196">
-            {info.getValue() || <span className="text-gray-400">无</span>}
-          </div>
-        </HoverCardContent>
-      </HoverCard>
-    ),
-  }),
-  // 操作列
-  columnHelper.accessor("id", {
-    header: () => "操作",
-    cell: (row) => (
-      <div className="flex justify-center space-x-2">
-        <Button
-          variant="secondary"
-          size="icon"
-          className="h-8 w-8 bg-blue-400 text-gray-100 hover:bg-blue-500"
-          onClick={() => {
-            console.log(row.row.original);
-            window.location.href = `/jobs/${row.row.original.id}`;
-          }}
-        >
-          <View className="h-4 w-4" />
-        </Button>
-        <Button
-          variant="secondary"
-          size="icon"
-          className="h-8 w-8 bg-blue-400 text-gray-100 hover:bg-blue-500"
-          onClick={() => {
-            console.log(row.row.original);
-            window.location.href = `/jobs/creation/${row.row.original.id}`;
-          }}
-        >
-          <Edit className="h-4 w-4" />
-        </Button>
-        <Button variant="destructive" size="icon" className="h-8 w-8">
-          <Trash className="h-4 w-4" />
-        </Button>
-      </div>
-    ),
-  }),
-];
-
 export default function JobListPage() {
   const [searchParams, setSearchParams] = useState<JobSearchParams | null>(
     null
   );
-  const listQuery = useQuery({
+  const query = useQuery({
     queryKey: ["jobs", searchParams],
     queryFn: () => {
       return fetchAllJobs(searchParams);
     },
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: (id: number) => {
+      return deleteJob(id);
+    },
+    onSuccess: () => {
+      query.refetch();
+    },
+  });
+
+  const columns = [
+    columnHelper.accessor("id", {
+      header: () => "ID",
+    }),
+    columnHelper.accessor("name", {
+      header: () => <div className="min-w-8">任务名称</div>,
+    }),
+    columnHelper.accessor("area_name", {
+      header: "搜索区域",
+    }),
+    columnHelper.accessor("drones", {
+      header: () => <div className="min-w-8">无人机</div>,
+      cell: (info) =>
+        info.getValue() || <span className="text-gray-400">未指定</span>,
+    }),
+    columnHelper.accessor("description", {
+      header: () => <div className="min-w-12">描述</div>,
+      cell: (info) => (
+        <HoverCard>
+          <HoverCardTrigger>
+            <div className="text-left overflow-hidden text-ellipsis whitespace-nowrap max-w-36">
+              {info.getValue() || <span className="text-gray-400">无</span>}
+            </div>
+          </HoverCardTrigger>
+          <HoverCardContent>
+            <div className="text-left max-w-196">
+              {info.getValue() || <span className="text-gray-400">无</span>}
+            </div>
+          </HoverCardContent>
+        </HoverCard>
+      ),
+    }),
+    // 操作列
+    columnHelper.accessor("id", {
+      header: () => "操作",
+      cell: (row) => (
+        <div className="flex justify-center space-x-2">
+          <Button
+            variant="secondary"
+            size="icon"
+            className="h-8 w-8 bg-blue-400 text-gray-100 hover:bg-blue-500"
+            onClick={() => {
+              console.log(row.row.original);
+              window.location.href = `/jobs/${row.row.original.id}`;
+            }}
+          >
+            <View className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="secondary"
+            size="icon"
+            className="h-8 w-8 bg-blue-400 text-gray-100 hover:bg-blue-500"
+            onClick={() => {
+              console.log(row.row.original);
+              window.location.href = `/jobs/creation/${row.row.original.id}`;
+            }}
+          >
+            <Edit className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="destructive"
+            size="icon"
+            className="h-8 w-8"
+            onClick={() => {
+              deleteMutation.mutate(row.row.original.id);
+            }}
+          >
+            <Trash className="h-4 w-4" />
+          </Button>
+        </div>
+      ),
+    }),
+  ];
+
   const table = useReactTable({
-    data: listQuery.data || [],
+    data: query.data || [],
     columns,
     getCoreRowModel: getCoreRowModel(),
   });
@@ -208,10 +224,7 @@ export default function JobListPage() {
             />
           </PopoverContent>
         </Popover>
-        <Button
-          onClick={() => listQuery.refetch()}
-          disabled={listQuery.isPending}
-        >
+        <Button onClick={() => query.refetch()} disabled={query.isPending}>
           搜索
         </Button>
         <div className="flex-1" />
@@ -219,17 +232,17 @@ export default function JobListPage() {
           onClick={() => {
             window.location.href = "/jobs/new";
           }}
-          disabled={listQuery.isPending}
+          disabled={query.isPending}
         >
           创建任务
         </Button>
       </div>
-      {listQuery.isLoading ? (
+      {query.isLoading ? (
         <div className="flex justify-center items-center py-8">
           <div className="w-8 h-8 border-4 border-blue-300 border-t-blue-500 rounded-full animate-spin" />
         </div>
-      ) : listQuery.isError ? (
-        <div>Error: {listQuery.error.message}</div>
+      ) : query.isError ? (
+        <div>Error: {query.error.message}</div>
       ) : (
         <div>
           <Table className="border border-gray-200 rounded-md">

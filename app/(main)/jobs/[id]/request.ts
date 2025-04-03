@@ -77,3 +77,12 @@ export async function getJobCreateOpytions(
   );
   return res.data.data;
 }
+
+/**
+ * 删除任务
+ * @param id 任务ID
+ * @returns void
+ */
+export async function deleteJob(id: number): Promise<void> {
+  await httpClient.instance.delete(`${prefix}/${id}`);
+}
