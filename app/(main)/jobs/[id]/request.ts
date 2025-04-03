@@ -4,29 +4,11 @@ import {
   JobCreationRequest,
   JobCreationResult,
   JobDetailResult,
-  JobItemResult,
-  JobSearchParams,
   PhysicalDrone,
-} from "./type";
+} from "./types";
 
 // API路径前缀
 const prefix = "/job";
-
-/**
- * 获取所有任务列表
- * @param params 任务搜索参数，可为空
- * @returns 任务列表数据
- */
-export async function fetchAllJobs(
-  params: JobSearchParams | null = null
-): Promise<JobItemResult[]> {
-  console.log("fetchAllJobs", params);
-  
-  const res = await httpClient.instance.get<Response<JobItemResult[]>>(
-    `${prefix}`
-  );
-  return res.data.data;
-}
 
 /**
  * 通过ID获取任务详情
@@ -36,7 +18,7 @@ export async function fetchAllJobs(
 export async function getJobDetailById(id: number): Promise<JobDetailResult> {
   const res = await httpClient.instance.get<Response<JobDetailResult>>(
     `${prefix}/${id}`
-  );  
+  );
   return res.data.data;
 }
 
@@ -47,7 +29,7 @@ export async function getJobDetailById(id: number): Promise<JobDetailResult> {
 export async function getJobPhysicalDrones(): Promise<PhysicalDrone[]> {
   const res = await httpClient.instance.get<Response<PhysicalDrone[]>>(
     `${prefix}/creation/drones`
-  );  
+  );
   return res.data.data;
 }
 

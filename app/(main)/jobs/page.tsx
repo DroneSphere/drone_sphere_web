@@ -1,7 +1,6 @@
 "use client";
 
-import { deleteJob, fetchAllJobs } from "@/app/(main)/jobs/[id]/request";
-import { JobItemResult, JobSearchParams } from "@/app/(main)/jobs/[id]/type";
+import { deleteJob } from "@/app/(main)/jobs/[id]/request";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import {
@@ -34,6 +33,8 @@ import {
 import { format } from "date-fns";
 import { CalendarIcon, Edit, Trash, View } from "lucide-react";
 import { useState } from "react";
+import { JobItemResult, JobSearchParams } from "./types";
+import { fetchAllJobs } from "./requests";
 
 const columnHelper = createColumnHelper<JobItemResult>();
 
@@ -42,7 +43,7 @@ export default function JobListPage() {
     null
   );
   const query = useQuery({
-    queryKey: ["jobs", searchParams],
+    queryKey: ["jobs"],
     queryFn: () => {
       return fetchAllJobs(searchParams);
     },

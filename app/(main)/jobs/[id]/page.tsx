@@ -10,7 +10,7 @@ import TaskInfoPanel from "@/app/(main)/jobs/[id]/task-info-panel";
 import {
   JobCreationRequest,
   JobDetailResult,
-} from "@/app/(main)/jobs/[id]/type";
+} from "@/app/(main)/jobs/[id]/types";
 import WaylinePanel from "@/app/(main)/jobs/[id]/wayline-panel";
 import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";

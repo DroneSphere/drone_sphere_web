@@ -1,6 +1,6 @@
 "use client";
 
-import { JobDetailResult, PhysicalDrone } from "@/app/(main)/jobs/[id]/type";
+import { JobDetailResult, PhysicalDrone } from "@/app/(main)/jobs/[id]/types";
 import { Button } from "@/components/ui/button";
 import { FormItem } from "@/components/ui/form";
 import {

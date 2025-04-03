@@ -1,4 +1,4 @@
-import { JobDetailResult } from "@/app/(main)/jobs/[id]/type";
+import { JobDetailResult } from "@/app/(main)/jobs/[id]/types";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";

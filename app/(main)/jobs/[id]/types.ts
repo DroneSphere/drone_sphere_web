@@ -1,36 +1,4 @@
 /**
- * 任务列表返回的元素项结构
- * Structure of job items returned from job list
- */
-export interface JobItemResult {
-  /** 任务的唯一标识ID */
-  id: number;
-  /** 任务名称 */
-  name: string;
-  /** 区域名称 */
-  area_name: string;
-  /** 任务描述 */
-  description: string;
-  /** 使用的无人机列表 */
-  drones: string[];
-}
-
-/**
- * 任务搜索参数
- * Parameters for job search
- */
-export interface JobSearchParams {
-  /** 任务名称 */
-  name?: string;
-  /** 区域 */
-  area?: string;
-  /** 创建开始时间 */
-  createAtBegin?: string;
-  /** 创建结束时间 */
-  createAtEnd?: string;
-}
-
-/**
  * 任务创建请求的接口定义
  * Definition for job creation request
  * @interface JobCreationRequest
@@ -73,7 +41,7 @@ export interface JobCreationRequest {
   description?: string;
   /** 关联的区域ID，指定任务将在哪个区域执行 */
   area_id: number;
-  /** 
+  /**
    * 任务中使用的无人机列表（选填）
    * 包含所有参与此任务的虚拟无人机配置信息
    */
@@ -89,7 +57,7 @@ export interface JobCreationRequest {
     /** 无人机在地图上的显示颜色（十六进制颜色码） */
     color: string;
   }[];
-  /** 
+  /**
    * 任务航线列表（选填）
    * 定义每个无人机需要执行的飞行路径
    */
@@ -100,7 +68,7 @@ export interface JobCreationRequest {
     height: number;
     /** 航线在地图上的显示颜色（十六进制颜色码） */
     color: string;
-    /** 
+    /**
      * 航线路径点集
      * 按顺序定义无人机需要飞行的路径
      */
@@ -110,7 +78,7 @@ export interface JobCreationRequest {
       /** 经度坐标（WGS84坐标系） */
       lng: number;
     }[];
-    /** 
+    /**
      * 航线特殊点位（选填）
      * 定义航线上需要特别关注的点，如拍照点、悬停点等
      */
@@ -123,7 +91,7 @@ export interface JobCreationRequest {
       lng: number;
     }[];
   }[];
-  /** 
+  /**
    * 虚拟无人机到物理无人机的映射关系
    * 定义哪台实体无人机将执行哪个虚拟无人机的任务
    */

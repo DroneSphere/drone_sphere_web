@@ -1,6 +1,6 @@
 import httpClient from "@/api/http_client";
 import { Response } from "@/api/response";
-import { JobItemResult } from "../jobs/[id]/type";
+import { JobItemResult } from "../jobs/[id]/types";
 import { TaskItemResult } from "./type";
 
 export async function getTasks(): Promise<TaskItemResult[]> {
