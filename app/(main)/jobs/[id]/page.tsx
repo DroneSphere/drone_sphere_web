@@ -51,9 +51,6 @@ export default function Page() {
   // 计算工作状态
   const { isCreateMode: isCreating, idPart } = useIsCreateMode();
   const [isEditing, setIsEditing] = useState(false);
-  useEffect(() => {
-    console.log("当前工作状态", isCreating, isEditing);
-  }, [isCreating, isEditing]);
 
   // 已选择的无人机
   const [selectedDrones, setSelectedDrones] = useState<
