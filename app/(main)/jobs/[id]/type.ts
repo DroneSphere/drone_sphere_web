@@ -62,65 +62,78 @@ export interface JobSearchParams {
  *   physicalDroneSN: string;     - 物理无人机序列号
  * }>} mappings - 虚拟无人机到物理无人机的映射关系
  */
+/**
+ * 任务创建请求接口
+ * 定义创建新任务时需要提交的数据结构
+ */
 export interface JobCreationRequest {
-  /** 任务名称 */
+  /** 任务名称（必填） */
   name: string;
-  /** 任务描述（可选） */
+  /** 任务描述（选填） */
   description?: string;
-  /** 区域ID */
+  /** 关联的区域ID，指定任务将在哪个区域执行 */
   area_id: number;
-  /** 任务中使用的无人机列表（可选） */
+  /** 
+   * 任务中使用的无人机列表（选填）
+   * 包含所有参与此任务的虚拟无人机配置信息
+   */
   drones?: {
-    /** 无人机ID */
-    id: number;
-    /** 无人机索引 */
+    /** 无人机在列表中的序号，用于标识顺序 */
     index: number;
-    /** 无人机唯一键，格式：${index}-${drone_id}-${variation_index} */
+    /** 无人机唯一标识键，遵循格式：${index}-${drone_id}-${variation_index} */
     key: string;
-    /** 无人机名称 */
-    name: string;
-    /** 无人机描述（可选） */
-    description?: string;
-    /** 无人机型号（可选） */
-    model?: string;
-    /** 无人机颜色 */
+    /** 无人机型号ID，关联到无人机型号数据表 */
+    model_id: number;
+    /** 无人机变体ID，指定该无人机的具体配置变种 */
+    variantion_id: number;
+    /** 无人机在地图上的显示颜色（十六进制颜色码） */
     color: string;
-    /** 无人机变体信息 */
-    variantion: JobDroneVariation;
   }[];
-  /** 任务航线列表（可选） */
+  /** 
+   * 任务航线列表（选填）
+   * 定义每个无人机需要执行的飞行路径
+   */
   waylines?: {
-    /** 无人机唯一键，关联到drones中的key */
-    droneKey: string;
-    /** 航线高度 */
+    /** 无人机唯一键，关联到drones数组中对应无人机的key */
+    drone_key: string;
+    /** 航线飞行高度（单位：米） */
     height: number;
-    /** 航线颜色 */
+    /** 航线在地图上的显示颜色（十六进制颜色码） */
     color: string;
-    /** 航线路径 */
+    /** 
+     * 航线路径点集
+     * 按顺序定义无人机需要飞行的路径
+     */
     path: {
-      /** 纬度 */
+      /** 纬度坐标（WGS84坐标系） */
       lat: number;
-      /** 经度 */
+      /** 经度坐标（WGS84坐标系） */
       lng: number;
     }[];
-    /** 航线点位（可选） */
+    /** 
+     * 航线特殊点位（选填）
+     * 定义航线上需要特别关注的点，如拍照点、悬停点等
+     */
     points?: {
-      /** 点位索引 */
+      /** 点位在航线中的索引编号 */
       index: number;
-      /** 纬度 */
+      /** 纬度坐标（WGS84坐标系） */
       lat: number;
-      /** 经度 */
+      /** 经度坐标（WGS84坐标系） */
       lng: number;
     }[];
   }[];
-  /** 虚拟无人机到物理无人机的映射关系 */
+  /** 
+   * 虚拟无人机到物理无人机的映射关系
+   * 定义哪台实体无人机将执行哪个虚拟无人机的任务
+   */
   mappings: {
-    /** 选定的无人机唯一键 */
-    selectedDroneKey: string;
-    /** 物理无人机ID */
-    physicalDroneId: number;
-    /** 物理无人机序列号 */
-    physicalDroneSN: string;
+    /** 选定的虚拟无人机唯一键，关联到drones数组中的key */
+    selected_drone_key: string;
+    /** 物理无人机的系统ID */
+    physical_drone_id: number;
+    /** 物理无人机的序列号（SN），用于唯一标识设备 */
+    physical_drone_sn: string;
   }[];
 }
 

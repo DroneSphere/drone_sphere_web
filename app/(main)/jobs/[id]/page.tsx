@@ -156,17 +156,14 @@ export default function Page() {
         description: data.description,
         area_id: data.area_id || 0,
         drones: selectedDrones.map((drone) => ({
-          id: drone.id,
-          index: drone.index || 0, // Provide default value of 0 when index is undefined
+          index: drone.index || 0, // 提供默认值0，确保index始终为数字类型
           key: drone.key,
-          name: drone.name,
-          description: drone.description,
-          model: drone.model,
+          model_id: drone.id,
+          variantion_id: drone.variantion.id,
           color: drone.color,
-          variantion: drone.variantion,
         })),
         waylines: waylineAreas.map((wayline) => ({
-          droneKey: wayline.droneKey,
+          drone_key: wayline.droneKey,
           height: 0,
           color: wayline.color,
           path: wayline.path.map((p) => ({
@@ -180,9 +177,9 @@ export default function Page() {
           })),
         })),
         mappings: droneMappings.map((mapping) => ({
-          selectedDroneKey: mapping.selectedDroneKey,
-          physicalDroneId: mapping.physicalDroneId,
-          physicalDroneSN: mapping.physicalDroneSN,
+          selected_drone_key: mapping.selectedDroneKey,
+          physical_drone_id: mapping.physicalDroneId,
+          physical_drone_sn: mapping.physicalDroneSN,
         })),
       });
     } else {
