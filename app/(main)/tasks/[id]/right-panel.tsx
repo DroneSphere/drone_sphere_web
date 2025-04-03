@@ -168,13 +168,16 @@ export default function DroneMonitorPanel({
       };
     });
 
+    // 在 effect 内部存储当前的 eventSources 引用，以便在清理函数中使用
+    const currentEventSources = eventSourcesRef.current;
+
     // 清理函数 - 只在组件完全卸载时执行
     return () => {
       console.log("Component unmounting, closing all SSE connections");
-      Object.keys(eventSourcesRef.current).forEach((key) => {
+      Object.keys(currentEventSources).forEach((key) => {
         console.log(`Closing EventSource for ${key}`);
-        eventSourcesRef.current[key]?.close();
-        delete eventSourcesRef.current[key];
+        currentEventSources[key]?.close();
+        delete currentEventSources[key];
       });
     };
   }, [drones]); // 从依赖项中移除 mapRef, AMapRef, droneMarkers

@@ -323,7 +323,7 @@ export default function Page() {
     console.log("formattedMappings", formattedMappings);
 
     setDroneMappings(formattedMappings);
-  }, [dataQuery.isSuccess, dataQuery.data, isMapLoaded, form]);
+  }, [dataQuery.isSuccess, dataQuery.data, isMapLoaded, form, selectedDrones]);
 
   // 选择区域时绘制选中的搜索区域多边形
   useEffect(() => {

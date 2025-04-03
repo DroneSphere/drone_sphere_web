@@ -258,7 +258,7 @@ export default function DroneSelectionPanel({
           )}
 
           {/* Display selected drones */}
-          {selectedDrones?.map((d, idx) => (
+          {selectedDrones?.map((d) => (
             <div className="mt-4 px-1 space-y-2" key={d.key}>
               {d.index != 1 && <Separator className="my-2" />}
               {/* 第一行 */}
