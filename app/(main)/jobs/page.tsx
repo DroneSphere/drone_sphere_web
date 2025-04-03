@@ -139,7 +139,7 @@ export default function JobListPage() {
 
   return (
     <div className="px-4">
-      <div className="flex gap-4 justify-start items-center max-w-full overflow-x-auto pb-4">
+      <div className="flex gap-4 justify-start items-center max-w-full overflow-x-auto p-2">
         <Input
           type="text"
           placeholder="任务名称"
