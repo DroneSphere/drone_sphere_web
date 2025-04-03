@@ -294,7 +294,10 @@ export default function Page() {
       return {
         droneKey: wayline.drone_key,
         color: wayline.color,
-        path: wayline.points.map((p) => {
+        path: wayline.path.map((p) => {
+          return new AMapRef.current!.LngLat(p.lng, p.lat);
+        }),
+        points: wayline.points?.map((p) => {
           return new AMapRef.current!.LngLat(p.lng, p.lat);
         }),
         visible: true, // Initialize as visible
