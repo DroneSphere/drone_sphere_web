@@ -32,7 +32,7 @@ import {
 } from "@tanstack/react-table";
 import { format } from "date-fns";
 import { CalendarIcon, Edit, Trash, View } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { JobItemResult, JobSearchParams } from "./types";
 import { fetchAllJobs } from "./requests";
 
@@ -133,7 +133,7 @@ export default function JobListPage() {
   ];
 
   const table = useReactTable({
-    data: query.data || [],
+    data: useMemo(() => query.data || [], [query.data]),
     columns,
     getCoreRowModel: getCoreRowModel(),
   });
@@ -146,7 +146,7 @@ export default function JobListPage() {
           placeholder="任务名称"
           className="px-4 py-2 border rounded-md w-[200px]"
           onChange={(e) =>
-            setSearchParams((prev) => ({ ...prev, name: e.target.value }))
+            setSearchParams((prev) => ({ ...prev, job_name: e.target.value }))
           }
         />
         <Input
@@ -154,7 +154,7 @@ export default function JobListPage() {
           placeholder="区域名称"
           className="px-4 py-2 border rounded-md w-[200px]"
           onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-            setSearchParams((prev) => ({ ...prev, area: e.target.value }))
+            setSearchParams((prev) => ({ ...prev, area_name: e.target.value }))
           }
         />
 

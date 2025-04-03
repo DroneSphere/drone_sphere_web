@@ -4,9 +4,9 @@
  */
 export interface JobSearchParams {
   /** 任务名称 */
-  name?: string;
+  job_name?: string;
   /** 区域 */
-  area?: string;
+  area_name?: string;
   /** 创建开始时间 */
   createAtBegin?: string;
   /** 创建结束时间 */
