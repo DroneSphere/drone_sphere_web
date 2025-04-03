@@ -145,12 +145,6 @@ export default function DroneModelMappingPanel({
         }
       });
     }
-
-    // 显示成功映射的提示消息
-    toast({
-      title: "映射已更新",
-      description: `已将${droneModel.name}映射到${physicalDrone.sn}`,
-    });
   };
 
   /**

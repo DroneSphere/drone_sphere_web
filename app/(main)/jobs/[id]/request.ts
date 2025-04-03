@@ -20,6 +20,8 @@ const prefix = "/job";
 export async function fetchAllJobs(
   params: JobSearchParams | null = null
 ): Promise<JobItemResult[]> {
+  console.log("fetchAllJobs", params);
+  
   const res = await httpClient.instance.get<Response<JobItemResult[]>>(
     `${prefix}`
   );
@@ -69,9 +71,7 @@ export async function createJob(
  * @param id 相关ID
  * @returns 任务创建选项数据
  */
-export async function getJobCreateOpytions(
-  id: number
-): Promise<JobCreationResult> {
+export async function getJobCreateOpytions(): Promise<JobCreationResult> {
   const res = await httpClient.instance.get<Response<JobCreationResult>>(
     `${prefix}/creation/options`
   );

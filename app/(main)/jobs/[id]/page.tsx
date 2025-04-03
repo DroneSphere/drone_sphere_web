@@ -26,6 +26,7 @@ import { z } from "zod";
 import DroneModelMappingPanel, {
   DroneMapping,
 } from "./drone-model-mapping-panel";
+import { useRouter } from "next/navigation";
 
 const formSchema = z.object({
   name: z.string().optional(),
@@ -47,6 +48,8 @@ export default function Page() {
   const polylinesRef = useRef<AMap.Polyline[]>([]);
   // Add new ref for markers
   const markersRef = useRef<AMap.Marker[][]>([]);
+
+  const router = useRouter();
 
   // 计算工作状态
   const { isCreateMode: isCreating, idPart } = useIsCreateMode();
@@ -93,7 +96,7 @@ export default function Page() {
   // 编辑和创建需要的参数
   const optionsQuery = useQuery({
     queryKey: ["job-creation-options"],
-    queryFn: () => getJobCreateOpytions(parseInt(idPart)),
+    queryFn: () => getJobCreateOpytions(),
     enabled: isCreating || isEditing,
   });
   useEffect(() => {
@@ -186,8 +189,8 @@ export default function Page() {
   }
 
   const createMutation = useMutation({
-    mutationFn: async (data: JobCreationRequest) => {
-      return await createJob(data);
+    mutationFn: (data: JobCreationRequest) => {
+      return createJob(data);
     },
     onSuccess: (data) => {
       console.log("创建任务成功", data);
@@ -195,6 +198,8 @@ export default function Page() {
         title: "操作成功",
         description: "任务创建成功",
       });
+      // 重定向到任务详情页面
+      router.replace(`/jobs/${data}`);
     },
     onError: (error) => {
       console.error("创建任务失败", error);
@@ -661,7 +666,15 @@ export default function Page() {
                     取消编辑
                   </Button>
                 )}
-                {(isEditing || isCreating) && <Button size="sm">保存</Button>}
+                {(isEditing || isCreating) && (
+                  <Button
+                    disabled={!isMapLoaded || createMutation.isPending}
+                    type="submit"
+                    size="sm"
+                  >
+                    保存
+                  </Button>
+                )}
               </div>
             </form>
           </Form>

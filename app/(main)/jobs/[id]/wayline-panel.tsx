@@ -324,6 +324,7 @@ export default function WaylinePanel({
               <Button
                 size="sm"
                 variant="outline"
+                type="button"
                 onClick={() => {
                   if (
                     path.length <= 0 ||
