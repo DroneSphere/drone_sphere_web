@@ -206,13 +206,13 @@ export default function TaskInfoPanel({
                 </div>
               </div>
               <div className="mb-4">
-                <div className="font-medium">任务描述</div>
+                <div className="text-sm font-medium">任务描述</div>
                 <div className="text-sm text-gray-700">
                   {form.getValues("description") || "无描述"}
                 </div>
               </div>
               <div className="mb-4">
-                <div className="font-medium">区域</div>
+                <div className="text-sm font-medium">区域</div>
                 <div className="text-sm text-gray-700">
                   {dataQuery.data?.area?.name || "无区域"}
                 </div>
