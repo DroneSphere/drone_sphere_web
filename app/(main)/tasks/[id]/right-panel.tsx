@@ -1,6 +1,6 @@
 "use client";
 
-import { DroneState } from "@/api/drone/types";
+import { DroneState } from "@/app/(main)/drones/types";
 import { baseURL } from "@/api/http_client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";

@@ -1,7 +1,7 @@
 "use client";
 
-import { DroneSearchParams, fetchAllDrones } from "@/api/drone/request";
-import { DroneItemResult } from "@/api/drone/types";
+import { DroneSearchParams, fetchAllDrones } from "@/app/(main)/drones/requests";
+import { DroneItemResult } from "@/app/(main)/drones/types";
 import { Button } from "@/components/ui/button";
 import {
   HoverCard,

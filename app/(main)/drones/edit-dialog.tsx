@@ -1,4 +1,4 @@
-import { updateDrone } from "@/api/drone/request";
+import { updateDrone } from "@/app/(main)/drones/requests";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,

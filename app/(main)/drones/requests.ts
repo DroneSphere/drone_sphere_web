@@ -1,5 +1,5 @@
-import httpClient from "../http_client";
-import { Response } from "../response";
+import httpClient from "../../../api/http_client";
+import { Response } from "../../../api/response";
 import { DroneDetailResult, DroneItemResult, DroneState, DroneUpdateRequest } from "./types";
 
 export interface DroneSearchParams {
