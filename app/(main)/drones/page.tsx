@@ -1,6 +1,6 @@
 "use client";
 
-import { DroneSearchParams, fetchAllDrones } from "@/app/(main)/drones/requests";
+import { DroneSearchParams, fetchAllDrones, fetchDroneModels } from "@/app/(main)/drones/requests";
 import { DroneItemResult } from "@/app/(main)/drones/types";
 import { Button } from "@/components/ui/button";
 import {
@@ -62,6 +62,12 @@ export default function DronesPage() {
     queryFn: () => {
       return fetchAllDrones(searchParams);
     },
+  });
+
+  // 获取无人机型号列表
+  const modelsQuery = useQuery({
+    queryKey: ["droneModels"],
+    queryFn: fetchDroneModels,
   });
 
   const columns = useMemo(
@@ -142,11 +148,6 @@ export default function DronesPage() {
     getCoreRowModel: getCoreRowModel(),
   });
 
-  const selectOptions = [
-    { label: "Mavic 3E", value: "M3E" },
-    { label: "Mavic 3T", value: "M3T" },
-  ];
-
   return (
     <div className="min-h-screen p-4">
       <div className="mb-4 flex gap-4 justify-between items-center">
@@ -178,11 +179,18 @@ export default function DronesPage() {
             <SelectValue placeholder="无人机型号" />
           </SelectTrigger>
           <SelectContent>
-            {selectOptions.map((option) => (
-              <SelectItem key={option.value} value={option.value}>
-                {option.label}
+            {modelsQuery.isSuccess && modelsQuery.data ? (
+              modelsQuery.data.map((model) => (
+                <SelectItem key={model.id} value={String(model.id)}>
+                  {model.name}
+                </SelectItem>
+              ))
+            ) : (
+              // 为加载状态或错误状态的 SelectItem 设置一个非空的 value 属性
+              <SelectItem value="loading_or_error" disabled>
+                {modelsQuery.isPending ? "加载中..." : "获取型号列表失败"}
               </SelectItem>
-            ))}
+            )}
           </SelectContent>
         </Select>
         <Button

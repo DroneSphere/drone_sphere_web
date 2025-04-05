@@ -2,6 +2,12 @@ import httpClient from "../../../api/http_client";
 import { Response } from "../../../api/response";
 import { DroneDetailResult, DroneItemResult, DroneState, DroneUpdateRequest } from "./types";
 
+// 无人机型号接口返回的数据结构
+export interface DroneModelItem {
+  id: number;
+  name: string;
+}
+
 export interface DroneSearchParams {
   sn?: string;
   callsign?: string;
@@ -44,5 +50,17 @@ export async function fetchDroneState(sn: string): Promise<DroneState> {
   const res = await httpClient.instance.get<Response<DroneState>>(
     `/drone/state/sse/${sn}`
   );
+  return res.data.data;
+}
+
+/**
+ * 获取无人机型号列表
+ * @returns 无人机型号列表
+ */
+export async function fetchDroneModels(): Promise<DroneModelItem[]> {
+  const res = await httpClient.instance.get<Response<DroneModelItem[]>>(
+    "/drone/models"
+  );
+  console.log("获取无人机型号列表:", res);
   return res.data.data;
 }
