@@ -26,14 +26,6 @@ import { getTasks } from "./request";
 import { TaskItemResult, TaskStatus, TaskStatusMap } from "./type";
 
 const columnHelper = createColumnHelper<TaskItemResult>();
-// job_id: number;
-//   job_name: string;
-//   job_description?: string;
-//   job_status: number;
-//   schedule_time: string;
-//   start_time?: string;
-//   end_time?: string;
-//   created_by: string;
 const columns = [
   columnHelper.accessor("job_id", {
     header: () => "任务ID",
@@ -72,22 +64,6 @@ const columns = [
   columnHelper.accessor("schedule_time", {
     header: "计划时间",
   }),
-  columnHelper.accessor("start_time", {
-    header: "开始时间",
-    cell: (info) => (
-      <span>
-        {info.getValue() || <span className="text-gray-400">未开始</span>}
-      </span>
-    ),
-  }),
-  columnHelper.accessor("end_time", {
-    header: "结束时间",
-    cell: (info) => (
-      <span>
-        {info.getValue() || <span className="text-gray-400">未结束</span>}
-      </span>
-    ),
-  }),
   columnHelper.accessor("job_description", {
     header: "任务描述",
     cell: (info) => (
@@ -116,23 +92,11 @@ const columns = [
           size="icon"
           className="h-8 w-8 bg-blue-400 text-gray-100 hover:bg-blue-500"
           onClick={() => {
-            console.log(row.row.original);
             window.location.href = `/tasks/${row.row.original.job_id}`;
           }}
         >
           <View className="h-4 w-4" />
         </Button>
-        {/* <Button
-          variant="secondary"
-          size="icon"
-          className="h-8 w-8 bg-blue-400 text-gray-100 hover:bg-blue-500"
-          onClick={() => {
-            console.log(row.row.original);
-            window.location.href = `/jobs/creation/${row.row.original.job_id}`;
-          }}
-        >
-          <Edit className="h-4 w-4" />
-        </Button> */}
       </div>
     ),
   }),
@@ -172,7 +136,6 @@ export default function Page() {
           {table.getRowModel().rows.map((row) => (
             <TableRow key={row.id} className="hover:bg-gray-50">
               {row.getVisibleCells().map((cell) => (
-                // 居中
                 <TableCell key={cell.id} className="text-center p-2">
                   {flexRender(cell.column.columnDef.cell, cell.getContext())}
                 </TableCell>

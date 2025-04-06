@@ -19,7 +19,5 @@ export interface TaskItemResult {
   job_description?: string;
   job_status: number;
   schedule_time: string;
-  start_time?: string;
-  end_time?: string;
   created_by: string;
 }

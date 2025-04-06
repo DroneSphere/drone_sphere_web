@@ -24,6 +24,8 @@ export interface JobItemResult {
   name: string;
   /** 区域名称 */
   area_name: string;
+  /** 计划时间 */
+  schedule_time: string;
   /** 任务描述 */
   description: string;
   /** 使用的无人机列表 */

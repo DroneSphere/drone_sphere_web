@@ -1,21 +1,27 @@
-import httpClient from "@/api/http_client";
-import { Response } from "@/api/response";
-import { JobItemResult } from "../jobs/[id]/types";
-import { TaskItemResult } from "./type";
+import { fetchAllJobs } from "../jobs/requests";
+import { TaskItemResult, TaskStatus } from "./type";
 
+/**
+ * 获取所有任务列表
+ * 复用jobs接口,并进行数据适配转换
+ * @returns 任务列表数据
+ */
 export async function getTasks(): Promise<TaskItemResult[]> {
-  const res = await httpClient.instance.get<Response<JobItemResult[]>>(`/job`);
-  const ans = res.data.data.map((item) => {
-    return {
-      job_id: item.id,
-      job_name: item.name,
-      job_description: item.description || "No description available",
-      job_status: 0,
-      schedule_time: "111",
-      start_time: "2023-10-15T10:30:00Z",
-      end_time: "2023-10-15T11:45:00Z",
-      created_by: "admin",
-    } as TaskItemResult;
-  });
-  return ans;
+  try {
+    // 获取原始任务数据
+    const jobItems = await fetchAllJobs();
+    
+    // 转换为TaskItemResult格式
+    return jobItems.map((job) => ({
+      job_id: job.id,
+      job_name: job.name,
+      job_description: job.description,
+      job_status: TaskStatus.NOT_STARTED, // 任务状态默认为未开始
+      schedule_time: job.schedule_time,
+      created_by: "system", // 暂时使用默认值
+    }));
+  } catch (error) {
+    console.error("获取任务列表失败:", error);
+    throw error;
+  }
 }
