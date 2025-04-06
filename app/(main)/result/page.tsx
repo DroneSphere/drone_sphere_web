@@ -1,18 +1,7 @@
 "use client";
 
-import {
-  DetectResultItem,
-  DetectSearchParams,
-  fetchAllDetectResults,
-} from "@/api/result/result";
 import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
 import { Input } from "@/components/ui/input";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
 import {
   Select,
   SelectContent,
@@ -28,7 +17,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { cn } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
 import {
   createColumnHelper,
@@ -36,15 +24,16 @@ import {
   getCoreRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import { format } from "date-fns";
-import { CalendarIcon } from "lucide-react";
 import { useState } from "react";
+import { fetchResults } from "./requests";
+import { ResultItem, ResultQuery } from "./types";
+import ViewDialog from "./view-dialog";
 
-const columnHelper = createColumnHelper<DetectResultItem>();
-
+// 定义表格列
+const columnHelper = createColumnHelper<ResultItem>();
 const columns = [
   columnHelper.accessor("id", {
-    header: () => "ID",
+    header: "ID",
   }),
   columnHelper.accessor("job_name", {
     header: "任务名称",
@@ -61,27 +50,34 @@ const columns = [
   columnHelper.accessor("created_at", {
     header: "检测时间",
   }),
+  // 添加操作列
+  columnHelper.display({
+    id: "actions",
+    header: () => <div className="text-center">操作</div>,
+    cell: (info) => (
+      <div className="flex justify-center space-x-2">
+        <ViewDialog id={info.row.original.id} />
+      </div>
+    ),
+  }),
 ];
 
-export default function DronesPage() {
-  const [searchParams, setSearchParams] = useState<DetectSearchParams | null>(
-    null
-  );
-  const query = useQuery({
-    queryKey: ["detects"],
-    queryFn: () => {
-      return fetchAllDetectResults(searchParams);
-    },
+export default function ResultPage() {
+  // 搜索参数状态
+  const [searchParams, setSearchParams] = useState<ResultQuery>({
+    page: 1,
+    page_size: 10,
   });
 
-  const selectOptions = [
-    { label: "士兵", value: "soldier" },
-    { label: "坦克", value: "tank" },
-    { label: "车辆", value: "car" },
-  ];
+  // 使用 React Query 获取数据
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ["results", searchParams],
+    queryFn: () => fetchResults(searchParams),
+  });
 
+  // 初始化表格
   const table = useReactTable({
-    data: query.data || [],
+    data: data?.items || [],
     columns,
     getCoreRowModel: getCoreRowModel(),
   });
@@ -91,109 +87,47 @@ export default function DronesPage() {
       <div className="mb-4 flex gap-4 justify-start items-center">
         <Input
           type="text"
-          placeholder="任务名称"
-          className="px-4 py-2 border rounded-md w-[200px]"
+          placeholder="任务ID"
+          className="w-[200px]"
           onChange={(e) =>
-            setSearchParams((prev) => ({ ...prev, name: e.target.value }))
+            setSearchParams((prev) => ({
+              ...prev,
+              job_id: e.target.value ? parseInt(e.target.value) : undefined,
+            }))
           }
         />
-        <Select>
+        <Select
+          onValueChange={(value) =>
+            setSearchParams((prev) => ({
+              ...prev,
+              object_type: parseInt(value),
+            }))
+          }
+        >
           <SelectTrigger className="w-[160px]">
-            <SelectValue placeholder="检测目标分类" />
+            <SelectValue placeholder="检测目标类型" />
           </SelectTrigger>
           <SelectContent>
-            {selectOptions.map((option) => (
-              <SelectItem
-                key={option.value}
-                value={option.value}
-                onClick={() =>
-                  setSearchParams((prev) => ({
-                    ...prev,
-                    class: [option.value],
-                  }))
-                }
-              >
-                {option.label}
-              </SelectItem>
-            ))}
+            <SelectItem value="1">士兵</SelectItem>
+            <SelectItem value="2">坦克</SelectItem>
+            <SelectItem value="3">车辆</SelectItem>
           </SelectContent>
         </Select>
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button
-              variant={"outline"}
-              className={cn(
-                "w-[200px] justify-start text-left font-normal",
-                !searchParams?.createAtBegin && "text-muted-foreground"
-              )}
-            >
-              <CalendarIcon className="mr-2 h-4 w-4" />
-              {searchParams?.createAtBegin
-                ? format(new Date(searchParams.createAtBegin), "PPP")
-                : "开始时间"}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0">
-            <Calendar
-              mode="single"
-              selected={
-                searchParams?.createAtBegin
-                  ? new Date(searchParams.createAtBegin)
-                  : undefined
-              }
-              onSelect={(date) =>
-                setSearchParams((prev) => ({
-                  ...prev,
-                  createAtBegin: date ? format(date, "yyyy-MM-dd") : undefined,
-                }))
-              }
-              initialFocus
-            />
-          </PopoverContent>
-        </Popover>
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button
-              variant={"outline"}
-              className={cn(
-                "w-[200px] justify-start text-left font-normal",
-                !searchParams?.createAtEnd && "text-muted-foreground"
-              )}
-            >
-              <CalendarIcon className="mr-2 h-4 w-4" />
-              {searchParams?.createAtEnd
-                ? format(new Date(searchParams.createAtEnd), "PPP")
-                : "结束时间"}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0">
-            <Calendar
-              mode="single"
-              selected={
-                searchParams?.createAtEnd
-                  ? new Date(searchParams.createAtEnd)
-                  : undefined
-              }
-              onSelect={(date) =>
-                setSearchParams((prev) => ({
-                  ...prev,
-                  createAtEnd: date ? format(date, "yyyy-MM-dd") : undefined,
-                }))
-              }
-              initialFocus
-            />
-          </PopoverContent>
-        </Popover>
-        <Button onClick={() => query.refetch()} disabled={query.isLoading}>
+        <Button 
+          onClick={() => setSearchParams((prev) => ({ ...prev }))} 
+          disabled={isLoading}
+        >
           搜索
         </Button>
       </div>
-      {query.isLoading && (
+
+      {isLoading && (
         <div className="flex justify-center items-center py-8">
           <div className="w-8 h-8 border-4 border-blue-300 border-t-blue-500 rounded-full animate-spin" />
         </div>
       )}
-      {query.isSuccess && (
+
+      {!isLoading && (
         <Table className="border border-gray-200 rounded-md">
           <TableHeader className="bg-gray-100">
             <TableRow>
@@ -224,16 +158,49 @@ export default function DronesPage() {
           </TableBody>
         </Table>
       )}
-      {
-        // 无数据
-        !query.isPending && query.isSuccess && query.data?.length === 0 && (
-          <div className="text-center text-gray-500">暂无数据</div>
-        )
-      }
-      {
-        // 加载失败
-        query.isError && <div className="text-center">加载失败</div>
-      }
+
+      {!isLoading && data?.items.length === 0 && (
+        <div className="text-center text-gray-500 py-8">暂无数据</div>
+      )}
+
+      {isError && (
+        <div className="text-center text-red-500 py-8">加载失败</div>
+      )}
+
+      {/* 分页 TODO: 可以使用组件库的分页组件替换 */}
+      {data && data.total > 0 && (
+        <div className="flex justify-end items-center gap-2 mt-4">
+          <Button
+            variant="outline"
+            onClick={() =>
+              setSearchParams((prev) => ({
+                ...prev,
+                page: Math.max(1, prev.page - 1),
+              }))
+            }
+            disabled={searchParams.page <= 1}
+          >
+            上一页
+          </Button>
+          <span className="mx-2">
+            第 {searchParams.page} 页，共 {Math.ceil(data.total / searchParams.page_size)} 页
+          </span>
+          <Button
+            variant="outline"
+            onClick={() =>
+              setSearchParams((prev) => ({
+                ...prev,
+                page: prev.page + 1,
+              }))
+            }
+            disabled={
+              searchParams.page >= Math.ceil(data.total / searchParams.page_size)
+            }
+          >
+            下一页
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
