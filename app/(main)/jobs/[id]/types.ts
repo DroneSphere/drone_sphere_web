@@ -39,6 +39,8 @@ export interface JobCreationRequest {
   name: string;
   /** 任务描述（选填） */
   description?: string;
+  /** 计划执行时间（格式：HH:mm:ss，24小时制）*/
+  schedule_time?: string;
   /** 关联的区域ID，指定任务将在哪个区域执行 */
   area_id: number;
   /**

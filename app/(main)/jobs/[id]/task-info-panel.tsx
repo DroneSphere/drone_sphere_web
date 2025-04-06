@@ -61,6 +61,31 @@ export default function TaskInfoPanel({
   AMapRef,
 }: TaskInfoPanelProps) {
   const [collapsed, setCollapsed] = useState<boolean>(true);
+
+  // 处理时间选择的逻辑
+  const handleTimeChange = (type: 'hour' | 'minute' | 'second', value: string) => {
+    const currentTime = form.getValues('schedule_time') || '00:00:00';
+    const [hour, minute, second] = currentTime.split(':');
+
+    let newTime = '';
+    if (type === 'hour') {
+      newTime = `${value.padStart(2, '0')}:${minute}:${second}`;
+    } else if (type === 'minute') {
+      newTime = `${hour}:${value.padStart(2, '0')}:${second}`;
+    } else {
+      newTime = `${hour}:${minute}:${value.padStart(2, '0')}`;
+    }
+
+    form.setValue('schedule_time', newTime);
+  };
+
+  // 获取当前选择的时间值
+  const getCurrentTimeValues = () => {
+    const currentTime = form.getValues('schedule_time') || '00:00:00';
+    const [hour, minute, second] = currentTime.split(':');
+    return { hour, minute, second };
+  };
+
   return (
     <div className="space-y-2 p-3 border rounded-md shadow-sm">
       <div className="flex items-center justify-between">
@@ -141,22 +166,74 @@ export default function TaskInfoPanel({
                   </FormItem>
                 )}
               />
-               {/* <FormField
+              <FormField
                 control={form.control}
                 name="schedule_time"
-                render={({ field }) => (
+                render={() => (
                   <FormItem>
                     <FormLabel>计划执行时间</FormLabel>
-                    <FormControl>
-                      
-                    </FormControl>
+                    <div className="flex gap-2">
+                      <Select
+                        onValueChange={(value) => handleTimeChange('hour', value)}
+                        defaultValue={getCurrentTimeValues().hour}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="小时" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {Array.from({ length: 24 }, (_, i) => (
+                            <SelectItem key={i} value={i.toString().padStart(2, '0')}>
+                              {i.toString().padStart(2, '0')}时
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+
+                      <Select
+                        onValueChange={(value) => handleTimeChange('minute', value)}
+                        defaultValue={getCurrentTimeValues().minute}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="分钟" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {Array.from({ length: 60 }, (_, i) => (
+                            <SelectItem key={i} value={i.toString().padStart(2, '0')}>
+                              {i.toString().padStart(2, '0')}分
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+
+                      <Select
+                        onValueChange={(value) => handleTimeChange('second', value)}
+                        defaultValue={getCurrentTimeValues().second}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="秒" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {Array.from({ length: 60 }, (_, i) => (
+                            <SelectItem key={i} value={i.toString().padStart(2, '0')}>
+                              {i.toString().padStart(2, '0')}秒
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
                     <FormDescription>
-                      描述用于对该任务进行标识和说明，可以是任何信息。
+                      设置任务的计划执行时间（24小时制）
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
-              /> */}
+              />
               <FormField
                 control={form.control}
                 name="area_id"

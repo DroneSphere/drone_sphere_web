@@ -31,7 +31,10 @@ import { useRouter } from "next/navigation";
 const formSchema = z.object({
   name: z.string().optional(),
   description: z.string().optional(),
-  schedule_time: z.string().optional(),
+  schedule_time: z
+    .string()
+    .regex(/^([01]?[0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]$/, "请输入有效的时间格式 (HH:mm:ss)")
+    .optional(),
   area_id: z.number().optional(),
 });
 
@@ -155,6 +158,7 @@ export default function Page() {
         name: data.name || "",
         description: data.description,
         area_id: data.area_id || 0,
+        schedule_time: data.schedule_time,
         drones: selectedDrones.map((drone) => ({
           index: drone.index || 0, // 提供默认值0，确保index始终为数字类型
           key: drone.key,
