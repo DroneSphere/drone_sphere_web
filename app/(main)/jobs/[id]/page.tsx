@@ -27,6 +27,7 @@ import DroneModelMappingPanel, {
   DroneMapping,
 } from "./drone-model-mapping-panel";
 import { useRouter } from "next/navigation";
+import { points } from "@turf/turf";
 
 const formSchema = z.object({
   name: z.string().optional(),
@@ -391,7 +392,9 @@ export default function Page() {
 
     // 重新绘制搜索区域
     if (path && path.length > 0) {
-      const areaPolygon = new currentAMap.Polygon({
+      const areaPolygon = new currentAMap.Polygon();
+      areaPolygon.setPath(path);
+      areaPolygon.setOptions({
         path: path,
         strokeColor: "#3366FF",
         strokeWeight: 2,
