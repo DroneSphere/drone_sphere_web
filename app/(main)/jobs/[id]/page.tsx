@@ -20,7 +20,7 @@ import AMapLoader from "@amap/amap-jsapi-loader";
 import "@amap/amap-jsapi-types";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import DroneModelMappingPanel, {
@@ -70,7 +70,7 @@ export default function Page() {
       color: string;
       path: AMap.LngLat[];
       points?: AMap.LngLat[];
-      visible?: boolean; // Make visible property optional
+      visible?: boolean;
     }[]
   >([]);
 
@@ -80,21 +80,22 @@ export default function Page() {
   // 机型和实际无人机的映射关系
   const [droneMappings, setDroneMappings] = useState<DroneMapping[]>([]);
 
+  // 仅在创建/编辑模式下，当selectedDrones发生有效变化时更新映射关系
   useEffect(() => {
     if (!isCreating && !isEditing) return;
+    
     // 更新无人机映射关系
-    const newDroneMappings = selectedDrones.map((drone, index) => {
-      return {
-        selectedDroneIndex: index,
-        selectedDroneKey: drone.key,
-        seletedDroneId: drone.id,
-        physicalDroneId: 0,
-        physicalDroneSN: "",
-        color: drone.color,
-      };
-    });
+    const newDroneMappings = selectedDrones.map((drone) => ({
+      selectedDroneIndex: drone.index || 0,
+      selectedDroneKey: drone.key,
+      seletedDroneId: drone.id,
+      physicalDroneId: 0,
+      physicalDroneSN: "",
+      color: drone.color,
+    }));
+    
     setDroneMappings(newDroneMappings);
-  }, [selectedDrones, isCreating, isEditing]);
+  }, [isCreating, isEditing, selectedDrones]); // 添加 selectedDrones 作为依赖
 
   // 编辑和创建需要的参数
   const optionsQuery = useQuery({
@@ -214,6 +215,46 @@ export default function Page() {
     },
   });
 
+  // 缓存格式化后的数据
+  const formattedDronesData = useMemo(() => {
+    if (!dataQuery.data?.drones) return [];
+    return dataQuery.data.drones.map((drone) => ({
+      key: drone.key,
+      index: drone.index,
+      id: drone.id,
+      name: drone.name,
+      description: drone.description,
+      model: drone.model,
+      color: drone.color,
+      variantion: drone.variantion,
+    }));
+  }, [dataQuery.data?.drones]);
+
+  // 修复 formattedMappingsData
+  const formattedMappingsData = useMemo(() => {
+    if (!dataQuery.data?.mappings || !selectedDrones) return [];
+    return dataQuery.data.mappings.map((mapping) => ({
+      selectedDroneIndex: Number(mapping.selected_drone_key.split("-")[0]) || 0,
+      seletedDroneId: Number(mapping.selected_drone_key.split("-")[1]) || 0,
+      selectedDroneKey: mapping.selected_drone_key,
+      physicalDroneId: mapping.physical_drone_id,
+      physicalDroneSN: mapping.physical_drone_sn,
+      color: selectedDrones.find((dr) => dr.key === mapping.selected_drone_key)?.color || "",
+    }));
+  }, [dataQuery.data?.mappings, selectedDrones]);
+
+  // 修复 formattedWaylineAreasData
+  const formattedWaylineAreasData = useMemo(() => {
+    if (!dataQuery.data?.waylines || !AMapRef.current) return [];
+    return dataQuery.data.waylines.map((wayline) => ({
+      droneKey: wayline.drone_key,
+      color: wayline.color,
+      path: wayline.path.map((p) => new AMapRef.current!.LngLat(p.lng, p.lat)),
+      points: wayline.points?.map((p) => new AMapRef.current!.LngLat(p.lng, p.lat)),
+      visible: true,
+    }));
+  }, [dataQuery.data?.waylines]);
+
   // 完成数据加载后开始处理挂载地图逻辑
   useEffect(() => {
     window._AMapSecurityConfig = {
@@ -258,76 +299,38 @@ export default function Page() {
     };
   }, []);
 
+  // 优化 dataQuery useEffect
   useEffect(() => {
-    if (!dataQuery.isSuccess || !dataQuery.data) return;
+    console.log('dataQuery useEffect 触发', {
+      isSuccess: dataQuery.isSuccess,
+      hasData: !!dataQuery.data,
+      isMapLoaded,
+    });
 
-    const { area, drones, waylines, mappings } = dataQuery.data;
-    // 如果是编辑或浏览模式，设置已选择的无人机和搜索区域
+    if (!dataQuery.isSuccess || !dataQuery.data || !isMapLoaded || !AMapRef.current) return;
+
+    const { area } = dataQuery.data;
+
     // 设置地图区域路径
-    if (!area || !area.points || !AMapRef.current) {
-      return;
+    if (area?.points) {
+      const areaPath = area.points.map(
+        (p) => new AMapRef.current!.LngLat(p.lng, p.lat)
+      );
+      setPath(areaPath);
     }
-    const areaPath = area.points.map(
-      (p) => new AMapRef.current!.LngLat(p.lng, p.lat)
-    );
-    setPath(areaPath);
 
-    // 设置表单中的区域ID
-    form.setValue("area_id", area.id);
+    // 设置表单数据
+    form.setValue("area_id", area?.id || 0);
     form.setValue("name", dataQuery.data.name || "");
     form.setValue("description", dataQuery.data.description || "");
 
-    // 设置已选择的无人机
-    // 将API返回的无人机数据转换为组件使用的格式
-    const formattedDrones: JobDetailResult["drones"] = drones.map((drone) => ({
-      key: drone.key,
-      index: drone.index,
-      id: drone.id,
-      name: drone.name,
-      description: drone.description,
-      model: drone.model,
-      color: drone.color,
-      variantion: drone.variantion,
-    }));
+    // 使用缓存的数据更新状态
+    setSelectedDrones(formattedDronesData);
+    setDroneMappings(formattedMappingsData);
+    setWaylineAreas(formattedWaylineAreasData);
 
-    setSelectedDrones(formattedDrones);
-
-    // 设置航线
-    const formattedWaylineAreas = waylines.map((wayline) => {
-      return {
-        droneKey: wayline.drone_key,
-        color: wayline.color,
-        path: wayline.path.map((p) => {
-          return new AMapRef.current!.LngLat(p.lng, p.lat);
-        }),
-        points: wayline.points?.map((p) => {
-          return new AMapRef.current!.LngLat(p.lng, p.lat);
-        }),
-        visible: true, // Initialize as visible
-      };
-    });
-    setWaylineAreas(formattedWaylineAreas);
-
-    // 设置映射关系
-    const formattedMappings = mappings.map((mapping) => {
-      console.log("mapping", mapping);
-
-      return {
-        selectedDroneIndex:
-          Number(mapping.selected_drone_key.split("-")[0]) || 0,
-        seletedDroneId: Number(mapping.selected_drone_key.split("-")[1]) || 0,
-        selectedDroneKey: mapping.selected_drone_key,
-        physicalDroneId: mapping.physical_drone_id,
-        physicalDroneSN: mapping.physical_drone_sn,
-        color:
-          selectedDrones.find((dr) => dr.key === mapping.selected_drone_key)
-            ?.color || "",
-      };
-    });
-    console.log("formattedMappings", formattedMappings);
-
-    setDroneMappings(formattedMappings);
-  }, [dataQuery.isSuccess, dataQuery.data, isMapLoaded, form, selectedDrones]);
+  }, [dataQuery.isSuccess, dataQuery.data, isMapLoaded, 
+      formattedDronesData, formattedMappingsData, formattedWaylineAreasData, form]);
 
   // 选择区域时绘制选中的搜索区域多边形
   useEffect(() => {
@@ -357,29 +360,38 @@ export default function Page() {
     mapRef.current?.setFitView([polygon]);
   }, [path, isMapLoaded]);
 
-  // 绘制无人机航线
+  // 优化航线区域 useEffect
   useEffect(() => {
-    if (!waylineAreas || !isMapLoaded || !AMapRef.current || !mapRef.current)
-      return;
+    console.log('航线区域 useEffect 触发', {
+      hasWaylineAreas: !!waylineAreas,
+      waylineAreasCount: waylineAreas?.length,
+      isMapLoaded,
+      hasAMap: !!AMapRef.current,
+      hasMap: !!mapRef.current
+    });
 
-    // Store current map to avoid referencing the changing state in event callbacks
+    if (!waylineAreas || !isMapLoaded || !AMapRef.current || !mapRef.current) {
+      console.log('缺少必要数据，跳过航线区域更新');
+      return;
+    }
+
+    // Store current map references
     const currentMap = mapRef.current;
     const currentAMap = AMapRef.current;
 
-    // Clear previous polygons
+    // 清除旧的地图元素
     currentMap.clearMap();
 
-    // Clear previous refs
+    // 清除引用
     infoWindowsRef.current = [];
     polygonsRef.current = [];
     editorsRef.current = [];
-    polylinesRef.current = []; // Clear polylines ref
-    markersRef.current = []; // Clear markers ref
+    polylinesRef.current = [];
+    markersRef.current = [];
 
-    // Redraw search area if available
+    // 重新绘制搜索区域
     if (path && path.length > 0) {
-      const areaPolygon = new currentAMap.Polygon();
-      areaPolygon.setOptions({
+      const areaPolygon = new currentAMap.Polygon({
         path: path,
         strokeColor: "#3366FF",
         strokeWeight: 2,
@@ -390,6 +402,7 @@ export default function Page() {
       currentMap.add(areaPolygon);
     }
 
+    console.log('开始绘制航线区域', waylineAreas.length);
     for (let i = 0; i < waylineAreas.length; i++) {
       const subPath = waylineAreas[i].path;
       const drone = selectedDrones[i] || {
@@ -590,18 +603,16 @@ export default function Page() {
     currentMap.setFitView();
 
     return () => {
-      console.log("清除航线区域编辑器");
-      // 清除编辑器
-      editorsRef.current.forEach((editor, index) => {
-        if (editor) {
-          console.log(`关闭编辑器 ${index}`);
-          editor.close();
-        }
+      console.log("清除航线区域编辑器", {
+        editorsCount: editorsRef.current.length,
+        activeEditor: activeEditorRef.current
       });
-      // Clear active editor reference
+      editorsRef.current.forEach((editor) => {
+        if (editor) editor.close();
+      });
       activeEditorRef.current = -1;
     };
-  }, [waylineAreas, isMapLoaded, selectedDrones, path, isCreating, isEditing]);
+  }, [waylineAreas, isMapLoaded, path, isCreating, isEditing, selectedDrones]);
 
   return (
     <div className="px-4 mb-4 h-max-screen">
