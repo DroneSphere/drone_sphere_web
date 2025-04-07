@@ -37,7 +37,7 @@ export default function Home() {
   const form = useForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      email: "admin@mail.com",
+      email: "admin",
       password: "123456",
     },
   });
@@ -55,9 +55,19 @@ export default function Home() {
   });
 
   const onSubmit = (data: z.infer<typeof formSchema>) => {
+    const sn = jsNativeAPI.getRemoteControllerSN();
+    if (!sn) {
+      toast({
+        title: "连接失败",
+        description: "请检查遥控器是否连接",
+      });
+      return;
+    }
+    console.log("sn", sn);
     mutation.mutate({
       email: data.email,
       password: data.password,
+      sn: sn,
     });
   };
 
