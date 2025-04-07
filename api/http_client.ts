@@ -6,7 +6,8 @@ import axios, {
 } from "axios";
 
 // 导出 baseURL
-export const baseURL = "http://127.0.0.1:10086/api/v1";
+// 导出 baseURL，从环境变量中获取，如果没有设置则使用默认值
+export const baseURL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:10086/api/v1";
 
 class HttpClient {
   instance: AxiosInstance;
