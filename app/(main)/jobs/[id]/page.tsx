@@ -27,7 +27,6 @@ import DroneModelMappingPanel, {
   DroneMapping,
 } from "./drone-model-mapping-panel";
 import { useRouter } from "next/navigation";
-import { points } from "@turf/turf";
 
 const formSchema = z.object({
   name: z.string().optional(),

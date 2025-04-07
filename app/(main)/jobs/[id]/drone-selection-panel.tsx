@@ -62,7 +62,6 @@ export default function DroneSelectionPanel({
       return;
     }
 
-    // const index =  parseInt(selectedDroneKey.split("-")[0]);
     const droneId = parseInt(selectedDroneKey.split("-")[1]);
     const variantionIndex = parseInt(selectedDroneKey.split("-")[2]);
 
@@ -127,11 +126,14 @@ export default function DroneSelectionPanel({
 
   // Remove a drone from the selection
   const handleRemoveDrone = (droneKey: string) => {
-    const updatedDrones = selectedDrones.filter((d) => d.key !== droneKey);
-    setSelectedDrones(updatedDrones);
+    setSelectedDrones((prev) => prev.filter((d) => d.key !== droneKey));
+
+    // 重置被选中的选项
+    setSelectedDroneKey(undefined);
+
     toast({
       title: "无人机已移除",
-      description: "请重新选择无人机",
+      description: "无人机已从任务中移除",
     });
   };
 
@@ -184,6 +186,7 @@ export default function DroneSelectionPanel({
             <div className="flex justify-between items-center">
               <FormItem className="flex-1 mr-4">
                 <Select
+                  value={selectedDroneKey}
                   onValueChange={(value) => {
                     setSelectedDroneKey(value);
                   }}
@@ -193,8 +196,6 @@ export default function DroneSelectionPanel({
                       <SelectValue placeholder="请选择无人机">
                         {selectedDroneKey
                           ? (() => {
-                              console.log("selectedDroneKey", selectedDroneKey);
-
                               const droneId = parseInt(
                                 selectedDroneKey.split("-")[1]
                               );
