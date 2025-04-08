@@ -118,12 +118,30 @@ export default function Page() {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      name: "",
-      description: "",
-      schedule_time: "",
-      area_id: 0,
+      name: dataQuery.data?.name || "",
+      description: dataQuery.data?.description || "",
+      schedule_time: dataQuery.data?.schedule_time || "",
+      area_id: dataQuery.data?.area?.id || 0,
     },
   });
+
+  // 当进入编辑模式时，将所有现有数据填充到表单中
+  const fillFormWithExistingData = () => {
+    if (!dataQuery.data) return;
+    
+    // 设置基本信息
+    form.reset({
+      name: dataQuery.data.name,
+      description: dataQuery.data.description,
+      schedule_time: dataQuery.data.schedule_time,
+      area_id: dataQuery.data.area?.id || 0,
+    });
+    
+    // 设置无人机相关数据
+    setSelectedDrones(formattedDronesData);
+    setDroneMappings(formattedMappingsData);
+    setWaylineAreas(formattedWaylineAreasData);
+  };
 
   function onSubmit(data: z.infer<typeof formSchema>) {
     console.log("onSubmit", data);
@@ -184,6 +202,7 @@ export default function Page() {
         physical_drone_sn: mapping.physicalDroneSN,
       })),
     };
+    console.log("submitData", submitData);
 
     if (isCreating) {
       createMutation.mutate(submitData);
@@ -692,6 +711,7 @@ export default function Page() {
                     variant="outline"
                     size="sm"
                     onClick={() => {
+                      fillFormWithExistingData(); // 进入编辑模式时填充数据
                       setIsEditing(true);
                     }}
                   >

@@ -215,6 +215,8 @@ export interface JobDetailResult {
   name: string;
   /** 任务描述 */
   description: string;
+  /** 计划执行时间 */
+  schedule_time: string;
   /** 区域信息 */
   area: {
     /** 区域ID */
