@@ -26,28 +26,28 @@ import { GimbalItemResult } from "./type";
 const columnHelper = createColumnHelper<GimbalItemResult>();
 
 const columns = [
-  columnHelper.accessor("id", {
+  columnHelper.accessor("gimbal_model_id", {
     header: () => "ID",
   }),
-  columnHelper.accessor("product", {
+  columnHelper.accessor("gimbal_model_product", {
     header: "产品",
   }),
-  columnHelper.accessor("name", {
+  columnHelper.accessor("gimbal_model_name", {
     header: "名称",
   }),
-  columnHelper.accessor("domain", {
+  columnHelper.accessor("gimbal_model_domain", {
     header: "领域",
   }),
-  columnHelper.accessor("type", {
+  columnHelper.accessor("gimbal_model_type", {
     header: "主型号",
   }),
-  columnHelper.accessor("sub_type", {
+  columnHelper.accessor("gimbal_model_sub_type", {
     header: "子型号",
   }),
   columnHelper.accessor("gimbalindex", {
     header: "云台索引",
   }),
-  columnHelper.accessor("description", {
+  columnHelper.accessor("gimbal_model_description", {
     header: "描述",
     cell: (info) => (
       <HoverCard>
@@ -62,6 +62,12 @@ const columns = [
           </div>
         </HoverCardContent>
       </HoverCard>
+    ),
+  }),
+  columnHelper.accessor("is_thermal_available", {
+    header: "支持热成像",
+    cell: (info) => (
+      <div>{info.getValue() ? "是" : "否"}</div>
     ),
   }),
 ];
