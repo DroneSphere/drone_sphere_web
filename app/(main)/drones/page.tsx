@@ -1,6 +1,10 @@
 "use client";
 
-import { DroneSearchParams, fetchAllDrones, fetchDroneModels } from "@/app/(main)/drones/requests";
+import {
+  DroneSearchParams,
+  fetchAllDrones,
+  fetchDroneModels,
+} from "@/app/(main)/drones/requests";
 import { DroneItemResult } from "@/app/(main)/drones/types";
 import { Button } from "@/components/ui/button";
 import {
@@ -203,7 +207,11 @@ export default function DronesPage() {
       </div>
       {
         // 加载中
-        listQuery.isPending && <div className="text-center">加载中...</div>
+        listQuery.isPending && (
+          <div className="flex justify-center items-center py-8">
+            <div className="w-8 h-8 border-4 border-blue-300 border-t-blue-500 rounded-full animate-spin"></div>
+          </div>
+        )
       }
       {listQuery.isSuccess && (
         <div className="my-4 max-w-full overflow-x-auto">
