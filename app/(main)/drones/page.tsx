@@ -136,7 +136,7 @@ export default function DronesPage() {
         header: () => <div className="text-center">操作</div>,
         cell: (info) => (
           <div className="flex justify-center space-x-2">
-            <EditDialog sn={info.row.original.sn} />
+            <EditDialog sn={info.row.original.sn} callsign={info.row.original.callsign} description={info.row.original.description} />
             <ViewDialog sn={info.row.original.sn} />
             <DeleteDialog sn={info.row.original.sn} />
           </div>

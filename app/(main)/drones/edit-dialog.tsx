@@ -34,6 +34,8 @@ const formSchema = z.object({
 export default function EditDialog(
   props: Readonly<{
     sn: string;
+    callsign?: string;
+    description?: string;
   }>
 ) {
   const [open, setOpen] = useState(false);
@@ -43,6 +45,7 @@ export default function EditDialog(
     mutationFn: (data: z.infer<typeof formSchema>) => {
       return updateDrone(props.sn, {
         callsign: data.callsign,
+        description: data.description,
       });
     },
     onSuccess: () => {
@@ -57,7 +60,8 @@ export default function EditDialog(
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      callsign: "",
+      callsign: props.callsign ?? undefined,
+      description: props.description ?? undefined,
     },
   });
 
