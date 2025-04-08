@@ -287,3 +287,12 @@ export interface JobDetailResult {
     physical_drone_callsign: string;
   }[];
 }
+
+/**
+ * 任务编辑请求接口
+ * 继承自任务创建请求，添加任务ID字段
+ */
+export interface JobEditRequest extends JobCreationRequest {
+  /** 要编辑的任务ID */
+  id: number;
+}

@@ -5,6 +5,7 @@ import {
   JobCreationResult,
   JobDetailResult,
   PhysicalDrone,
+  JobEditRequest,
 } from "./types";
 
 // API路径前缀
@@ -67,4 +68,19 @@ export async function getJobCreateOpytions(): Promise<JobCreationResult> {
  */
 export async function deleteJob(id: number): Promise<void> {
   await httpClient.instance.delete(`${prefix}/${id}`);
+}
+
+/**
+ * 更新任务
+ * @param data 更新任务的请求数据
+ * @returns 更新后的任务详情
+ */
+export async function updateJob(
+  data: JobEditRequest
+): Promise<JobDetailResult> {
+  const res = await httpClient.instance.put<Response<JobDetailResult>>(
+    `${prefix}`,
+    data
+  );
+  return res.data.data;
 }

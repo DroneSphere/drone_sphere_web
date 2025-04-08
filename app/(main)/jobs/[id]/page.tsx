@@ -5,11 +5,13 @@ import {
   createJob,
   getJobCreateOpytions,
   getJobDetailById,
+  updateJob,
 } from "@/app/(main)/jobs/[id]/request";
 import TaskInfoPanel from "@/app/(main)/jobs/[id]/task-info-panel";
 import {
   JobCreationRequest,
   JobDetailResult,
+  JobEditRequest,
 } from "@/app/(main)/jobs/[id]/types";
 import WaylinePanel from "@/app/(main)/jobs/[id]/wayline-panel";
 import { Button } from "@/components/ui/button";
@@ -126,70 +128,71 @@ export default function Page() {
   function onSubmit(data: z.infer<typeof formSchema>) {
     console.log("onSubmit", data);
     // 处理提交数据
-    if (isCreating) {
-      console.log("创建模式，提交数据", data);
-      console.log("选中的无人机", selectedDrones);
-      console.log("航线区域", waylineAreas);
-      console.log("无人机映射关系", droneMappings);
-      if (!selectedDrones || selectedDrones.length <= 0) {
-        toast({
-          title: "操作失败",
-          description: "请至少选择一台无人机",
-        });
-        return;
-      }
-
-      if (!waylineAreas || waylineAreas.length <= 0) {
-        toast({
-          title: "操作失败",
-          description: "请至少选择一条航线",
-        });
-        return;
-      }
-
-      if (!droneMappings || droneMappings.length <= 0) {
-        toast({
-          title: "操作失败",
-          description: "请至少选择一台实际无人机",
-        });
-        return;
-      }
-
-      createMutation.mutate({
-        name: data.name || "",
-        description: data.description,
-        area_id: data.area_id || 0,
-        schedule_time: data.schedule_time,
-        drones: selectedDrones.map((drone) => ({
-          index: drone.index || 0, // 提供默认值0，确保index始终为数字类型
-          key: drone.key,
-          model_id: drone.id,
-          variantion_id: drone.variantion.id,
-          color: drone.color,
-        })),
-        waylines: waylineAreas.map((wayline) => ({
-          drone_key: wayline.droneKey,
-          height: 0,
-          color: wayline.color,
-          path: wayline.path.map((p) => ({
-            lat: p.getLat(),
-            lng: p.getLng(),
-          })),
-          points: wayline.points?.map((p, idx) => ({
-            index: idx,
-            lat: p.getLat(),
-            lng: p.getLng(),
-          })),
-        })),
-        mappings: droneMappings.map((mapping) => ({
-          selected_drone_key: mapping.selectedDroneKey,
-          physical_drone_id: mapping.physicalDroneId,
-          physical_drone_sn: mapping.physicalDroneSN,
-        })),
+    if (!selectedDrones || selectedDrones.length <= 0) {
+      toast({
+        title: "操作失败",
+        description: "请至少选择一台无人机",
       });
-    } else {
-      // 编辑模式
-      console.log("编辑模式，提交数据", data);
+      return;
+    }
+
+    if (!waylineAreas || waylineAreas.length <= 0) {
+      toast({
+        title: "操作失败",
+        description: "请至少选择一条航线",
+      });
+      return;
+    }
+
+    if (!droneMappings || droneMappings.length <= 0) {
+      toast({
+        title: "操作失败",
+        description: "请至少选择一台实际无人机",
+      });
+      return;
+    }
+
+    const submitData = {
+      name: data.name || "",
+      description: data.description,
+      area_id: data.area_id || 0,
+      schedule_time: data.schedule_time,
+      drones: selectedDrones.map((drone) => ({
+        index: drone.index || 0, // 提供默认值0，确保index始终为数字类型
+        key: drone.key,
+        model_id: drone.id,
+        variantion_id: drone.variantion.id,
+        color: drone.color,
+      })),
+      waylines: waylineAreas.map((wayline) => ({
+        drone_key: wayline.droneKey,
+        height: 0,
+        color: wayline.color,
+        path: wayline.path.map((p) => ({
+          lat: p.getLat(),
+          lng: p.getLng(),
+        })),
+        points: wayline.points?.map((p, idx) => ({
+          index: idx,
+          lat: p.getLat(),
+          lng: p.getLng(),
+        })),
+      })),
+      mappings: droneMappings.map((mapping) => ({
+        selected_drone_key: mapping.selectedDroneKey,
+        physical_drone_id: mapping.physicalDroneId,
+        physical_drone_sn: mapping.physicalDroneSN,
+      })),
+    };
+
+    if (isCreating) {
+      createMutation.mutate(submitData);
+    } else if (isEditing) {
+      // 编辑模式下添加id字段
+      editionMutation.mutate({
+        ...submitData,
+        id: parseInt(idPart),
+      });
     }
   }
 
@@ -211,6 +214,29 @@ export default function Page() {
       toast({
         title: "操作失败",
         description: "任务创建失败",
+      });
+    },
+  });
+
+  const editionMutation = useMutation({
+    mutationFn: (data: JobEditRequest) => {
+      return updateJob(data);
+    },
+    onSuccess: () => {
+      toast({
+        title: "操作成功",
+        description: "任务更新成功",
+      });
+      // 重置编辑状态
+      setIsEditing(false);
+      // 刷新数据
+      dataQuery.refetch();
+    },
+    onError: (error) => {
+      console.error("更新任务失败", error);
+      toast({
+        title: "操作失败",
+        description: "任务更新失败",
       });
     },
   });
