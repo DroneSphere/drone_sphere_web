@@ -28,22 +28,22 @@ import { GatewayModelItemResult } from "./type";
 const columnHelper = createColumnHelper<GatewayModelItemResult>();
 
 const columns = [
-  columnHelper.accessor("id", {
+  columnHelper.accessor("gateway_model_id", {
     header: () => "ID",
   }),
-  columnHelper.accessor("name", {
+  columnHelper.accessor("gateway_model_name", {
     header: "名称",
   }),
-  columnHelper.accessor("domain", {
+  columnHelper.accessor("gateway_model_domain", {
     header: "领域",
   }),
-  columnHelper.accessor("type", {
+  columnHelper.accessor("gateway_model_type", {
     header: "主型号",
   }),
-  columnHelper.accessor("sub_type", {
+  columnHelper.accessor("gateway_model_sub_type", {
     header: "子型号",
   }),
-  columnHelper.accessor("description", {
+  columnHelper.accessor("gateway_model_description", {
     header: "描述",
     cell: (info) => (
       <HoverCard>
@@ -59,6 +59,18 @@ const columns = [
         </HoverCardContent>
       </HoverCard>
     ),
+  }),
+  columnHelper.accessor("created_time", {
+    header: "创建时间",
+    cell: (info) => new Date(info.getValue()).toLocaleString("zh-CN"),
+  }),
+  columnHelper.accessor("updated_time", {
+    header: "更新时间",
+    cell: (info) => new Date(info.getValue()).toLocaleString("zh-CN"),
+  }),
+  columnHelper.accessor("state", {
+    header: "状态",
+    cell: (info) => info.getValue() === 0 ? "正常" : "未知",
   }),
 ];
 
@@ -114,7 +126,6 @@ export default function Page() {
               {table.getRowModel().rows.map((row) => (
                 <TableRow key={row.id} className="hover:bg-gray-50">
                   {row.getVisibleCells().map((cell) => (
-                    // 居中
                     <TableCell key={cell.id} className="text-center p-2">
                       {flexRender(
                         cell.column.columnDef.cell,

@@ -7,6 +7,5 @@ export async function getGatewayModels(): Promise<GatewayModelItemResult[]> {
     "/models/gateways"
   );
   console.log(res.data);
-  
   return res.data.data;
 }
