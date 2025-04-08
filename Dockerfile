@@ -15,7 +15,6 @@ RUN \
     else echo "Lockfile not found." && exit 1; \
     fi
 
-
 # Rebuild the source code only when needed
 FROM base AS builder
 WORKDIR /app
@@ -24,8 +23,18 @@ COPY . .
 
 # Next.js collects completely anonymous telemetry data about general usage.
 # Learn more here: https://nextjs.org/telemetry
-# Uncomment the following line in case you want to disable telemetry during the build.
-# ENV NEXT_TELEMETRY_DISABLED=1
+ENV NEXT_TELEMETRY_DISABLED=1
+
+# 在构建时加载环境变量
+ARG NEXT_PUBLIC_API_BASE_URL
+ARG NEXT_PUBLIC_DJI_APP_ID
+ARG NEXT_PUBLIC_DJI_APP_KEY
+ARG NEXT_PUBLIC_DJI_LICENSE
+
+ENV NEXT_PUBLIC_API_BASE_URL=$NEXT_PUBLIC_API_BASE_URL
+ENV NEXT_PUBLIC_DJI_APP_ID=$NEXT_PUBLIC_DJI_APP_ID
+ENV NEXT_PUBLIC_DJI_APP_KEY=$NEXT_PUBLIC_DJI_APP_KEY
+ENV NEXT_PUBLIC_DJI_LICENSE=$NEXT_PUBLIC_DJI_LICENSE
 
 RUN \
     if [ -f yarn.lock ]; then yarn run build; \
@@ -39,8 +48,13 @@ FROM base AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
-# Uncomment the following line in case you want to disable telemetry during runtime.
-# ENV NEXT_TELEMETRY_DISABLED=1
+ENV NEXT_TELEMETRY_DISABLED=1
+
+# 在运行时设置环境变量
+ENV NEXT_PUBLIC_API_BASE_URL=$NEXT_PUBLIC_API_BASE_URL
+ENV NEXT_PUBLIC_DJI_APP_ID=$NEXT_PUBLIC_DJI_APP_ID
+ENV NEXT_PUBLIC_DJI_APP_KEY=$NEXT_PUBLIC_DJI_APP_KEY
+ENV NEXT_PUBLIC_DJI_LICENSE=$NEXT_PUBLIC_DJI_LICENSE
 
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
@@ -57,8 +71,6 @@ USER nextjs
 EXPOSE 3000
 
 ENV PORT=3000
-
-# server.js is created by next build from the standalone output
-# https://nextjs.org/docs/pages/api-reference/config/next-config-js/output
 ENV HOSTNAME="0.0.0.0"
+
 CMD ["node", "server.js"]
