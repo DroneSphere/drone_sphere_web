@@ -487,7 +487,7 @@ export default function DroneMonitorPanel({
                             <ArrowUp className="h-3 w-3" />
                             <span className="w-10 min-w-[2.5rem]">高度:</span>
                             <span className="font-mono">
-                              {(drone.sn && droneStates[drone.sn]?.height) ??
+                              {(drone.sn && droneStates[drone.sn]?.height.toFixed(2)) ??
                                 "--"}
                               m
                             </span>
