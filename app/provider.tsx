@@ -25,7 +25,8 @@ export function AuthCheck({
       window.djiBridge &&
       typeof window.djiBridge.platformVerifyLicense === "function";
 
-    if (!token) {
+    const curRoute = window.location.pathname;
+    if (!token && !curRoute.includes("/login")) {
       const loginUrl = isDjiWebview ? "/pilot/login" : "/login";
       router.replace(loginUrl);
     }

@@ -1,4 +1,4 @@
-import { AUTH_TOKEN_KEY, setLocalStorage } from "@/lib/storage";
+import { AUTH_TOKEN_KEY, getLocalStorage, setLocalStorage } from "@/lib/storage";
 import Cookies from "js-cookie";
 import httpClient from "../http_client";
 import { Response } from "../response";
@@ -30,6 +30,10 @@ export async function register(payload: LoginRequest): Promise<LoginResult> {
 }
 
 export async function getInfo(): Promise<LoginResult> {
+  const token = getLocalStorage(AUTH_TOKEN_KEY);
+  if (!token) {
+    throw new Error("Token not found");
+  }
   const res = await httpClient.instance.get<Response<LoginResult>>("/user");
 
   console.log(res);
