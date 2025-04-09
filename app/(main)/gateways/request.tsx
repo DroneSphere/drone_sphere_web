@@ -4,7 +4,7 @@ import { GatewayItemResult } from "./type";
 
 export async function getAllGateways(): Promise<GatewayItemResult[]> {
   const res = await httpClient.instance.get<Response<GatewayItemResult[]>>(
-    "/gateway"
+    "/gateway/list"
   );
   return res.data.data;
 }

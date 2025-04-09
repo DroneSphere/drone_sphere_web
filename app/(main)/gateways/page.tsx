@@ -26,10 +26,11 @@ import { GatewayItemResult } from "./type";
 
 const columnHelper = createColumnHelper<GatewayItemResult>();
 
-const statusMap: Record<number, string> = {
-  0: "离线",
-  1: "在线",
-};
+// 状态现在直接使用字符串，不需要映射
+// const statusMap: Record<number, string> = {
+//   0: "离线",
+//   1: "在线",
+// };
 
 export default function DronesPage() {
   const query = useQuery({
@@ -52,33 +53,11 @@ export default function DronesPage() {
       }),
       columnHelper.accessor("status", {
         header: "状态",
-        cell: (info) =>
-          statusMap[info.getValue()] || (
-            <span className="text-gray-400">未知</span>
-          ),
+        // 状态现在直接显示字符串
+        cell: (info) => info.getValue() || <span className="text-gray-400">未知</span>,
       }),
-      columnHelper.accessor("username", {
-        header: "当前用户",
-      }),
-      columnHelper.accessor("model.name", {
-        header: "型号",
-      }),
-      columnHelper.accessor("model.description", {
-        header: "型号描述",
-        cell: (info) => (
-          <HoverCard>
-            <HoverCardTrigger>
-              <div className="text-left overflow-hidden text-ellipsis whitespace-nowrap max-w-36">
-                {info.getValue() || <span className="text-gray-400">无</span>}
-              </div>
-            </HoverCardTrigger>
-            <HoverCardContent>
-              <div className="text-left max-w-196">
-                {info.getValue() || <span className="text-gray-400">无</span>}
-              </div>
-            </HoverCardContent>
-          </HoverCard>
-        ),
+      columnHelper.accessor("product_model", {
+        header: "设备型号", // 直接显示产品型号
       }),
       columnHelper.accessor("description", {
         header: "描述",
@@ -96,6 +75,12 @@ export default function DronesPage() {
             </HoverCardContent>
           </HoverCard>
         ),
+      }),
+      columnHelper.accessor("created_at", {
+        header: "创建时间", // 新增创建时间
+      }),
+      columnHelper.accessor("last_online_at", {
+        header: "最后在线", // 新增最后在线时间
       }),
     ],
     []
