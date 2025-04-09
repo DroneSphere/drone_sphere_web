@@ -23,6 +23,7 @@ import {
 import { useMemo } from "react";
 import { getAllGateways } from "./request";
 import { GatewayItemResult } from "./type";
+import EditDialog from "./edit-dialog";
 
 const columnHelper = createColumnHelper<GatewayItemResult>();
 
@@ -81,6 +82,20 @@ export default function DronesPage() {
       }),
       columnHelper.accessor("last_online_at", {
         header: "最后在线", // 新增最后在线时间
+      }),
+      // 操作列
+      columnHelper.display({
+        id: "actions",
+        header: "操作",
+        cell: (info) => (
+          <div className="flex justify-center">
+            <EditDialog
+              sn={info.row.original.sn}
+              callsign={info.row.original.callsign}
+              description={info.row.original.description}
+            />
+          </div>
+        ),
       }),
     ],
     []
