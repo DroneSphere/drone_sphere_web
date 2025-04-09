@@ -19,6 +19,10 @@ import {
   WifiOff,
 } from "lucide-react";
 import React, { useEffect, useState } from "react";
+// 导入搜索结果类型和获取函数
+import { SearchResultItem } from "./type";
+import { getSearchResults } from "./request";
+import Image from "next/image";
 
 // 更新DroneData接口以匹配processedDrones返回的数据结构
 interface DroneData {
@@ -65,6 +69,8 @@ export default function DroneMonitorPanel({
   const [collapsedCards, setCollapsedCards] = useState<Record<string, boolean>>(
     {}
   );
+  // 添加搜索结果状态
+  const [searchResults, setSearchResults] = useState<SearchResultItem[]>([]);
 
   // 添加一个ref来保存EventSource实例，防止重复创建
   const eventSourcesRef = React.useRef<Record<string, EventSource>>({});
@@ -286,18 +292,25 @@ export default function DroneMonitorPanel({
     });
   }, [droneStates, drones, AMapRef, mapRef, droneMarkers]);
 
-  // 添加组件卸载时清理所有标记的逻辑
-  // useEffect(() => {
-  //   return () => {
-  //     // 清理所有地图标记
-  //     Object.values(droneMarkers).forEach((marker) => {
-  //       if (marker && mapRef.current) {
-  //         mapRef.current.remove(marker);
-  //       }
-  //     });
-  //     setDroneMarkers({});
-  //   };
-  // }, [mapRef, droneMarkers]);
+  // 添加搜索结果轮询逻辑
+  useEffect(() => {
+    const jobId = "9"; // 使用固定的任务ID，也可以从URL参数或props中获取
+
+    // 创建轮询定时器
+    const intervalId = setInterval(async () => {
+      try {
+        // 调用API获取搜索结果
+        const result = await getSearchResults(jobId);
+        // 更新搜索结果状态
+        setSearchResults(result.data.items);
+      } catch (error) {
+        console.error("获取搜索结果失败:", error);
+      }
+    }, 1000); // 每秒轮询一次
+
+    // 组件卸载时清除定时器
+    return () => clearInterval(intervalId);
+  }, []); // 空依赖数组，仅在组件挂载时运行一次
 
   return (
     <div className="flex flex-col gap-3 w-96 max-h-[calc(100vh-4rem)]">
@@ -487,7 +500,8 @@ export default function DroneMonitorPanel({
                             <ArrowUp className="h-3 w-3" />
                             <span className="w-10 min-w-[2.5rem]">高度:</span>
                             <span className="font-mono">
-                              {(drone.sn && droneStates[drone.sn]?.height.toFixed(2)) ??
+                              {(drone.sn &&
+                                droneStates[drone.sn]?.height.toFixed(2)) ??
                                 "--"}
                               m
                             </span>
@@ -561,6 +575,60 @@ export default function DroneMonitorPanel({
       </div>
       <div className="h-[300px] overflow-y-auto flex flex-col gap-3 p-3 border rounded-md shadow-sm bg-background">
         <div className="text-sm font-medium">搜索结果</div>
+
+        {/* 没有搜索结果时显示提示信息 */}
+        {searchResults.length === 0 && (
+          <div className="flex items-center justify-center w-auto h-full">
+            <span className="text-gray-500 text-xs">暂无搜索结果</span>
+          </div>
+        )}
+
+        {/* 搜索结果列表 */}
+        {searchResults.map((result) => (
+          <div
+            key={result.id}
+            className="flex items-center gap-2"
+            onClick={() => {
+              // 点击搜索结果时的处理逻辑
+              console.log("点击搜索结果:", result);
+              // 这里可以添加地图跳转或其他操作
+            }}
+          >
+            {/* 结果图片 */}
+            <div className="relative w-12 h-12 rounded-md overflow-hidden">
+              <Image
+                src={result.image_url}
+                alt={result.target_label}
+                fill
+                sizes="48px"
+                style={{ objectFit: "cover" }}
+                onError={() => {
+                  // 注意：Image组件不支持直接修改src，这里只是记录错误
+                  console.log("图片加载失败:", result.image_url);
+                }}
+                // 添加占位符图片
+                placeholder="blur"
+                blurDataURL="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="
+              />
+            </div>
+
+            {/* 结果详情 */}
+            <div className="flex flex-col gap-0.5 flex-1 overflow-hidden">
+              <div className="font-medium text-xs truncate">
+                {result.target_label}
+              </div>
+              <div className="text-[10px] text-muted-foreground flex items-center gap-1">
+                <Compass className="h-2 w-2" />
+                <span>
+                  坐标: {result.lng}, {result.lat}
+                </span>
+              </div>
+              <div className="text-[10px] text-muted-foreground">
+                创建时间: {result.created_at}
+              </div>
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );
