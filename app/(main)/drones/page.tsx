@@ -32,8 +32,7 @@ import {
 } from "@tanstack/react-table";
 import { useMemo, useState } from "react";
 import DeleteDialog from "./delete-dialog";
-import EditDialog from "./edit-dialog";
-import ViewDialog from "./view-dialog";
+import DetailDialog from "./detail-dialog";
 
 const columnHelper = createColumnHelper<DroneItemResult>();
 
@@ -132,12 +131,11 @@ export default function DronesPage() {
         header: () => <div className="text-center">操作</div>,
         cell: (info) => (
           <div className="flex justify-center space-x-2">
-            <EditDialog
+            <DetailDialog
               sn={info.row.original.sn}
               callsign={info.row.original.callsign}
               description={info.row.original.description}
             />
-            <ViewDialog sn={info.row.original.sn} />
             <DeleteDialog sn={info.row.original.sn} />
           </div>
         ),
