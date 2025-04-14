@@ -33,6 +33,7 @@ import {
 import { useMemo, useState } from "react";
 import DeleteDialog from "./delete-dialog";
 import DetailDialog from "./detail-dialog";
+import AddDroneDialog from "./add-dialog";
 import { Search } from "lucide-react";
 
 const columnHelper = createColumnHelper<DroneItemResult>();
@@ -205,6 +206,7 @@ export default function DronesPage() {
           搜索
         </Button>
         <div className="flex-1"></div>
+        <AddDroneDialog />
       </div>
       {
         // 加载中

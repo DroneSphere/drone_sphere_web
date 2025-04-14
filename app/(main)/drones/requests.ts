@@ -64,3 +64,24 @@ export async function fetchDroneModels(): Promise<DroneModelItem[]> {
   console.log("获取无人机型号列表:", res);
   return res.data.data;
 }
+
+/**
+ * 添加新无人机
+ * @param payload 无人机信息
+ * @returns 添加的无人机信息
+ */
+export async function addDrone(payload: {
+  sn: string;
+  callsign?: string;
+  description?: string;
+  product_model?: string;
+  is_rtk_available?: boolean;
+  is_thermal_available?: boolean;
+}): Promise<DroneDetailResult> {
+  const res = await httpClient.instance.post<Response<DroneDetailResult>>(
+    "/drone",
+    payload
+  );
+  console.log("添加无人机结果:", res);
+  return res.data.data;
+}
