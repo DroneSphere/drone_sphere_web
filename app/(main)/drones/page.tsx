@@ -153,7 +153,7 @@ export default function DronesPage() {
   });
 
   return (
-    <div className="min-h-screen p-4">
+    <div className="p-4">
       <div className="mb-4 flex gap-4 justify-between items-center">
         <Input
           type="text"

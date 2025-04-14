@@ -5,7 +5,6 @@ import { ChevronRight, type LucideIcon } from "lucide-react";
 import {
   SidebarGroup,
   SidebarMenu,
-  SidebarMenuAction,
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarMenuSub,
@@ -34,7 +33,6 @@ export function NavMain({
 }) {
   return (
     <SidebarGroup>
-      {/* <SidebarGroupLabel>{dictionary?.sidebar?.platform}</SidebarGroupLabel> */}
       <SidebarMenu>
         {items.map((item) => (
           <Collapsible
@@ -44,19 +42,23 @@ export function NavMain({
             className={`${item.isActive ? "bg-sidebar-accent" : ""}`}
           >
             <SidebarMenuItem>
-              <SidebarMenuButton asChild tooltip={item.title}>
-                <a href={item.url}>
-                  <item.icon />
-                  <span>{item.title}</span>
-                </a>
-              </SidebarMenuButton>
               {item.items?.length ? (
                 <>
                   <CollapsibleTrigger asChild>
-                    <SidebarMenuAction className="data-[state=open]:rotate-90">
-                      <ChevronRight />
-                      <span className="sr-only">Toggle</span>
-                    </SidebarMenuAction>
+                    <SidebarMenuButton
+                      asChild
+                      tooltip={item.title}
+                      className="hover:cursor-pointer"
+                    >
+                      {/* <a href={item.url}> */}
+                      <div className="flex items-center">
+                        <item.icon />
+                        <span>{item.title}</span>
+                        <div className="flex-1" />
+                        <ChevronRight className="data-[state=open]:rotate-90" />
+                      </div>
+                      {/* </a> */}
+                    </SidebarMenuButton>
                   </CollapsibleTrigger>
                   <CollapsibleContent>
                     <SidebarMenuSub>
@@ -72,7 +74,14 @@ export function NavMain({
                     </SidebarMenuSub>
                   </CollapsibleContent>
                 </>
-              ) : null}
+              ) : (
+                <SidebarMenuButton asChild tooltip={item.title}>
+                  <a href={item.url}>
+                    <item.icon />
+                    <span>{item.title}</span>
+                  </a>
+                </SidebarMenuButton>
+              )}
             </SidebarMenuItem>
           </Collapsible>
         ))}

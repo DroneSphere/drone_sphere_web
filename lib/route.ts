@@ -34,13 +34,13 @@ export const routeMap = {
       url: "/drones",
       icon: Plane,
     },
+    // {
+    //   title: "网关管理",
+    //   url: "/gateways",
+    //   icon: Router,
+    // },
     {
-      title: "网关管理",
-      url: "/gateways",
-      icon: Router,
-    },
-    {
-      title: "型号管理",
+      title: "基本信息管理",
       icon: Frame,
       url: "/models",
       items: [
