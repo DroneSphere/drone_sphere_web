@@ -7,11 +7,6 @@ import {
 } from "@/app/(main)/drones/requests";
 import { DroneItemResult } from "@/app/(main)/drones/types";
 import { Button } from "@/components/ui/button";
-import {
-  HoverCard,
-  HoverCardContent,
-  HoverCardTrigger,
-} from "@/components/ui/hover-card";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -86,17 +81,10 @@ export default function DronesPage() {
         header: "呼号",
         cell: (info) => <div className="w-32">{info.getValue()}</div>,
       }),
-      columnHelper.accessor("status", {
-        header: "状态",
-        cell: (info) => (
-          <div className="w-8">
-            {info.getValue() || <span className="text-gray-400">未知</span>}
-          </div>
-        ),
-      }),
+
       columnHelper.accessor("product_model", {
         header: "型号",
-        cell: (info) => <div className="w-16">{info.getValue()}</div>,
+        cell: (info) => <div className="w-32">{info.getValue()}</div>, // 增加型号列宽度，从w-16修改为w-32
       }),
       columnHelper.accessor("is_rtk_available", {
         header: () => "RTK",
@@ -114,29 +102,41 @@ export default function DronesPage() {
         header: "最后在线时间",
         cell: (info) => <div className="w-32">{info.getValue()}</div>,
       }),
-      columnHelper.accessor("description", {
-        header: "描述",
+      columnHelper.accessor("status", {
+        header: "状态",
         cell: (info) => (
-          <HoverCard>
-            <HoverCardTrigger>
-              <div className="text-left overflow-hidden text-ellipsis whitespace-nowrap max-w-36">
-                {info.getValue() || <span className="text-gray-400">无</span>}
-              </div>
-            </HoverCardTrigger>
-            <HoverCardContent>
-              <div className="text-left max-w-196">
-                {info.getValue() || <span className="text-gray-400">无</span>}
-              </div>
-            </HoverCardContent>
-          </HoverCard>
+          <div className="w-8">
+            {info.getValue() || <span className="text-gray-400">未知</span>}
+          </div>
         ),
       }),
+      // columnHelper.accessor("description", {
+      //   header: "描述",
+      //   cell: (info) => (
+      //     <HoverCard>
+      //       <HoverCardTrigger>
+      //         <div className="text-left overflow-hidden text-ellipsis whitespace-nowrap max-w-36">
+      //           {info.getValue() || <span className="text-gray-400">无</span>}
+      //         </div>
+      //       </HoverCardTrigger>
+      //       <HoverCardContent>
+      //         <div className="text-left max-w-196">
+      //           {info.getValue() || <span className="text-gray-400">无</span>}
+      //         </div>
+      //       </HoverCardContent>
+      //     </HoverCard>
+      //   ),
+      // }),
       columnHelper.display({
         id: "actions",
         header: () => <div className="text-center">操作</div>,
         cell: (info) => (
           <div className="flex justify-center space-x-2">
-            <EditDialog sn={info.row.original.sn} callsign={info.row.original.callsign} description={info.row.original.description} />
+            <EditDialog
+              sn={info.row.original.sn}
+              callsign={info.row.original.callsign}
+              description={info.row.original.description}
+            />
             <ViewDialog sn={info.row.original.sn} />
             <DeleteDialog sn={info.row.original.sn} />
           </div>
@@ -215,12 +215,15 @@ export default function DronesPage() {
       }
       {listQuery.isSuccess && (
         <div className="my-4 max-w-full overflow-x-auto">
-          <Table className="border border-gray-200 rounded-md">
+          <Table className="border border-gray-200 rounded-md border-collapse">
             <TableHeader className="bg-gray-100">
-              <TableRow>
+              <TableRow className="border-b border-gray-300">
                 {table.getHeaderGroups().map((headerGroup) =>
                   headerGroup.headers.map((header) => (
-                    <TableHead key={header.id} className="text-center">
+                    <TableHead
+                      key={header.id}
+                      className="text-center border border-gray-300 p-2"
+                    >
                       {header.isPlaceholder
                         ? null
                         : flexRender(
@@ -234,10 +237,16 @@ export default function DronesPage() {
             </TableHeader>
             <TableBody>
               {table.getRowModel().rows.map((row) => (
-                <TableRow key={row.id} className="hover:bg-gray-50">
+                <TableRow
+                  key={row.id}
+                  className="hover:bg-gray-50 border-b border-gray-200"
+                >
                   {row.getVisibleCells().map((cell) => (
                     // 居中
-                    <TableCell key={cell.id} className="text-center p-2">
+                    <TableCell
+                      key={cell.id}
+                      className="text-center p-2 border-x border-gray-200"
+                    >
                       {flexRender(
                         cell.column.columnDef.cell,
                         cell.getContext()
