@@ -25,8 +25,9 @@ export default function DeleteDialog(
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>
       <AlertDialogTrigger asChild>
-        <Button variant="destructive" size="icon" className="h-8 w-8">
+        <Button variant="destructive" size="sm" className="rounded-sm hover:bg-red-600">
           <Trash className="h-4 w-4" />
+          删除
         </Button>
       </AlertDialogTrigger>
       <AlertDialogContent>
