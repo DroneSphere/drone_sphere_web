@@ -1,7 +1,7 @@
 "use client";
 
 import { login, register } from "@/api/user/request";
-import { LoginRequest, RegisterRequest } from "@/api/user/types";
+import { RegisterRequest } from "@/api/user/types";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
