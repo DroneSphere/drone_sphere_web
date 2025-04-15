@@ -105,8 +105,8 @@ export default function AddDroneDialog() {
       <DialogTrigger asChild>
         <Button
           variant="default"
-          size="sm"
-          className="rounded-sm bg-blue-500 text-gray-100 hover:bg-blue-600"
+          size="default"
+          className="rounded-sm bg-green-500 text-gray-100 hover:bg-green-600"
         >
           <PlusCircle className="h-4 w-4 mr-1" />
           添加无人机
