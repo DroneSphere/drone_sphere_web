@@ -24,7 +24,7 @@ import { z } from "zod";
 
 // 登录表单验证模式
 const loginSchema = z.object({
-  email: z.string().min(1, "邮箱不能为空"),
+  username: z.string().min(1, "用户名不能为空"),
   password: z.string().min(6, "密码至少需要6个字符"),
 });
 
@@ -50,7 +50,7 @@ export default function AuthPage() {
   const loginForm = useForm({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      email: "",
+      username: "",
       password: "",
     },
   });
@@ -108,8 +108,11 @@ export default function AuthPage() {
     },
   });
 
-  const onLoginSubmit = (data: LoginRequest) => {
-    loginMut.mutate(data);
+  const onLoginSubmit = (data: { username: string; password: string }) => {
+    loginMut.mutate({
+      email: data.username,
+      password: data.password,
+    });
   };
 
   const onRegisterSubmit = (data: RegisterRequest) => {
@@ -145,12 +148,12 @@ export default function AuthPage() {
                 >
                   <FormField
                     control={loginForm.control}
-                    name="email"
+                    name="username"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>电子邮箱</FormLabel>
+                        <FormLabel>用户名</FormLabel>
                         <FormControl>
-                          <Input placeholder="请输入电子邮箱" {...field} />
+                          <Input placeholder="请输入用户名" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
