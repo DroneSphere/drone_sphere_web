@@ -33,10 +33,11 @@ export default function ViewDialog(
       <DialogTrigger>
         <Button
           variant="secondary"
-          size="icon"
-          className="h-8 w-8 bg-blue-400 text-gray-100 hover:bg-blue-500"
+          size="sm"
+          className="rounded-sm bg-blue-400 text-gray-100 hover:bg-blue-500"
         >
-          <View className="h-4 w-4" />
+          <View className="h-4 w-4 mr-1" />
+          详情
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-4xl">
