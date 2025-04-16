@@ -7,7 +7,6 @@ import {
   Monitor,
   PieChart,
   Plane,
-  Router,
   Settings2,
   SquareTerminal,
 } from "lucide-react";

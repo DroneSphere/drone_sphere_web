@@ -319,6 +319,7 @@ export default function DetailDialog(
                           <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
                             {Array.isArray(value) && value.length > 0 ? (
                               <div className="flex flex-col">
+                                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                                 {value.map((gimbal: any) => (
                                   <div key={gimbal.id} className="text-left">
                                     {gimbal.name}
