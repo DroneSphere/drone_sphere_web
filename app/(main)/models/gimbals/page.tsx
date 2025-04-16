@@ -22,6 +22,8 @@ import {
 } from "@tanstack/react-table";
 import { getGimbalList } from "./request";
 import { GimbalItemResult } from "./type";
+import DetailDialog from "./detail-dialog";
+import DeleteDialog from "./delete-dialog";
 
 const columnHelper = createColumnHelper<GimbalItemResult>();
 
@@ -66,8 +68,24 @@ const columns = [
   }),
   columnHelper.accessor("is_thermal_available", {
     header: "支持热成像",
+    cell: (info) => <div>{info.getValue() ? "是" : "否"}</div>,
+  }),
+  // 添加操作列
+  columnHelper.display({
+    id: "actions",
+    header: () => <div className="text-center">操作</div>,
     cell: (info) => (
-      <div>{info.getValue() ? "是" : "否"}</div>
+      <div className="flex justify-center space-x-2">
+        <DetailDialog
+          id={info.row.original.gimbal_model_id}
+          name={info.row.original.gimbal_model_name}
+          description={info.row.original.gimbal_model_description}
+        />
+        <DeleteDialog
+          id={info.row.original.gimbal_model_id}
+          name={info.row.original.gimbal_model_name}
+        />
+      </div>
     ),
   }),
 ];
@@ -93,12 +111,15 @@ export default function Page() {
           </div>
         )}
         {query.isSuccess && query.data && (
-          <Table className="border border-gray-200 rounded-md">
+          <Table className="border border-gray-200 rounded-md border-collapse">
             <TableHeader className="bg-gray-100">
-              <TableRow>
+              <TableRow className="border-b border-gray-300">
                 {table.getHeaderGroups().map((headerGroup) =>
                   headerGroup.headers.map((header) => (
-                    <TableHead key={header.id} className="text-center">
+                    <TableHead
+                      key={header.id}
+                      className="text-center border border-gray-300 p-2"
+                    >
                       {header.isPlaceholder
                         ? null
                         : flexRender(
@@ -112,10 +133,15 @@ export default function Page() {
             </TableHeader>
             <TableBody>
               {table.getRowModel().rows.map((row) => (
-                <TableRow key={row.id} className="hover:bg-gray-50">
+                <TableRow
+                  key={row.id}
+                  className="hover:bg-gray-50 border-b border-gray-200"
+                >
                   {row.getVisibleCells().map((cell) => (
-                    // 居中
-                    <TableCell key={cell.id} className="text-center p-2">
+                    <TableCell
+                      key={cell.id}
+                      className="text-center p-2 border-x border-gray-200"
+                    >
                       {flexRender(
                         cell.column.columnDef.cell,
                         cell.getContext()

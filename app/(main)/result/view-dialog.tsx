@@ -12,18 +12,8 @@ import { View } from "lucide-react";
 import { useState } from "react";
 import Image from "next/image";
 
-// key的中文映射
-const keyMappings: Record<string, string> = {
-  id: "ID",
-  job_id: "任务ID",
-  job_name: "任务名称",
-  wayline_id: "航线ID",
-  drone_id: "无人机ID",
-  object_type: "目标类型",
-  object_label: "目标标签",
-  object_confidence: "置信度",
-  created_at: "创建时间",
-};
+// 注意：由于我们现在直接使用特定字段，不再需要通用映射
+// 旧的key映射被移除
 
 export default function ViewDialog(
   props: Readonly<{
@@ -64,7 +54,7 @@ export default function ViewDialog(
         {query.isSuccess && query.data && (
           <DialogHeader>
             <DialogTitle>检测结果详情</DialogTitle>
-            <div className="mt-8 flex gap-4">
+            <div className="pt-4 flex gap-4">
               {/* 左侧图片 */}
               <div className="flex-1 relative min-h-[400px]">
                 <Image
@@ -78,36 +68,91 @@ export default function ViewDialog(
               {/* 右侧信息 */}
               <div className="flex-1">
                 <dl className="divide-y divide-gray-200">
-                  {Object.entries(query.data).map(([key, value]) => {
-                    // 跳过图片URL和position、coordinate等复杂类型
-                    if (key === "image_url" || typeof value === "object") return null;
-                    
-                    return (
-                      <div key={key} className="py-2 grid grid-cols-3 gap-4">
-                        <dt className="text-sm font-medium text-gray-500">
-                          {keyMappings[key] || key}
-                        </dt>
-                        <dd className="text-sm text-gray-900 col-span-2">
-                          {key === "object_confidence" 
-                            ? `${(value * 100).toFixed(2)}%`
-                            : String(value)}
-                        </dd>
-                      </div>
-                    );
-                  })}
-                  {/* 坐标信息 */}
+                  {/* ID */}
                   <div className="py-2 grid grid-cols-3 gap-4">
-                    <dt className="text-sm font-medium text-gray-500">坐标</dt>
+                    <dt className="text-sm font-medium text-gray-500">ID</dt>
                     <dd className="text-sm text-gray-900 col-span-2">
-                      经度: {query.data.coordinate.lng}°, 纬度: {query.data.coordinate.lat}°
+                      {String(query.data.id)}
                     </dd>
                   </div>
-                  {/* 位置信息 */}
+                  
+                  {/* 任务名称 */}
                   <div className="py-2 grid grid-cols-3 gap-4">
-                    <dt className="text-sm font-medium text-gray-500">框选位置</dt>
+                    <dt className="text-sm font-medium text-gray-500">任务名称</dt>
                     <dd className="text-sm text-gray-900 col-span-2">
-                      X: {query.data.position.x}, Y: {query.data.position.y},
-                      宽度: {query.data.position.w}, 高度: {query.data.position.h}
+                      {String(query.data.job_name)}
+                    </dd>
+                  </div>
+                  
+                  {/* 目标标签 */}
+                  <div className="py-2 grid grid-cols-3 gap-4">
+                    <dt className="text-sm font-medium text-gray-500">目标标签</dt>
+                    <dd className="text-sm text-gray-900 col-span-2">
+                      {String(query.data.object_label)}
+                    </dd>
+                  </div>
+                  
+                  {/* 置信度 */}
+                  <div className="py-2 grid grid-cols-3 gap-4">
+                    <dt className="text-sm font-medium text-gray-500">置信度</dt>
+                    <dd className="text-sm text-gray-900 col-span-2">
+                      {`${(query.data.object_confidence * 100).toFixed(2)}%`}
+                    </dd>
+                  </div>
+                  
+                  {/* 坐标信息 - 经度 */}
+                  <div className="py-2 grid grid-cols-3 gap-4">
+                    <dt className="text-sm font-medium text-gray-500">经度</dt>
+                    <dd className="text-sm text-gray-900 col-span-2">
+                      {query.data.coordinate.lng.toFixed(6)}
+                    </dd>
+                  </div>
+                  
+                  {/* 坐标信息 - 纬度 */}
+                  <div className="py-2 grid grid-cols-3 gap-4">
+                    <dt className="text-sm font-medium text-gray-500">纬度</dt>
+                    <dd className="text-sm text-gray-900 col-span-2">
+                      {query.data.coordinate.lat.toFixed(6)}
+                    </dd>
+                  </div>
+                  
+                  {/* 检测结果 - X坐标 */}
+                  {/* <div className="py-2 grid grid-cols-3 gap-4">
+                    <dt className="text-sm font-medium text-gray-500">检测结果 - X坐标</dt>
+                    <dd className="text-sm text-gray-900 col-span-2">
+                      {query.data.position.x}
+                    </dd>
+                  </div> */}
+                  
+                  {/* 检测结果 - Y坐标 */}
+                  {/* <div className="py-2 grid grid-cols-3 gap-4">
+                    <dt className="text-sm font-medium text-gray-500">检测结果 - Y坐标</dt>
+                    <dd className="text-sm text-gray-900 col-span-2">
+                      {query.data.position.y}
+                    </dd>
+                  </div> */}
+                  
+                  {/* 检测结果 - 宽度 */}
+                  {/* <div className="py-2 grid grid-cols-3 gap-4">
+                    <dt className="text-sm font-medium text-gray-500">检测结果 - 宽度</dt>
+                    <dd className="text-sm text-gray-900 col-span-2">
+                      {query.data.position.w}
+                    </dd>
+                  </div> */}
+                  
+                  {/* 检测结果 - 高度 */}
+                  {/* <div className="py-2 grid grid-cols-3 gap-4">
+                    <dt className="text-sm font-medium text-gray-500">检测结果 - 高度</dt>
+                    <dd className="text-sm text-gray-900 col-span-2">
+                      {query.data.position.h}
+                    </dd>
+                  </div> */}
+                  
+                  {/* 创建时间 */}
+                  <div className="py-2 grid grid-cols-3 gap-4">
+                    <dt className="text-sm font-medium text-gray-500">创建时间</dt>
+                    <dd className="text-sm text-gray-900 col-span-2">
+                      {String(query.data.created_at)}
                     </dd>
                   </div>
                 </dl>

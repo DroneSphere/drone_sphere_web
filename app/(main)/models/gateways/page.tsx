@@ -24,6 +24,8 @@ import {
 import { useEffect } from "react";
 import { getGatewayModels } from "./request";
 import { GatewayModelItemResult } from "./type";
+import DetailDialog from "./detail-dialog";
+import DeleteDialog from "./delete-dialog";
 
 const columnHelper = createColumnHelper<GatewayModelItemResult>();
 
@@ -70,7 +72,25 @@ const columns = [
   }),
   columnHelper.accessor("state", {
     header: "状态",
-    cell: (info) => info.getValue() === 0 ? "正常" : "未知",
+    cell: (info) => (info.getValue() === 0 ? "正常" : "未知"),
+  }),
+  // 添加操作列
+  columnHelper.display({
+    id: "actions",
+    header: () => <div className="text-center">操作</div>,
+    cell: (info) => (
+      <div className="flex justify-center space-x-2">
+        <DetailDialog
+          id={info.row.original.gateway_model_id}
+          name={info.row.original.gateway_model_name}
+          description={info.row.original.gateway_model_description}
+        />
+        <DeleteDialog
+          id={info.row.original.gateway_model_id}
+          name={info.row.original.gateway_model_name}
+        />
+      </div>
+    ),
   }),
 ];
 
@@ -98,19 +118,22 @@ export default function Page() {
 
   return (
     <div className="px-4">
-      <div className="my-4 max-w-full overflow-x-auto">
-        {query.isLoading && (
-          <div className="flex justify-center items-center py-8">
-            <div className="w-8 h-8 border-4 border-blue-300 border-t-blue-500 rounded-full animate-spin" />
-          </div>
-        )}
-        {query.isSuccess && query.data && (
-          <Table className="border border-gray-200 rounded-md">
+      {query.isLoading && (
+        <div className="flex justify-center items-center py-8">
+          <div className="w-8 h-8 border-4 border-blue-300 border-t-blue-500 rounded-full animate-spin" />
+        </div>
+      )}
+      {query.isSuccess && query.data && (
+        <div className="my-4 max-w-full overflow-x-auto">
+          <Table className="border border-gray-200 rounded-md border-collapse">
             <TableHeader className="bg-gray-100">
-              <TableRow>
+              <TableRow className="border-b border-gray-300">
                 {table.getHeaderGroups().map((headerGroup) =>
                   headerGroup.headers.map((header) => (
-                    <TableHead key={header.id} className="text-center">
+                    <TableHead
+                      key={header.id}
+                      className="text-center border border-gray-300 p-2"
+                    >
                       {header.isPlaceholder
                         ? null
                         : flexRender(
@@ -124,9 +147,15 @@ export default function Page() {
             </TableHeader>
             <TableBody>
               {table.getRowModel().rows.map((row) => (
-                <TableRow key={row.id} className="hover:bg-gray-50">
+                <TableRow
+                  key={row.id}
+                  className="hover:bg-gray-50 border-b border-gray-200"
+                >
                   {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id} className="text-center p-2">
+                    <TableCell
+                      key={cell.id}
+                      className="text-center p-2 border-x border-gray-200"
+                    >
                       {flexRender(
                         cell.column.columnDef.cell,
                         cell.getContext()
@@ -137,8 +166,8 @@ export default function Page() {
               ))}
             </TableBody>
           </Table>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }

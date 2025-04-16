@@ -24,6 +24,8 @@ import {
 import { useEffect } from "react";
 import { getAllModels } from "./request";
 import { DroneModelItemResult } from "./type";
+import DeleteDialog from "./delete-dialog";
+import DetailDialog from "./detail-dialog";
 
 const columnHelper = createColumnHelper<DroneModelItemResult>();
 
@@ -112,6 +114,16 @@ const columns = [
       </HoverCard>
     ),
   }),
+  columnHelper.display({
+    id: "actions",
+    header: () => <div className="text-center">操作</div>,
+    cell: (info) => (
+      <div className="flex justify-center space-x-2">
+        <DetailDialog id={info.row.original.id} name={info.row.original.name} description={info.row.original.description} />
+        <DeleteDialog id={info.row.original.id} name={info.row.original.name} />
+      </div>
+    ),
+  }),
 ];
 
 export default function Page() {
@@ -145,12 +157,12 @@ export default function Page() {
       )}
       {query.isSuccess && query.data && (
         <div className="my-4 max-w-full overflow-x-auto">
-          <Table className="border border-gray-200 rounded-md">
+          <Table className="border border-gray-200 rounded-md border-collapse">
             <TableHeader className="bg-gray-100">
-              <TableRow>
+              <TableRow className="border-b border-gray-300">
                 {table.getHeaderGroups().map((headerGroup) =>
                   headerGroup.headers.map((header) => (
-                    <TableHead key={header.id} className="text-center">
+                    <TableHead key={header.id} className="text-center border border-gray-300 p-2">
                       {header.isPlaceholder
                         ? null
                         : flexRender(
@@ -164,10 +176,10 @@ export default function Page() {
             </TableHeader>
             <TableBody>
               {table.getRowModel().rows.map((row) => (
-                <TableRow key={row.id} className="hover:bg-gray-50">
+                <TableRow key={row.id} className="hover:bg-gray-50 border-b border-gray-200">
                   {row.getVisibleCells().map((cell) => (
                     // 居中
-                    <TableCell key={cell.id} className="text-center p-2">
+                    <TableCell key={cell.id} className="text-center p-2 border-x border-gray-200">
                       {flexRender(
                         cell.column.columnDef.cell,
                         cell.getContext()
