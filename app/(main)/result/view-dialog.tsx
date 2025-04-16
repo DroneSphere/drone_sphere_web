@@ -57,15 +57,17 @@ export default function ViewDialog(
             <DialogTitle>检测结果详情</DialogTitle>
             <div className="pt-4 flex gap-4">
               {/* 左侧图片 */}
-              <div className="flex-1 relative min-h-[400px]">
+                {/* 左侧图片 */}
+                <div className="w-1/2 aspect-video">
                 <Image
                   src={query.data.image_url}
                   alt="检测结果图片"
-                  fill
-                  style={{ objectFit: "contain" }}
-                  className="rounded-lg shadow-lg"
+                  width={500} // 宽度固定
+                  height={300} // 高度固定，会被 aspect-video 覆盖
+                  style={{ objectFit: "cover" }} // 保持宽高比并填充容器
+                  className="rounded-sm"
                 />
-              </div>
+                </div>
               {/* 右侧信息 */}
               <div className="flex-1">
                 <dl className="divide-y divide-gray-200">
