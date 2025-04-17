@@ -22,13 +22,14 @@ import {
   getCoreRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { getGatewayModels } from "./request";
 import { GatewayModelItemResult } from "./type";
 import DetailDialog from "./detail-dialog";
 import DeleteDialog from "./delete-dialog";
 import AddGatewayDialog from "./add-dialog";
 import { Search } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 const columnHelper = createColumnHelper<GatewayModelItemResult>();
 
@@ -39,7 +40,7 @@ export default function Page() {
   // 查询网关型号数据
   const query = useQuery({
     queryKey: ["models", "gateways"],
-    queryFn: () => getGatewayModels(),
+    queryFn: () => getGatewayModels(searchText),
   });
 
   // 定义表格列定义
@@ -84,10 +85,6 @@ export default function Page() {
       header: "更新时间",
       cell: (info) => new Date(info.getValue()).toLocaleString("zh-CN"),
     }),
-    columnHelper.accessor("state", {
-      header: "状态",
-      cell: (info) => (info.getValue() === 0 ? "正常" : "未知"),
-    }),
     // 添加操作列
     columnHelper.display({
       id: "actions",
@@ -119,25 +116,9 @@ export default function Page() {
     }
   }, [query.isError, query.error]);
 
-  // 过滤数据
-  const filteredData = useMemo(() => {
-    const lowercaseSearch = searchText.toLowerCase();
-    return (query.data || []).filter((item) => {
-      return (
-        String(item.gateway_model_id).includes(lowercaseSearch) ||
-        (item.gateway_model_name || "")
-          .toLowerCase()
-          .includes(lowercaseSearch) ||
-        (item.gateway_model_description || "")
-          .toLowerCase()
-          .includes(lowercaseSearch)
-      );
-    });
-  }, [query.data, searchText]);
-
   // 创建表格实例
   const table = useReactTable({
-    data: filteredData,
+    data: query.data || [],
     columns,
     getCoreRowModel: getCoreRowModel(),
   });
@@ -145,19 +126,34 @@ export default function Page() {
   return (
     <div className="px-4">
       {/* 顶部操作栏 */}
-      <div className="flex justify-between items-center mb-4">
-        <div className="relative w-64">
-          <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+      <div className="flex justify-between items-center mb-4 gap-4">
+        {/* <div className="relative w-64"> */}
+        {/* <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
             <Search className="h-4 w-4 text-gray-500" />
-          </div>
-          <Input
-            type="text"
-            placeholder="搜索网关型号..."
-            className="pl-10 py-2"
-            value={searchText}
-            onChange={(e) => setSearchText(e.target.value)}
-          />
-        </div>
+          </div> */}
+        <Input
+          type="text"
+          placeholder="搜索网关型号..."
+          className="px-4 py-2 border rounded-sm w-[200px]"
+          value={searchText}
+          onChange={(e) => setSearchText(e.target.value)}
+        />
+        {/* 搜索按钮 */}
+        <Button
+          onClick={() => {
+            // 处理搜索逻辑
+            // 这里可以添加搜索请求的逻辑
+            console.log("搜索网关型号:", searchText);
+            query.refetch();
+          }}
+          disabled={query.isPending}
+          className="px-4 py-2 bg-blue-500 text-white rounded-sm hover:bg-blue-600"
+        >
+          <Search className="h-4 w-4" />
+          搜索
+        </Button>
+        <div className="flex-1" />
+        {/* </div> */}
         <AddGatewayDialog />
       </div>
 

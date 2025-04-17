@@ -32,9 +32,9 @@ import { Textarea } from "@/components/ui/textarea";
 const formSchema = z.object({
   gateway_model_name: z.string().min(1, { message: "网关型号名称不能为空" }),
   gateway_model_description: z.string().optional(),
-  gateway_model_domain: z.coerce.number().int().optional(),
-  gateway_model_type: z.coerce.number().int().optional(),
-  gateway_model_sub_type: z.coerce.number().int().optional(),
+  gateway_model_domain: z.coerce.number().int(),
+  gateway_model_type: z.coerce.number().int(),
+  gateway_model_sub_type: z.coerce.number().int(),
 });
 
 export default function AddGatewayDialog() {
@@ -45,17 +45,17 @@ export default function AddGatewayDialog() {
   const mutation = useMutation({
     mutationFn: (data: z.infer<typeof formSchema>) => {
       return addGatewayModel({
-        gateway_model_name: data.gateway_model_name,
-        gateway_model_description: data.gateway_model_description,
-        gateway_model_domain: data.gateway_model_domain,
-        gateway_model_type: data.gateway_model_type,
-        gateway_model_sub_type: data.gateway_model_sub_type,
+        name: data.gateway_model_name,
+        description: data.gateway_model_description,
+        domain: data.gateway_model_domain,
+        type: data.gateway_model_type,
+        sub_type: data.gateway_model_sub_type,
       });
     },
     onSuccess: () => {
       // 使之前的查询失效
       queryClient.invalidateQueries({
-        queryKey: ["gatewayModels"],
+        queryKey: ["models", "gateways"],
       });
       // 重置表单
       form.reset();
@@ -136,10 +136,10 @@ export default function AddGatewayDialog() {
                   render={({ field }) => (
                     <FormItem className="sm:col-span-2">
                       <FormControl>
-                        <Input 
-                          type="number" 
-                          placeholder="请输入领域值" 
-                          {...field} 
+                        <Input
+                          type="number"
+                          placeholder="请输入领域值"
+                          {...field}
                         />
                       </FormControl>
                       <FormMessage />
@@ -159,10 +159,10 @@ export default function AddGatewayDialog() {
                   render={({ field }) => (
                     <FormItem className="sm:col-span-2">
                       <FormControl>
-                        <Input 
-                          type="number" 
-                          placeholder="请输入类型值" 
-                          {...field} 
+                        <Input
+                          type="number"
+                          placeholder="请输入类型值"
+                          {...field}
                         />
                       </FormControl>
                       <FormMessage />
@@ -182,10 +182,10 @@ export default function AddGatewayDialog() {
                   render={({ field }) => (
                     <FormItem className="sm:col-span-2">
                       <FormControl>
-                        <Input 
-                          type="number" 
-                          placeholder="请输入子类型值" 
-                          {...field} 
+                        <Input
+                          type="number"
+                          placeholder="请输入子类型值"
+                          {...field}
                         />
                       </FormControl>
                       <FormMessage />
