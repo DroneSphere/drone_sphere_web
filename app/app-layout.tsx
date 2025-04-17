@@ -26,8 +26,8 @@ export default function AppLayout({
   const { isLoading, user } = useUserContext();
 
   return (
-    <>
-      <div className="flex items-center justify-between w-full px-8 h-16 bg-sidebar">
+    <div className="flex flex-col h-screen overflow-hidden">
+      <div className="flex items-center justify-between w-full px-8 h-16 bg-sidebar shrink-0">
         <div className="flex-1" />
         <h1 className="flex-1 font-semibold text-center text-2xl">
           无人机集群搜索系统
@@ -69,10 +69,10 @@ export default function AppLayout({
         )}
         {(isLoading || !user) && <div className="flex-1 flex justify-end" />}
       </div>
-      <SidebarProvider id="sidebar-provider" className="overflow-x-auto">
-        <AppSidebar className="pt-20" />
-        <SidebarInset className="w-[calc(100vw-280px)]">
-          <div className="flex items-center gap-2 px-4 py-2">
+      <SidebarProvider id="sidebar-provider" className="flex-1 flex overflow-hidden">
+        <AppSidebar className="pt-20 h-full overflow-y-auto" />
+        <SidebarInset className="w-[calc(100vw-280px)] h-full overflow-hidden flex flex-col">
+          <div className="flex items-center gap-2 px-4 py-2 shrink-0">
             <SidebarTrigger className="-ml-1" />
             {/* 面包屑组件 */}
             <div className="flex text-sm font-medium text-slate-700 dark:text-slate-200">
@@ -102,6 +102,6 @@ export default function AppLayout({
           {children}
         </SidebarInset>
       </SidebarProvider>
-    </>
+    </div>
   );
 }
