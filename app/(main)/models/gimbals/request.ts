@@ -72,3 +72,39 @@ export async function deleteGimbal(id: number): Promise<boolean> {
   // 模拟删除成功
   return true;
 }
+
+// Mock: 添加云台型号
+export async function addGimbalModel(data: {
+  gimbal_model_name: string;
+  gimbal_model_description?: string;
+  gimbal_model_product: string;
+  gimbal_model_domain?: number;
+  gimbal_model_type?: number;
+  gimbal_model_sub_type?: number;
+  is_thermal_available?: boolean;
+}): Promise<GimbalItemResult> {
+  // 这里使用mock数据，实际项目中应该调用API
+  console.log('添加云台型号:', data);
+  
+  // 模拟API请求延迟
+  await new Promise(resolve => setTimeout(resolve, 1000));
+  
+  // 生成随机ID
+  const id = Math.floor(Math.random() * 1000) + 100;
+  
+  // 返回mock数据
+  return {
+    gimbal_model_id: id,
+    gimbal_model_name: data.gimbal_model_name,
+    gimbal_model_description: data.gimbal_model_description || `这是云台型号${data.gimbal_model_name}的描述`,
+    gimbal_model_product: data.gimbal_model_product,
+    gimbal_model_domain: data.gimbal_model_domain || 1,
+    gimbal_model_type: data.gimbal_model_type || 2,
+    gimbal_model_sub_type: data.gimbal_model_sub_type || 3,
+    gimbalindex: 0,
+    state: 1,
+    is_thermal_available: data.is_thermal_available || false,
+    created_time: new Date().toISOString(),
+    updated_time: new Date().toISOString()
+  };
+}

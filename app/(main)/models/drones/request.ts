@@ -74,3 +74,36 @@ export async function deleteModel(id: number): Promise<boolean> {
   // 模拟删除成功
   return true;
 }
+
+// Mock: 添加无人机型号
+export async function addModel(data: {
+  name: string;
+  description?: string;
+  domain?: number;
+  type?: number;
+  sub_type?: number;
+  gateway_id: number;
+}): Promise<DroneModelItemResult> {
+  // 这里使用mock数据，实际项目中应该调用API
+  console.log('添加无人机型号:', data);
+  
+  // 模拟API请求延迟
+  await new Promise(resolve => setTimeout(resolve, 1000));
+  
+  // 生成随机ID
+  const id = Math.floor(Math.random() * 1000) + 100;
+  
+  // 返回mock数据
+  return {
+    id: id,
+    name: data.name,
+    description: data.description || `这是无人机型号${data.name}的描述`,
+    domain: data.domain || 1,
+    type: data.type || 2,
+    sub_type: data.sub_type || 3,
+    gateway_name: "默认网关", // 这里应该通过gateway_id获取真实的网关名称
+    gateway_id: data.gateway_id,
+    gateway_description: "默认网关描述",
+    gimbals: [] // 默认为空，实际应用中可能需要单独的API来关联云台
+  };
+}

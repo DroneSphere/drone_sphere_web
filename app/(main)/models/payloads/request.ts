@@ -56,3 +56,27 @@ export async function deletePayload(id: number): Promise<boolean> {
   // 模拟删除成功
   return true;
 }
+
+// Mock: 添加负载型号
+export async function addPayload(data: {
+  name: string;
+  category: string;
+  description?: string;
+}): Promise<PayloadItemResult> {
+  // 这里使用mock数据，实际项目中应该调用API
+  console.log('添加负载型号:', data);
+  
+  // 模拟API请求延迟
+  await new Promise(resolve => setTimeout(resolve, 1000));
+  
+  // 生成随机ID
+  const id = Math.floor(Math.random() * 1000) + 100;
+  
+  // 返回mock数据
+  return {
+    id: id,
+    name: data.name,
+    category: data.category,
+    description: data.description || `这是负载型号${data.name}的描述，提供了相关的功能和特性。`
+  };
+}

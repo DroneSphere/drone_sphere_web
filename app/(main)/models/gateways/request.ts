@@ -66,3 +66,34 @@ export async function deleteGateway(id: number): Promise<boolean> {
   // 模拟删除成功
   return true;
 }
+
+// Mock: 添加网关型号
+export async function addGatewayModel(data: {
+  gateway_model_name: string;
+  gateway_model_description?: string;
+  gateway_model_domain?: number;
+  gateway_model_type?: number;
+  gateway_model_sub_type?: number;
+}): Promise<GatewayModelItemResult> {
+  // 这里使用mock数据，实际项目中应该调用API
+  console.log('添加网关型号:', data);
+  
+  // 模拟API请求延迟
+  await new Promise(resolve => setTimeout(resolve, 1000));
+  
+  // 生成随机ID
+  const id = Math.floor(Math.random() * 1000) + 100;
+  
+  // 返回mock数据
+  return {
+    gateway_model_id: id,
+    gateway_model_name: data.gateway_model_name,
+    gateway_model_description: data.gateway_model_description || `这是网关型号${data.gateway_model_name}的描述`,
+    gateway_model_domain: data.gateway_model_domain || 1,
+    gateway_model_type: data.gateway_model_type || 2,
+    gateway_model_sub_type: data.gateway_model_sub_type || 3,
+    created_time: new Date().toISOString(),
+    updated_time: new Date().toISOString(),
+    state: 1
+  };
+}
