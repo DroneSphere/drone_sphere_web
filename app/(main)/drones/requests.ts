@@ -74,9 +74,7 @@ export async function addDrone(payload: {
   sn: string;
   callsign?: string;
   description?: string;
-  product_model?: string;
-  is_rtk_available?: boolean;
-  is_thermal_available?: boolean;
+  drone_model_id?: number;
 }): Promise<DroneDetailResult> {
   const res = await httpClient.instance.post<Response<DroneDetailResult>>(
     "/drone",

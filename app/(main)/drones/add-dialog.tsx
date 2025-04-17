@@ -32,7 +32,7 @@ import { PlusCircle } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { Switch } from "@/components/ui/switch";
+import { toast } from "@/hooks/use-toast";
 
 // 不使用选项列表，改为直接输入
 
@@ -41,13 +41,7 @@ const formSchema = z.object({
   sn: z.string().min(1, { message: "序列号不能为空" }),
   callsign: z.string().optional(),
   description: z.string().optional(),
-  product_model: z.string().optional(),
-  is_rtk_available: z.boolean().default(false),
-  is_thermal_available: z.boolean().default(false),
-  // 新增字段 - 使用字符串类型
-  domain: z.string().optional(),
-  type: z.string().optional(),
-  sub_type: z.string().optional(),
+  product_model_id: z.string().optional(),
 });
 
 export default function AddDroneDialog() {
@@ -64,7 +58,12 @@ export default function AddDroneDialog() {
   // 处理表单提交的逻辑
   const mutation = useMutation({
     mutationFn: (data: z.infer<typeof formSchema>) => {
-      return addDrone(data);
+      return addDrone({
+        sn: data.sn,
+        callsign: data.callsign,
+        description: data.description,
+        drone_model_id: Number(data.product_model_id),
+      });
     },
     onSuccess: () => {
       // 使之前的查询失效
@@ -72,7 +71,11 @@ export default function AddDroneDialog() {
         queryKey: ["drones"],
       });
       // 重置表单
-      form.reset();
+      // form.reset();
+      toast({
+        title: "添加成功",
+        description: "新无人机已成功添加",
+      });
       // 关闭对话框
       setOpen(false);
     },
@@ -85,13 +88,7 @@ export default function AddDroneDialog() {
       sn: "",
       callsign: "",
       description: "",
-      product_model: undefined,
-      is_rtk_available: false,
-      is_thermal_available: false,
-      // 新增字段的默认值 - 改为空字符串
-      domain: "",
-      type: "",
-      sub_type: "",
+      product_model_id: undefined,
     },
   });
 
@@ -118,10 +115,7 @@ export default function AddDroneDialog() {
         </DialogHeader>
 
         <Form {...form}>
-          <form
-            onSubmit={form.handleSubmit(onSubmit)}
-            className="space-y-4"
-          >
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             {/* 表单内容部分 */}
             <div className="my-4 divide-y divide-gray-200">
               {/* 无人机序列号 - 必填 */}
@@ -135,10 +129,7 @@ export default function AddDroneDialog() {
                   render={({ field }) => (
                     <FormItem className="sm:col-span-2">
                       <FormControl>
-                        <Input
-                          placeholder="请输入无人机序列号"
-                          {...field}
-                        />
+                        <Input placeholder="请输入无人机序列号" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -157,10 +148,7 @@ export default function AddDroneDialog() {
                   render={({ field }) => (
                     <FormItem className="sm:col-span-2">
                       <FormControl>
-                        <Input
-                          placeholder="请输入无人机呼号"
-                          {...field}
-                        />
+                        <Input placeholder="请输入无人机呼号" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -175,7 +163,7 @@ export default function AddDroneDialog() {
                 </FormLabel>
                 <FormField
                   control={form.control}
-                  name="product_model"
+                  name="product_model_id"
                   render={({ field }) => (
                     <FormItem className="sm:col-span-2">
                       <Select
@@ -190,133 +178,19 @@ export default function AddDroneDialog() {
                         <SelectContent>
                           {modelsQuery.isSuccess && modelsQuery.data ? (
                             modelsQuery.data.map((model) => (
-                              <SelectItem key={model.id} value={model.name}>
+                              <SelectItem key={model.id} value={model.id.toString()}>
                                 {model.name}
                               </SelectItem>
                             ))
                           ) : (
                             <SelectItem value="loading_or_error" disabled>
-                              {modelsQuery.isPending ? "加载中..." : "获取型号列表失败"}
+                              {modelsQuery.isPending
+                                ? "加载中..."
+                                : "获取型号列表失败"}
                             </SelectItem>
                           )}
                         </SelectContent>
                       </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              {/* 是否支持RTK */}
-              <div className="py-2 sm:grid sm:grid-cols-3 sm:gap-4 items-center">
-                <FormLabel className="text-sm font-medium text-gray-500">
-                  是否支持RTK
-                </FormLabel>
-                <FormField
-                  control={form.control}
-                  name="is_rtk_available"
-                  render={({ field }) => (
-                    <FormItem className="sm:col-span-2 flex flex-row items-center space-x-2">
-                      <FormControl>
-                        <Switch
-                          checked={field.value}
-                          onCheckedChange={field.onChange}
-                        />
-                      </FormControl>
-                      <span className="text-sm text-gray-500">
-                        {field.value ? "支持" : "不支持"}
-                      </span>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              {/* 是否支持热成像 */}
-              <div className="py-2 sm:grid sm:grid-cols-3 sm:gap-4 items-center">
-                <FormLabel className="text-sm font-medium text-gray-500">
-                  是否支持热成像
-                </FormLabel>
-                <FormField
-                  control={form.control}
-                  name="is_thermal_available"
-                  render={({ field }) => (
-                    <FormItem className="sm:col-span-2 flex flex-row items-center space-x-2">
-                      <FormControl>
-                        <Switch
-                          checked={field.value}
-                          onCheckedChange={field.onChange}
-                        />
-                      </FormControl>
-                      <span className="text-sm text-gray-500">
-                        {field.value ? "支持" : "不支持"}
-                      </span>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              {/* 领域输入 */}
-              <div className="py-2 sm:grid sm:grid-cols-3 sm:gap-4 items-center">
-                <FormLabel className="text-sm font-medium text-gray-500">
-                  领域
-                </FormLabel>
-                <FormField
-                  control={form.control}
-                  name="domain"
-                  render={({ field }) => (
-                    <FormItem className="sm:col-span-2">
-                      <FormControl>
-                        <Input
-                          placeholder="请输入无人机应用领域"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              {/* 类型输入 */}
-              <div className="py-2 sm:grid sm:grid-cols-3 sm:gap-4 items-center">
-                <FormLabel className="text-sm font-medium text-gray-500">
-                  类型
-                </FormLabel>
-                <FormField
-                  control={form.control}
-                  name="type"
-                  render={({ field }) => (
-                    <FormItem className="sm:col-span-2">
-                      <FormControl>
-                        <Input
-                          placeholder="请输入无人机类型"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              {/* 子类型输入 */}
-              <div className="py-2 sm:grid sm:grid-cols-3 sm:gap-4 items-center">
-                <FormLabel className="text-sm font-medium text-gray-500">
-                  子类型
-                </FormLabel>
-                <FormField
-                  control={form.control}
-                  name="sub_type"
-                  render={({ field }) => (
-                    <FormItem className="sm:col-span-2">
-                      <FormControl>
-                        <Input
-                          placeholder="请输入无人机子类型"
-                          {...field}
-                        />
-                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
