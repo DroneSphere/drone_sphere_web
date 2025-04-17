@@ -71,7 +71,7 @@ export default function AddDroneDialog() {
         queryKey: ["drones"],
       });
       // 重置表单
-      // form.reset();
+      form.reset();
       toast({
         title: "添加成功",
         description: "新无人机已成功添加",
@@ -106,7 +106,7 @@ export default function AddDroneDialog() {
           className="rounded-sm bg-green-500 text-gray-100 hover:bg-green-600"
         >
           <PlusCircle className="h-4 w-4 mr-1" />
-          添加无人机
+          添加
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-2xl">
@@ -178,7 +178,10 @@ export default function AddDroneDialog() {
                         <SelectContent>
                           {modelsQuery.isSuccess && modelsQuery.data ? (
                             modelsQuery.data.map((model) => (
-                              <SelectItem key={model.id} value={model.id.toString()}>
+                              <SelectItem
+                                key={model.id}
+                                value={model.id.toString()}
+                              >
                                 {model.name}
                               </SelectItem>
                             ))

@@ -83,3 +83,16 @@ export async function addDrone(payload: {
   console.log("添加无人机结果:", res);
   return res.data.data;
 }
+
+/**
+ * 根据SN删除无人机
+ * @param sn 无人机序列号
+ * @returns 如果成功返回null，否则抛出异常
+ */
+export async function deleteDroneBySN(sn: string): Promise<null> {
+  const res = await httpClient.instance.delete<Response<null>>(
+    `/drone/${sn}`
+  );
+  console.log("删除无人机结果:", res);
+  return res.data.data;
+}

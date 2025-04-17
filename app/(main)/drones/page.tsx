@@ -76,7 +76,7 @@ export default function DronesPage() {
         header: () => "ID",
       }),
       columnHelper.accessor("sn", {
-        header: "SN",
+        header: "序列号",
       }),
       columnHelper.accessor("callsign", {
         header: "呼号",
@@ -157,7 +157,7 @@ export default function DronesPage() {
       <div className="mb-4 flex gap-4 justify-between items-center">
         <Input
           type="text"
-          placeholder="无人机SN"
+          placeholder="无人机序列号"
           className="px-4 py-2 border rounded-md w-[200px]"
           onChange={(e) => {
             console.log(e.target.value);
