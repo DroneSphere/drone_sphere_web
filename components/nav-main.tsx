@@ -16,6 +16,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import { cn } from "@/lib/utils";
 
 export function NavMain({
   items,
@@ -24,10 +25,12 @@ export function NavMain({
     title: string;
     url: string;
     icon: LucideIcon;
-    isActive?: boolean;
+    isActive?: boolean;    // 导航项是否激活（包括因子导航激活而导致的父导航激活）
+    selfActive?: boolean;  // 导航项本身是否激活（不包括因子导航激活导致的父导航激活）
     items?: {
       title: string;
       url: string;
+      isActive?: boolean; // 添加子导航项的激活状态属性
     }[];
   }[];
 }) {
@@ -39,7 +42,10 @@ export function NavMain({
             key={item.title}
             asChild
             defaultOpen={item.isActive}
-            className={`${item.isActive ? "bg-sidebar-accent" : ""}`}
+            className={cn(
+              // 只有当父导航项本身被激活（不是因为子导航项激活）时才添加高亮背景
+              item.selfActive ? "bg-sidebar-accent" : "",
+            )}
           >
             <SidebarMenuItem>
               {item.items?.length ? (
@@ -55,7 +61,7 @@ export function NavMain({
                         <item.icon />
                         <span>{item.title}</span>
                         <div className="flex-1" />
-                        <ChevronRight className="data-[state=open]:rotate-90" />
+                        <ChevronRight className="data-[state=open]:rotate-90 transition-transform duration-200" />
                       </div>
                       {/* </a> */}
                     </SidebarMenuButton>
@@ -64,7 +70,10 @@ export function NavMain({
                     <SidebarMenuSub>
                       {item.items?.map((subItem) => (
                         <SidebarMenuSubItem key={subItem.title}>
-                          <SidebarMenuSubButton asChild>
+                          <SidebarMenuSubButton 
+                            asChild 
+                            isActive={subItem.isActive}
+                          >
                             <a href={subItem.url}>
                               <span>{subItem.title}</span>
                             </a>

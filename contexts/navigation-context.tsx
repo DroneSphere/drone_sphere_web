@@ -32,7 +32,13 @@ export function NavigationProvider({
 
   // 判断是否为活动路由
   const isActiveRoute = (path: string) => {
-    return pathname.includes(path);
+    // 如果是根路径，只在完全匹配时返回 true
+    if (path === '/') {
+      return pathname === '/';
+    }
+    
+    // 对于其他路径，检查当前路径是否以给定路径开头，并且后面是路径分隔符或结束
+    return pathname === path || pathname.startsWith(`${path}/`);
   };
 
   // 获取所有导航项目的平面列表用于面包屑查找
