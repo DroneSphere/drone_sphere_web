@@ -23,6 +23,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { keyMappings } from "./misc";
+import { Textarea } from "@/components/ui/textarea";
 
 // 定义可编辑字段的表单模式
 const formSchema = z.object({
@@ -165,7 +166,7 @@ export default function DetailDialog(
                         render={({ field }) => (
                           <FormItem className="space-y-1">
                             <FormControl>
-                              <Input placeholder="请输入描述" {...field} />
+                              <Textarea placeholder="请输入描述" {...field} />
                             </FormControl>
                             <FormMessage />
                           </FormItem>

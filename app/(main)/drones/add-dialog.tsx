@@ -33,6 +33,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { toast } from "@/hooks/use-toast";
+import { Textarea } from "@/components/ui/textarea";
 
 // 不使用选项列表，改为直接输入
 
@@ -211,7 +212,7 @@ export default function AddDroneDialog() {
                   render={({ field }) => (
                     <FormItem className="sm:col-span-2">
                       <FormControl>
-                        <Input placeholder="请输入描述信息" {...field} />
+                        <Textarea placeholder="请输入描述信息" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
