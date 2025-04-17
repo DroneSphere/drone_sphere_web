@@ -19,7 +19,7 @@ import { Input } from "@/components/ui/input";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Edit } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { getModelById, updateModel } from "./request";
@@ -31,7 +31,9 @@ const formSchema = z.object({
   domain: z.number().optional(),
   type: z.number().optional(),
   sub_type: z.number().optional(),
-  gateway_name: z.string().optional(),
+  gateway_name: z.string().optional(), // 仅用于显示，实际提交时使用 gateway_id
+  gateway_id: z.number().optional(), // API 需要的网关 ID
+  gimbal_ids: z.array(z.number()).optional(), // API 需要的云台 ID 列表
 });
 
 // 定义键值映射，用于显示字段的中文名称
@@ -67,10 +69,22 @@ export default function DetailDialog(
     enabled: open, // 只在对话框打开时获取数据
   });
 
+  // 处理 API 返回的数据
+  const modelData = query.isSuccess && query.data ? query.data : null;
+
   // 处理表单提交的逻辑
   const mutation = useMutation({
     mutationFn: (data: z.infer<typeof formSchema>) => {
-      return updateModel(props.id, data);
+      // 准备符合 API 要求的参数格式
+      return updateModel(props.id, {
+        name: data.name,
+        description: data.description || "",
+        domain: data.domain || 0,
+        type: data.type || 0,
+        sub_type: data.sub_type || 0,
+        gateway_id: data.gateway_id || 0, // 使用 gateway_id 而不是 gateway_name
+        gimbal_ids: data.gimbal_ids || [], // 添加云台 ID 列表
+      });
     },
     onSuccess: () => {
       // 使之前的查询失效
@@ -91,14 +105,28 @@ export default function DetailDialog(
   });
 
   // 当获取到详细数据后更新表单默认值
-  if (query.isSuccess && query.data) {
-    form.setValue("name", query.data.name || "");
-    form.setValue("description", query.data.description || "");
-    form.setValue("domain", query.data.domain);
-    form.setValue("type", query.data.type);
-    form.setValue("sub_type", query.data.sub_type);
-    form.setValue("gateway_name", query.data.gateway_name || "");
-  }
+  // 使用 useEffect 确保只在 modelData 变化时更新表单值
+  useEffect(() => {
+    if (modelData) {
+      form.setValue("name", modelData.name || "");
+      form.setValue("description", modelData.description || "");
+      form.setValue("domain", modelData.domain);
+      form.setValue("type", modelData.type);
+      form.setValue("sub_type", modelData.sub_type);
+      form.setValue("gateway_name", modelData.gateway_name || "");
+      form.setValue("gateway_id", modelData.gateway_id);
+
+      // 处理 gimbals 数据，提取 gimbal_model_id 数组
+      if (modelData.gimbals && modelData.gimbals.length > 0) {
+        const gimbalIds = modelData.gimbals.map(
+          (gimbal) => gimbal.gimbal_model_id
+        );
+        form.setValue("gimbal_ids", gimbalIds);
+      } else {
+        form.setValue("gimbal_ids", []);
+      }
+    }
+  }, [modelData, form]);
 
   function onSubmit(data: z.infer<typeof formSchema>) {
     console.log("提交表单数据", data);
@@ -135,10 +163,10 @@ export default function DetailDialog(
         )}
 
         {/* 成功获取数据状态 */}
-        {query.isSuccess && query.data && (
+        {query.isSuccess && modelData && (
           <>
             <DialogHeader>
-              <DialogTitle>无人机型号详细信息 - {query.data.name}</DialogTitle>
+              <DialogTitle>无人机型号详细信息 - {modelData.name}</DialogTitle>
             </DialogHeader>
 
             <Form {...form}>
@@ -148,6 +176,12 @@ export default function DetailDialog(
               >
                 {/* 表单内容部分 */}
                 <div className="my-4 divide-y divide-gray-200">
+                  <div className="py-2 sm:grid sm:grid-cols-3 sm:gap-4">
+                    <dt className="text-sm font-medium text-gray-500">ID</dt>
+                    <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
+                      {modelData.id}
+                    </dd>
+                  </div>
                   {/* 可编辑字段 - 名称 */}
                   <div className="py-2 sm:grid sm:grid-cols-3 sm:gap-4 items-center">
                     <dt className="text-sm font-medium text-gray-500">
@@ -205,11 +239,13 @@ export default function DetailDialog(
                         render={({ field }) => (
                           <FormItem className="space-y-1">
                             <FormControl>
-                              <Input 
-                                type="number" 
-                                placeholder="请输入领域" 
+                              <Input
+                                type="number"
+                                placeholder="请输入领域"
                                 {...field}
-                                onChange={(e) => field.onChange(parseInt(e.target.value) || 0)} 
+                                onChange={(e) =>
+                                  field.onChange(parseInt(e.target.value) || 0)
+                                }
                               />
                             </FormControl>
                             <FormMessage />
@@ -231,11 +267,13 @@ export default function DetailDialog(
                         render={({ field }) => (
                           <FormItem className="space-y-1">
                             <FormControl>
-                              <Input 
-                                type="number" 
-                                placeholder="请输入主型号" 
+                              <Input
+                                type="number"
+                                placeholder="请输入主型号"
                                 {...field}
-                                onChange={(e) => field.onChange(parseInt(e.target.value) || 0)} 
+                                onChange={(e) =>
+                                  field.onChange(parseInt(e.target.value) || 0)
+                                }
                               />
                             </FormControl>
                             <FormMessage />
@@ -257,11 +295,13 @@ export default function DetailDialog(
                         render={({ field }) => (
                           <FormItem className="space-y-1">
                             <FormControl>
-                              <Input 
-                                type="number" 
-                                placeholder="请输入子型号" 
+                              <Input
+                                type="number"
+                                placeholder="请输入子型号"
                                 {...field}
-                                onChange={(e) => field.onChange(parseInt(e.target.value) || 0)} 
+                                onChange={(e) =>
+                                  field.onChange(parseInt(e.target.value) || 0)
+                                }
                               />
                             </FormControl>
                             <FormMessage />
@@ -292,76 +332,44 @@ export default function DetailDialog(
                     </dd>
                   </div>
 
-                  {/* 非可编辑字段 */}
-                  {Object.entries(query.data).map(([key, value]) => {
-                    // 跳过可编辑字段，因为已经在上面单独处理了
-                    if (
-                      key === "name" ||
-                      key === "description" ||
-                      key === "domain" ||
-                      key === "type" ||
-                      key === "sub_type" ||
-                      key === "gateway_name"
-                    ) {
-                      return null;
-                    }
-
-                    // 特殊处理 gimbals 数组
-                    if (key === "gimbals") {
-                      return (
-                        <div
-                          key={key}
-                          className="py-2 sm:grid sm:grid-cols-3 sm:gap-4"
-                        >
-                          <dt className="text-sm font-medium text-gray-500">
-                            {keyMappings[key] || key}
-                          </dt>
-                          <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
-                            {Array.isArray(value) && value.length > 0 ? (
-                              <div className="flex flex-col">
-                                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                                {value.map((gimbal: any) => (
-                                  <div key={gimbal.id} className="text-left">
-                                    {gimbal.name}
-                                    {gimbal.description && (
-                                      <span className="text-gray-500 ml-2">
-                                        ({gimbal.description})
-                                      </span>
-                                    )}
-                                  </div>
-                                ))}
-                              </div>
-                            ) : (
-                              <span className="text-gray-400">无</span>
+                  <div className="py-2 sm:grid sm:grid-cols-3 sm:gap-4">
+                    <dt className="text-sm font-medium text-gray-500">
+                      可搭载云台
+                    </dt>
+                    <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
+                      <div className="flex flex-col">
+                        {modelData.gimbals.map((gimbal) => (
+                          <div
+                            key={gimbal.gimbal_model_id}
+                            className="text-left"
+                          >
+                            {gimbal.gimbal_model_name}
+                            {gimbal.gimbal_model_description && (
+                              <span className="text-gray-500 ml-2">
+                                ({gimbal.gimbal_model_description})
+                              </span>
                             )}
-                          </dd>
-                        </div>
-                      );
-                    }
-
-                    return (
-                      <div
-                        key={key}
-                        className="py-2 sm:grid sm:grid-cols-3 sm:gap-4"
-                      >
-                        <dt className="text-sm font-medium text-gray-500">
-                          {keyMappings[key] || key}
-                        </dt>
-
-                        <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
-                          <span className="text-gray-500">
-                            {value === null ||
-                            value === undefined ||
-                            value === "" ? (
-                              <span className="text-gray-400">无</span>
-                            ) : (
-                              value
-                            )}
-                          </span>
-                        </dd>
+                          </div>
+                        ))}
                       </div>
-                    );
-                  })}
+                    </dd>
+                  </div>
+                  <div className="py-2 sm:grid sm:grid-cols-3 sm:gap-4">
+                    <dt className="text-sm font-medium text-gray-500">
+                      创建时间
+                    </dt>
+                    <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
+                      {modelData.created_at}
+                    </dd>
+                  </div>
+                  <div className="py-2 sm:grid sm:grid-cols-3 sm:gap-4">
+                    <dt className="text-sm font-medium text-gray-500">
+                      更新时间
+                    </dt>
+                    <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
+                      {modelData.updated_at}
+                    </dd>
+                  </div>
                 </div>
 
                 {/* 底部按钮 */}

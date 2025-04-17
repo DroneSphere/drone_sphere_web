@@ -23,9 +23,9 @@ import {
   getCoreRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { getAllModels } from "./request";
-import { DroneModelItemResult } from "./type";
+import { DroneModelItemResult, GimbalModel } from "./type";
 import DeleteDialog from "./delete-dialog";
 import DetailDialog from "./detail-dialog";
 import AddDroneModelDialog from "./add-dialog";
@@ -36,13 +36,11 @@ const columnHelper = createColumnHelper<DroneModelItemResult>();
 export default function Page() {
   // 添加搜索状态
   const [searchText, setSearchText] = useState("");
-  // 添加实际过滤使用的状态
-  const [filterText, setFilterText] = useState("");
 
   // 查询无人机型号数据
   const query = useQuery({
     queryKey: ["models", "drones"],
-    queryFn: () => getAllModels(),
+    queryFn: () => getAllModels(searchText),
   });
 
   // 定义表格列定义
@@ -88,28 +86,26 @@ export default function Page() {
         }
         return (
           <div className="flex flex-col">
-            {gimbals.map(
-              (gimbal: { id: number; name: string; description?: string }) => (
-                <div key={gimbal.id} className="text-left">
-                  {gimbal.description ? (
-                    <HoverCard>
-                      <HoverCardTrigger>
-                        <div className="text-center overflow-hidden text-ellipsis whitespace-nowrap max-w-72 hover:underline hover:cursor-pointer">
-                          {gimbal.name}
-                        </div>
-                      </HoverCardTrigger>
-                      <HoverCardContent>
-                        <div className="text-left max-w-196">
-                          {gimbal.description}
-                        </div>
-                      </HoverCardContent>
-                    </HoverCard>
-                  ) : (
-                    gimbal.name
-                  )}
-                </div>
-              )
-            )}
+            {gimbals.map((gimbal: GimbalModel) => (
+              <div key={gimbal.gimbal_model_id} className="text-left">
+                {gimbal.gimbal_model_description ? (
+                  <HoverCard>
+                    <HoverCardTrigger>
+                      <div className="text-center overflow-hidden text-ellipsis whitespace-nowrap max-w-72 hover:underline hover:cursor-pointer">
+                        {gimbal.gimbal_model_name}
+                      </div>
+                    </HoverCardTrigger>
+                    <HoverCardContent>
+                      <div className="text-left max-w-196">
+                        {gimbal.gimbal_model_description}
+                      </div>
+                    </HoverCardContent>
+                  </HoverCard>
+                ) : (
+                  gimbal.gimbal_model_name
+                )}
+              </div>
+            ))}
           </div>
         );
       },
@@ -161,36 +157,16 @@ export default function Page() {
     }
   }, [query.isError, query.error]);
 
-  // 执行搜索操作
-  const handleSearch = () => {
-    setFilterText(searchText);
-  };
-
   // 处理回车键搜索
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
-      handleSearch();
+      query.refetch();
     }
   };
 
-  // 过滤数据
-  const filteredData = useMemo(() => {
-    if (!filterText) return query.data || [];
-
-    const lowercaseSearch = filterText.toLowerCase();
-    return (query.data || []).filter((item) => {
-      return (
-        String(item.id).includes(lowercaseSearch) ||
-        (item.name || "").toLowerCase().includes(lowercaseSearch) ||
-        (item.gateway_name || "").toLowerCase().includes(lowercaseSearch) ||
-        (item.description || "").toLowerCase().includes(lowercaseSearch)
-      );
-    });
-  }, [query.data, filterText]);
-
   // 创建表格实例
   const table = useReactTable({
-    data: filteredData,
+    data: query.data || [],
     columns,
     getCoreRowModel: getCoreRowModel(),
   });
@@ -213,7 +189,12 @@ export default function Page() {
               onKeyDown={handleKeyDown}
             />
           </div>
-          <Button variant="secondary" onClick={handleSearch} className="h-10">
+          <Button
+            variant="default"
+            onClick={() => query.refetch()}
+            className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
+          >
+            <Search className="h-4 w-4" />
             搜索
           </Button>
         </div>
@@ -221,14 +202,13 @@ export default function Page() {
       </div>
 
       {/* 加载状态 */}
-      {query.isLoading && (
+      {query.isPending && (
         <div className="flex justify-center items-center py-8">
           <div className="w-8 h-8 border-4 border-blue-300 border-t-blue-500 rounded-full animate-spin" />
         </div>
       )}
-
       {/* 数据表格 */}
-      {query.isSuccess && (
+      {query.isSuccess && query.data && query.data.length > 0 && (
         <div className="my-4 max-w-full overflow-x-auto">
           <Table className="border border-gray-200 rounded-md border-collapse">
             <TableHeader className="bg-gray-100">
@@ -283,6 +263,12 @@ export default function Page() {
             </TableBody>
           </Table>
         </div>
+      )}
+      {query.isSuccess && (!query.data || query.data.length === 0) && (
+        <div className="text-center text-gray-500">暂无数据</div>
+      )}
+      {query.isError && (
+        <div className="text-center text-red-500">加载失败，请稍后重试</div>
       )}
     </div>
   );
