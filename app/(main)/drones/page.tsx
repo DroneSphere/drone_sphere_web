@@ -54,20 +54,31 @@ const renderIndicator = (value: boolean | undefined) => {
 };
 
 export default function DronesPage() {
+  // 使用一个状态来存储搜索参数
   const [searchParams, setSearchParams] = useState<DroneSearchParams | null>(
     null
   );
-  const listQuery = useQuery({
-    queryKey: ["drones", searchParams],
+  // 使用另一个状态来存储实际执行查询的参数
+  const [queryParams, setQueryParams] = useState<DroneSearchParams | null>(
+    null
+  );
+
+  // 查询配置，只依赖于 queryParams 而不是 searchParams
+  const query = useQuery({
+    queryKey: ["drones", queryParams],
     queryFn: () => {
-      return fetchAllDrones(searchParams);
+      return fetchAllDrones(queryParams);
     },
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
   });
 
   // 获取无人机型号列表
   const modelsQuery = useQuery({
     queryKey: ["droneModels"],
     queryFn: fetchDroneModels,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
   });
 
   const columns = useMemo(
@@ -97,11 +108,11 @@ export default function DronesPage() {
       }),
       columnHelper.accessor("created_at", {
         header: "创建时间",
-        cell: (info) => <div className="w-32">{info.getValue()}</div>,
+        cell: (info) => <div className="">{info.getValue()}</div>,
       }),
       columnHelper.accessor("last_online_at", {
         header: "最后在线时间",
-        cell: (info) => <div className="w-32">{info.getValue()}</div>,
+        cell: (info) => <div className="">{info.getValue()}</div>,
       }),
       columnHelper.accessor("status", {
         header: "状态",
@@ -147,7 +158,7 @@ export default function DronesPage() {
   );
 
   const table = useReactTable({
-    data: listQuery.data || [],
+    data: query.data || [],
     columns,
     getCoreRowModel: getCoreRowModel(),
   });
@@ -160,9 +171,7 @@ export default function DronesPage() {
           placeholder="无人机序列号"
           className="px-4 py-2 border rounded-md w-[200px]"
           onChange={(e) => {
-            console.log(e.target.value);
             setSearchParams((prev) => ({ ...prev, sn: e.target.value }));
-            console.log(searchParams);
           }}
         />
         <Input
@@ -176,13 +185,17 @@ export default function DronesPage() {
         <Select
           onValueChange={(value) => {
             console.log(value);
-            setSearchParams((prev) => ({ ...prev, model: value }));
+            setSearchParams((prev) => {
+              const model_id = value === "all" ? undefined : Number(value);
+              return { ...prev, model_id };
+            });
           }}
         >
           <SelectTrigger className="w-[160px]">
             <SelectValue placeholder="无人机型号" />
           </SelectTrigger>
           <SelectContent>
+            <SelectItem value="all">全部型号</SelectItem>
             {modelsQuery.isSuccess && modelsQuery.data ? (
               modelsQuery.data.map((model) => (
                 <SelectItem key={model.id} value={String(model.id)}>
@@ -190,7 +203,6 @@ export default function DronesPage() {
                 </SelectItem>
               ))
             ) : (
-              // 为加载状态或错误状态的 SelectItem 设置一个非空的 value 属性
               <SelectItem value="loading_or_error" disabled>
                 {modelsQuery.isPending ? "加载中..." : "获取型号列表失败"}
               </SelectItem>
@@ -198,8 +210,11 @@ export default function DronesPage() {
           </SelectContent>
         </Select>
         <Button
-          onClick={() => listQuery.refetch()}
-          disabled={listQuery.isPending}
+          onClick={() => {
+            // 点击搜索按钮时，将当前的搜索参数设置为查询参数，从而触发查询
+            setQueryParams(searchParams);
+          }}
+          disabled={query.isPending}
           className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
         >
           <Search className="h-4 w-4" />
@@ -208,15 +223,14 @@ export default function DronesPage() {
         <div className="flex-1"></div>
         <AddDroneDialog />
       </div>
-      {
-        // 加载中
-        listQuery.isPending && (
-          <div className="flex justify-center items-center py-8">
-            <div className="w-8 h-8 border-4 border-blue-300 border-t-blue-500 rounded-full animate-spin"></div>
-          </div>
-        )
-      }
-      {listQuery.isSuccess && (
+      {/* 加载 */}
+      {query.isPending && (
+        <div className="flex justify-center items-center py-8">
+          <div className="w-8 h-8 border-4 border-blue-300 border-t-blue-500 rounded-full animate-spin"></div>
+        </div>
+      )}
+      {/* 成功 */}
+      {query.isSuccess && query.data && (
         <div className="my-4 max-w-full overflow-x-auto">
           <Table className="border border-gray-200 rounded-md border-collapse">
             <TableHeader className="bg-gray-100">
@@ -262,18 +276,10 @@ export default function DronesPage() {
           </Table>
         </div>
       )}
-      {
-        // 无数据
-        !listQuery.isPending &&
-          listQuery.isSuccess &&
-          listQuery.data?.length === 0 && (
-            <div className="text-center text-gray-500">暂无数据</div>
-          )
-      }
-      {
-        // 加载失败
-        listQuery.isError && <div className="text-center">加载失败</div>
-      }
+      {query.isSuccess && (!query.data || query.data.length === 0) && (
+        <div className="text-center text-gray-500">暂无数据</div>
+      )}
+      {query.isError && <div className="text-center">加载失败</div>}
     </div>
   );
 }

@@ -1,6 +1,11 @@
 import httpClient from "../../../api/http_client";
 import { Response } from "../../../api/response";
-import { DroneDetailResult, DroneItemResult, DroneState, DroneUpdateRequest } from "./types";
+import {
+  DroneDetailResult,
+  DroneItemResult,
+  DroneState,
+  DroneUpdateRequest,
+} from "./types";
 
 // 无人机型号接口返回的数据结构
 export interface DroneModelItem {
@@ -11,16 +16,19 @@ export interface DroneModelItem {
 export interface DroneSearchParams {
   sn?: string;
   callsign?: string;
-  model?: string;
+  model_id?: number;
 }
 
 export async function fetchAllDrones(
   params: DroneSearchParams | null = null
 ): Promise<DroneItemResult[]> {
-  console.log("param", params);
-
   const res = await httpClient.instance.get<Response<DroneItemResult[]>>(
-    "/drone/list"
+    "/drone/list",
+    {
+      params: {
+        ...params,
+      },
+    }
   );
   console.log(res);
   return res.data.data;
@@ -90,9 +98,7 @@ export async function addDrone(payload: {
  * @returns 如果成功返回null，否则抛出异常
  */
 export async function deleteDroneBySN(sn: string): Promise<null> {
-  const res = await httpClient.instance.delete<Response<null>>(
-    `/drone/${sn}`
-  );
+  const res = await httpClient.instance.delete<Response<null>>(`/drone/${sn}`);
   console.log("删除无人机结果:", res);
   return res.data.data;
 }

@@ -23,7 +23,6 @@ export default function DeleteDialog(
   }>
 ) {
   const [open, setOpen] = useState(false);
-  console.log("DeleteDialog", props.sn);
   const queryClient = useQueryClient();
   const { mutate, isPending } = useMutation({
     mutationFn: deleteDroneBySN,
