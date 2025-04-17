@@ -1,4 +1,3 @@
-import { Button } from "@/components/ui/button";
 import {
   FormControl,
   FormDescription,
@@ -16,7 +15,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { useState } from "react";
 import { UseFormReturn } from "react-hook-form";
 
 interface TaskInfoPanelProps {
@@ -60,8 +58,8 @@ export default function TaskInfoPanel({
   setPath,
   AMapRef,
 }: TaskInfoPanelProps) {
-  const [collapsed, setCollapsed] = useState<boolean>(true);
-
+  // 移除折叠状态，内容始终可见
+  
   // 处理时间选择的逻辑
   const handleTimeChange = (type: 'hour' | 'minute' | 'second', value: string) => {
     const currentTime = form.getValues('schedule_time') || '00:00:00';
@@ -87,50 +85,11 @@ export default function TaskInfoPanel({
   };
 
   return (
-    <div className="space-y-2 p-3 border rounded-md shadow-sm">
+    <div className="space-y-2">
       <div className="flex items-center justify-between">
-        <div className="text-md font-medium">任务信息</div>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="h-8 w-8 p-0"
-          onClick={(e) => {
-            e.preventDefault();
-            setCollapsed(!collapsed);
-          }}
-        >
-          {collapsed ? (
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <polyline points="6 9 12 15 18 9"></polyline>
-            </svg>
-          ) : (
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <polyline points="18 15 12 9 6 15"></polyline>
-            </svg>
-          )}
-        </Button>
+        <div className="text-md font-medium">基本信息</div>
       </div>
-      {!collapsed && (
+      {(
         <>
           {isEditing || isCreating ? (
             <>

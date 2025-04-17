@@ -22,7 +22,7 @@ import AMapLoader from "@amap/amap-jsapi-loader";
 import "@amap/amap-jsapi-types";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { useEffect, useRef, useState, useMemo } from "react";
+import { useEffect, useRef, useState, useMemo, useCallback } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import DroneModelMappingPanel, {
@@ -35,7 +35,10 @@ const formSchema = z.object({
   description: z.string().optional(),
   schedule_time: z
     .string()
-    .regex(/^([01]?[0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]$/, "请输入有效的时间格式 (HH:mm:ss)")
+    .regex(
+      /^([01]?[0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]$/,
+      "请输入有效的时间格式 (HH:mm:ss)"
+    )
     .optional(),
   area_id: z.number().optional(),
 });
@@ -58,7 +61,8 @@ export default function Page() {
 
   // 计算工作状态
   const { isCreateMode: isCreating, idPart } = useIsCreateMode();
-  const [isEditing, setIsEditing] = useState(false);
+  // 默认设置为编辑模式，不再区分编辑和查看状态
+  const [isEditing, setIsEditing] = useState(true);
 
   // 已选择的无人机
   const [selectedDrones, setSelectedDrones] = useState<
@@ -85,7 +89,7 @@ export default function Page() {
   // 仅在创建/编辑模式下，当selectedDrones发生有效变化时更新映射关系
   useEffect(() => {
     if (!isCreating && !isEditing) return;
-    
+
     // 更新无人机映射关系
     const newDroneMappings = selectedDrones.map((drone) => ({
       selectedDroneIndex: drone.index || 0,
@@ -95,7 +99,7 @@ export default function Page() {
       physicalDroneSN: "",
       color: drone.color,
     }));
-    
+
     setDroneMappings(newDroneMappings);
   }, [isCreating, isEditing, selectedDrones]); // 添加 selectedDrones 作为依赖
 
@@ -126,9 +130,11 @@ export default function Page() {
   });
 
   // 当进入编辑模式时，将所有现有数据填充到表单中
-  const fillFormWithExistingData = () => {
+  // 使用 useCallback 包装函数，确保引用稳定性，防止每次渲染创建新的函数引用
+  // 由于默认就是编辑模式，所以这个函数会在数据加载时自动调用
+  const fillFormWithExistingData = useCallback(() => {
     if (!dataQuery.data) return;
-    
+
     // 设置基本信息
     form.reset({
       name: dataQuery.data.name,
@@ -137,11 +143,12 @@ export default function Page() {
       area_id: dataQuery.data.area?.id || 0,
     });
     
-    // 设置无人机相关数据
-    setSelectedDrones(formattedDronesData);
-    setDroneMappings(formattedMappingsData);
-    setWaylineAreas(formattedWaylineAreasData);
-  };
+    // 注释掉这里的直接设置操作，避免循环更新
+    // 这些操作已经在 dataQuery useEffect 中处理
+    // setSelectedDrones(formattedDronesData);
+    // setDroneMappings(formattedMappingsData);
+    // setWaylineAreas(formattedWaylineAreasData);
+  }, [dataQuery.data, form]);  // 只依赖 dataQuery.data 和 form
 
   function onSubmit(data: z.infer<typeof formSchema>) {
     console.log("onSubmit", data);
@@ -275,18 +282,25 @@ export default function Page() {
     }));
   }, [dataQuery.data?.drones]);
 
-  // 修复 formattedMappingsData
+  // 修复 formattedMappingsData，移除对 selectedDrones 的依赖
   const formattedMappingsData = useMemo(() => {
-    if (!dataQuery.data?.mappings || !selectedDrones) return [];
+    if (!dataQuery.data?.mappings || !dataQuery.data?.drones) return [];
+    
+    // 使用 dataQuery.data.drones 替代 selectedDrones
+    // 避免对 selectedDrones 的依赖，防止形成循环依赖
+    const mappingDrones = dataQuery.data.drones;
+    
     return dataQuery.data.mappings.map((mapping) => ({
       selectedDroneIndex: Number(mapping.selected_drone_key.split("-")[0]) || 0,
       seletedDroneId: Number(mapping.selected_drone_key.split("-")[1]) || 0,
       selectedDroneKey: mapping.selected_drone_key,
       physicalDroneId: mapping.physical_drone_id,
       physicalDroneSN: mapping.physical_drone_sn,
-      color: selectedDrones.find((dr) => dr.key === mapping.selected_drone_key)?.color || "",
+      color:
+        mappingDrones.find((dr) => dr.key === mapping.selected_drone_key)
+          ?.color || "",
     }));
-  }, [dataQuery.data?.mappings, selectedDrones]);
+  }, [dataQuery.data?.mappings, dataQuery.data?.drones]); // 只依赖于 dataQuery 数据
 
   // 修复 formattedWaylineAreasData
   const formattedWaylineAreasData = useMemo(() => {
@@ -295,7 +309,9 @@ export default function Page() {
       droneKey: wayline.drone_key,
       color: wayline.color,
       path: wayline.path.map((p) => new AMapRef.current!.LngLat(p.lng, p.lat)),
-      points: wayline.points?.map((p) => new AMapRef.current!.LngLat(p.lng, p.lat)),
+      points: wayline.points?.map(
+        (p) => new AMapRef.current!.LngLat(p.lng, p.lat)
+      ),
       visible: true,
     }));
   }, [dataQuery.data?.waylines]);
@@ -346,13 +362,19 @@ export default function Page() {
 
   // 优化 dataQuery useEffect
   useEffect(() => {
-    console.log('dataQuery useEffect 触发', {
+    console.log("dataQuery useEffect 触发", {
       isSuccess: dataQuery.isSuccess,
       hasData: !!dataQuery.data,
       isMapLoaded,
     });
 
-    if (!dataQuery.isSuccess || !dataQuery.data || !isMapLoaded || !AMapRef.current) return;
+    if (
+      !dataQuery.isSuccess ||
+      !dataQuery.data ||
+      !isMapLoaded ||
+      !AMapRef.current
+    )
+      return;
 
     const { area } = dataQuery.data;
 
@@ -364,18 +386,26 @@ export default function Page() {
       setPath(areaPath);
     }
 
-    // 设置表单数据
-    form.setValue("area_id", area?.id || 0);
-    form.setValue("name", dataQuery.data.name || "");
-    form.setValue("description", dataQuery.data.description || "");
-
-    // 使用缓存的数据更新状态
+    // 设置表单数据 - 调用包装后的函数，而不是内联设置
+    fillFormWithExistingData();
+    
+    // 单独设置状态，避免在 fillFormWithExistingData 中设置
+    // 使用格式化后的数据更新状态
     setSelectedDrones(formattedDronesData);
     setDroneMappings(formattedMappingsData);
     setWaylineAreas(formattedWaylineAreasData);
 
-  }, [dataQuery.isSuccess, dataQuery.data, isMapLoaded, 
-      formattedDronesData, formattedMappingsData, formattedWaylineAreasData, form]);
+  }, [
+    dataQuery.isSuccess,
+    dataQuery.data,
+    isMapLoaded,
+    AMapRef,
+    fillFormWithExistingData,
+    formattedDronesData,
+    formattedMappingsData, 
+    formattedWaylineAreasData,
+    // 移除不必要的依赖 form
+  ]);
 
   // 选择区域时绘制选中的搜索区域多边形
   useEffect(() => {
@@ -407,16 +437,16 @@ export default function Page() {
 
   // 优化航线区域 useEffect
   useEffect(() => {
-    console.log('航线区域 useEffect 触发', {
+    console.log("航线区域 useEffect 触发", {
       hasWaylineAreas: !!waylineAreas,
       waylineAreasCount: waylineAreas?.length,
       isMapLoaded,
       hasAMap: !!AMapRef.current,
-      hasMap: !!mapRef.current
+      hasMap: !!mapRef.current,
     });
 
     if (!waylineAreas || !isMapLoaded || !AMapRef.current || !mapRef.current) {
-      console.log('缺少必要数据，跳过航线区域更新');
+      console.log("缺少必要数据，跳过航线区域更新");
       return;
     }
 
@@ -449,7 +479,7 @@ export default function Page() {
       currentMap.add(areaPolygon);
     }
 
-    console.log('开始绘制航线区域', waylineAreas.length);
+    console.log("开始绘制航线区域", waylineAreas.length);
     for (let i = 0; i < waylineAreas.length; i++) {
       const subPath = waylineAreas[i].path;
       const drone = selectedDrones[i] || {
@@ -652,7 +682,7 @@ export default function Page() {
     return () => {
       console.log("清除航线区域编辑器", {
         editorsCount: editorsRef.current.length,
-        activeEditor: activeEditorRef.current
+        activeEditor: activeEditorRef.current,
       });
       editorsRef.current.forEach((editor) => {
         if (editor) editor.close();
@@ -662,82 +692,61 @@ export default function Page() {
   }, [waylineAreas, isMapLoaded, path, isCreating, isEditing, selectedDrones]);
 
   return (
-    <div className="px-4 mb-4 h-max-screen">
+    <div className="px-4 mb-4">
       <div className="flex gap-4">
         <div
           id="map"
-          className="min-h-[720px] h-[calc(100vh-200px)] w-full border rounded-md shadow-sm"
+          className="h-[calc(100vh-200px)] w-full border rounded-md shadow-sm"
         />
         <div className="w-[460px]">
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              <TaskInfoPanel
-                isEditing={isEditing}
-                isCreating={isCreating}
-                form={form}
-                optionsQuery={optionsQuery}
-                dataQuery={dataQuery}
-                setPath={setPath}
-                AMapRef={AMapRef}
-              />
+              {/* 将四个面板放入一个可滚动的 div 容器中 */}
+              <div className="max-h-[calc(100vh-200px)] overflow-y-auto pl-2 pr-4 space-y-4">
+                <TaskInfoPanel
+                  isEditing={isEditing}
+                  isCreating={isCreating}
+                  form={form}
+                  optionsQuery={optionsQuery}
+                  dataQuery={dataQuery}
+                  setPath={setPath}
+                  AMapRef={AMapRef}
+                />
 
-              <DroneSelectionPanel
-                selectedDrones={selectedDrones}
-                setSelectedDrones={setSelectedDrones}
-                isEditMode={isCreating || isEditing}
-                availableDrones={optionsQuery.data?.drones || []}
-              />
+                <DroneSelectionPanel
+                  selectedDrones={selectedDrones}
+                  setSelectedDrones={setSelectedDrones}
+                  isEditMode={isCreating || isEditing}
+                  availableDrones={optionsQuery.data?.drones || []}
+                />
 
-              <WaylinePanel
-                selectedDrones={selectedDrones}
-                waylineAreas={waylineAreas}
-                setWaylineAreas={setWaylineAreas}
-                path={path}
-                AMapRef={AMapRef}
-                mapRef={mapRef}
-                isEditMode={isCreating || isEditing}
-              />
+                <WaylinePanel
+                  selectedDrones={selectedDrones}
+                  waylineAreas={waylineAreas}
+                  setWaylineAreas={setWaylineAreas}
+                  path={path}
+                  AMapRef={AMapRef}
+                  mapRef={mapRef}
+                  isEditMode={isCreating || isEditing}
+                />
 
-              <DroneModelMappingPanel
-                selectedDrones={selectedDrones}
-                isEditMode={isCreating || isEditing}
-                droneMappings={droneMappings}
-                setDroneMappings={setDroneMappings}
-              />
+                <DroneModelMappingPanel
+                  selectedDrones={selectedDrones}
+                  isEditMode={isCreating || isEditing}
+                  droneMappings={droneMappings}
+                  setDroneMappings={setDroneMappings}
+                />
+              </div>
 
               <div className="mt-4 flex justify-end gap-4">
-                {!isEditing && !isCreating && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      fillFormWithExistingData(); // 进入编辑模式时填充数据
-                      setIsEditing(true);
-                    }}
-                  >
-                    编辑
-                  </Button>
-                )}
-                {isEditing && !isCreating && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      setIsEditing(false);
-                    }}
-                  >
-                    取消编辑
-                  </Button>
-                )}
-                {(isEditing || isCreating) && (
-                  <Button
-                    disabled={!isMapLoaded || createMutation.isPending}
-                    type="submit"
-                    size="sm"
-                  >
-                    保存
-                  </Button>
-                )}
+                {/* 移除编辑和取消编辑按钮，保留保存按钮 */}
+                <Button
+                  disabled={!isMapLoaded || createMutation.isPending}
+                  type="submit"
+                  size="sm"
+                >
+                  保存
+                </Button>
               </div>
             </form>
           </Form>

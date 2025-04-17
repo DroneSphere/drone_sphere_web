@@ -1,6 +1,5 @@
 import { JobDetailResult } from "@/app/(main)/jobs/[id]/types";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import * as turf from "@turf/turf";
 import { Eye, EyeOff } from "lucide-react";
@@ -234,7 +233,7 @@ interface WaylinePanelProps {
     color: string;
     path: AMap.LngLat[];
     points?: AMap.LngLat[];
-    visible?: boolean; // Add visible property (optional for backward compatibility)
+    visible?: boolean;
   }[];
   setWaylineAreas: React.Dispatch<
     React.SetStateAction<
@@ -263,231 +262,200 @@ export default function WaylinePanel({
   isEditMode,
 }: WaylinePanelProps) {
   const { toast } = useToast();
-  const [collapsed, setCollapsed] = useState<boolean>(true);
-  
+  // 移除折叠状态，内容始终可见
+
   // 添加无人机飞行参数状态
   const [droneParams, setDroneParams] = useState({
-    flyingHeight: 30,     // 默认飞行高度30米
-    coverageWidth: 20,    // 默认每次覆盖20米宽
-    overlapRate: 0.2      // 默认20%的重叠率
+    flyingHeight: 30, // 默认飞行高度30米
+    coverageWidth: 20, // 默认每次覆盖20米宽
+    overlapRate: 0.2, // 默认20%的重叠率
   });
-  
+
   return (
-    <div className="mt-4 space-y-2 p-3 border rounded-md shadow-sm">
+    <div className="mt-4 space-y-2">
       <div className="flex items-center justify-between">
         <div className="text-md font-medium">航线信息</div>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="h-8 w-8 p-0"
-          onClick={(e) => {
-            e.preventDefault();
-            setCollapsed(!collapsed);
-          }}
-        >
-          {collapsed ? (
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <polyline points="6 9 12 15 18 9"></polyline>
-            </svg>
-          ) : (
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <polyline points="18 15 12 9 6 15"></polyline>
-            </svg>
-          )}
-        </Button>
       </div>
-      {!collapsed && (
-        <>
-          <div className="text-sm text-gray-500 flex items-center justify-between">
-            <div>已选择{selectedDrones.length}架无人机</div>
-            {isEditMode && (
+
+      {/* 移除折叠状态判断，内容始终显示 */}
+      <div className="text-sm text-gray-500 flex items-center justify-between">
+        <div>已选择{selectedDrones.length}架无人机</div>
+        {isEditMode && (
+          <Button
+            size="sm"
+            variant="outline"
+            type="button"
+            onClick={() => {
+              if (
+                path.length <= 0 ||
+                !AMapRef.current ||
+                !mapRef.current ||
+                selectedDrones.length === 0
+              ) {
+                toast({
+                  title: "无法生成航线",
+                  description: "请确保已选择区域和无人机",
+                });
+                return;
+              }
+
+              const subPaths = dividePolygonAmongDrones(
+                path,
+                selectedDrones,
+                AMapRef
+              );
+              if (!subPaths) {
+                toast({
+                  title: "无法生成航线",
+                  description: "请确保已选择区域和无人机",
+                });
+                return;
+              }
+
+              // 生成新的航线区域
+              const newWaylineAreas = selectedDrones.map((drone, index) => {
+                // 获取对应的子区域路径，如果index超出了subPaths的长度，则使用最后一个
+                const subPath =
+                  index < subPaths.length
+                    ? subPaths[index]
+                    : subPaths[subPaths.length - 1];
+
+                // 使用当前设置的参数生成航点
+                 const waypoints = generateWaypoints(
+                  subPath,
+                  droneParams,
+                  AMapRef
+                );
+
+                return {
+                  droneKey: drone.key,
+                  color: drone.color,
+                  path: subPath,
+                  points: waypoints,
+                  visible: true,
+                };
+              });
+
+              // 更新航线区域
+              setWaylineAreas(newWaylineAreas);
+              toast({
+                title: "航线生成成功",
+                description: `已为${selectedDrones.length}架无人机分配区域并生成航点`,
+              });
+            }}
+          >
+            生成航线
+          </Button>
+        )}
+      </div>
+
+      {/* 添加无人机参数设置 */}
+      {isEditMode && (
+        <div className="mt-2 border p-2 rounded-md">
+          <p className="text-sm font-medium mb-1">航线参数</p>
+          <div className="grid grid-cols-3 gap-2">
+            <div>
+              <label className="text-xs text-gray-500">飞行高度(米)</label>
+              <input
+                type="number"
+                className="w-full border rounded px-2 py-1 text-sm"
+                value={droneParams.flyingHeight}
+                onChange={(e) =>
+                  setDroneParams({
+                    ...droneParams,
+                    flyingHeight: Number(e.target.value),
+                  })
+                }
+                min="10"
+                max="120"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-gray-500">覆盖宽度(米)</label>
+              <input
+                type="number"
+                className="w-full border rounded px-2 py-1 text-sm"
+                value={droneParams.coverageWidth}
+                onChange={(e) =>
+                  setDroneParams({
+                    ...droneParams,
+                    coverageWidth: Number(e.target.value),
+                  })
+                }
+                min="5"
+                max="50"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-gray-500">重叠率(%)</label>
+              <input
+                type="number"
+                className="w-full border rounded px-2 py-1 text-sm"
+                value={droneParams.overlapRate * 100}
+                onChange={(e) =>
+                  setDroneParams({
+                    ...droneParams,
+                    overlapRate: Number(e.target.value) / 100,
+                  })
+                }
+                min="0"
+                max="50"
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 显示已生成的航线 */}
+      {waylineAreas.length > 0 && (
+        <div className="space-y-1 mt-2">
+          {waylineAreas.map((e, i) => (
+            <div
+              key={e.droneKey}
+              className="flex items-center justify-between p-2 border rounded-md"
+            >
+              <div>
+                <p className="text-xs font-medium">
+                  {selectedDrones.find((d) => d.key === e.droneKey)?.name ||
+                    `无人机 ${i + 1}`}
+                </p>
+                {e.points && (
+                  <p className="text-xs text-gray-500">
+                    航点数: {e.points.length}
+                  </p>
+                )}
+              </div>
+              <div className="flex-1" />
+              {/* 一个颜色指示器，方便快速识别 */}
+              <div
+                className={`rounded-full h-4 w-4 m-2`}
+                style={{ backgroundColor: e.color }}
+              />
+
+              {/* Replace delete button with eye icon toggle */}
               <Button
-                size="sm"
                 variant="outline"
-                type="button"
+                size="icon"
+                className="h-8 w-8"
                 onClick={() => {
-                  if (
-                    path.length <= 0 ||
-                    !AMapRef.current ||
-                    !mapRef.current ||
-                    selectedDrones.length === 0
-                  ) {
-                    toast({
-                      title: "无法生成航线",
-                      description: "请确保已选择区域和无人机",
-                    });
-                    return;
-                  }
-
-                  const subPaths = dividePolygonAmongDrones(
-                    path,
-                    selectedDrones,
-                    AMapRef
+                  setWaylineAreas((prev) =>
+                    prev.map((item) =>
+                      item.droneKey === e.droneKey
+                        ? { ...item, visible: !item.visible }
+                        : item
+                    )
                   );
-                  if (!subPaths) {
-                    toast({
-                      title: "无法生成航线",
-                      description: "请确保已选择区域和无人机",
-                    });
-                    return;
-                  }
-
-                  // 清空已有航线区域
-                  setWaylineAreas([]);
-
-                  // 创建新的航线区域，并为每个区域生成航点
-                  const newWaylineAreas = subPaths.map((subPath, i) => {
-                    // 为每个区域生成航点
-                    const points = generateWaypoints(
-                      subPath,
-                      droneParams,
-                      AMapRef
-                    );
-                    console.log("生成的航点:", points);
-                    
-                    return {
-                      droneKey: selectedDrones[i].key,
-                      name: selectedDrones[i].name,
-                      color: selectedDrones[i].color,
-                      path: subPath,
-                      points: points, // 添加生成的航点
-                      visible: true, // Initialize as visible by default
-                    };
-                  });
-                  
-                  setWaylineAreas(newWaylineAreas);
-
-                  toast({
-                    title: "航线已生成",
-                    description: `已为${selectedDrones.length}架无人机分配区域并生成航点`,
-                  });
                 }}
               >
-                生成航线
+                {e.visible ? (
+                  <Eye className="h-4 w-4" />
+                ) : (
+                  <EyeOff className="h-4 w-4" />
+                )}
               </Button>
-            )}
-          </div>
-          
-          {/* 添加无人机参数设置 */}
-          {isEditMode && (
-            <div className="mt-2 border p-2 rounded-md">
-              <p className="text-sm font-medium mb-1">航线参数</p>
-              <div className="grid grid-cols-3 gap-2">
-                <div>
-                  <label className="text-xs text-gray-500">飞行高度(米)</label>
-                  <input
-                    type="number"
-                    className="w-full border rounded px-2 py-1 text-sm"
-                    value={droneParams.flyingHeight}
-                    onChange={(e) => setDroneParams({
-                      ...droneParams,
-                      flyingHeight: Number(e.target.value)
-                    })}
-                    min="10"
-                    max="120"
-                  />
-                </div>
-                <div>
-                  <label className="text-xs text-gray-500">覆盖宽度(米)</label>
-                  <input
-                    type="number"
-                    className="w-full border rounded px-2 py-1 text-sm"
-                    value={droneParams.coverageWidth}
-                    onChange={(e) => setDroneParams({
-                      ...droneParams,
-                      coverageWidth: Number(e.target.value)
-                    })}
-                    min="5"
-                    max="50"
-                  />
-                </div>
-                <div>
-                  <label className="text-xs text-gray-500">重叠率(%)</label>
-                  <input
-                    type="number"
-                    className="w-full border rounded px-2 py-1 text-sm"
-                    value={droneParams.overlapRate * 100}
-                    onChange={(e) => setDroneParams({
-                      ...droneParams,
-                      overlapRate: Number(e.target.value) / 100
-                    })}
-                    min="0"
-                    max="80"
-                  />
-                </div>
-              </div>
-            </div>
-          )}
-          
-          {/* 渲染已选择的航线 */}
-          {waylineAreas.map((e, index) => (
-            <div key={e.droneKey}>
-              <div className="flex justify-between items-start">
-                <div className="text-sm">
-                  <p>
-                    {selectedDrones.find((dr) => dr.key === e.droneKey)?.name}
-                  </p>
-                  {e.points && (
-                    <p className="text-xs text-gray-500">
-                      航点数: {e.points.length}
-                    </p>
-                  )}
-                </div>
-                <div className="flex-1" />
-                {/* 一个颜色指示器，方便快速识别 */}
-                <div
-                  className={`rounded-full h-4 w-4 m-2`}
-                  style={{ backgroundColor: e.color }}
-                />
-
-                {/* Replace delete button with eye icon toggle */}
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={() => {
-                    setWaylineAreas((prev) =>
-                      prev.map((item) =>
-                        item.droneKey === e.droneKey
-                          ? { ...item, visible: !item.visible }
-                          : item
-                      )
-                    );
-                  }}
-                >
-                  {e.visible !== false ? (
-                    <Eye className="h-4 w-4" />
-                  ) : (
-                    <EyeOff className="h-4 w-4" />
-                  )}
-                </Button>
-              </div>
-              {index < waylineAreas.length - 1 && (
-                <Separator className="my-2" />
-              )}
             </div>
           ))}
-        </>
+        </div>
       )}
     </div>
   );

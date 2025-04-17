@@ -1,7 +1,6 @@
 "use client";
 
 import { JobDetailResult, PhysicalDrone } from "@/app/(main)/jobs/[id]/types";
-import { Button } from "@/components/ui/button";
 import { FormItem } from "@/components/ui/form";
 import {
   Select,
@@ -14,7 +13,6 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
 import { getJobPhysicalDrones } from "./request";
 
 interface DroneModelMappingProps {
@@ -50,17 +48,11 @@ export default function DroneModelMappingPanel({
   setDroneMappings,
 }: DroneModelMappingProps) {
   const { toast } = useToast();
-  const [collapsed, setCollapsed] = useState(true);
+  // 移除折叠状态，内容始终可见
   const physicalQuery = useQuery({
     queryKey: ["physicalDrones"],
     queryFn: getJobPhysicalDrones,
   });
-
-  // Toggle collapsed state
-  const handleToggleCollapse = (e: React.MouseEvent) => {
-    e.preventDefault();
-    setCollapsed(!collapsed);
-  };
 
   // 处理无人机选择
   /**
@@ -113,24 +105,20 @@ export default function DroneModelMappingPanel({
       setDroneMappings((prev) => {
         // 检查是否已经存在这个selectedDroneKey的映射
         const existingDroneKeyIndex = prev.findIndex(
-          (m) => m.selectedDroneKey === droneModel.key
+          (m) => m.selectedDroneKey === droneModelKey
         );
 
-        // 如果存在，则更新该映射
         if (existingDroneKeyIndex >= 0) {
-          const updatedMappings = [...prev];
-          updatedMappings[existingDroneKeyIndex] = {
-            selectedDroneIndex: parseInt(droneModel.key.split("-")[0]) || 0,
-            selectedDroneKey: droneModel.key,
-            seletedDroneId: droneModel.id,
+          // 如果已经存在这个selectedDroneKey的映射，则更新它
+          const updated = [...prev];
+          updated[existingDroneKeyIndex] = {
+            ...updated[existingDroneKeyIndex],
             physicalDroneId: physicalDrone.id,
             physicalDroneSN: physicalDrone.sn,
-            color: droneModel.color,
           };
-          return updatedMappings;
-        }
-        // 如果不存在，添加新映射
-        else {
+          return updated;
+        } else {
+          // 如果不存在这个selectedDroneKey的映射，则创建新的映射
           return [
             ...prev,
             {
@@ -160,152 +148,112 @@ export default function DroneModelMappingPanel({
   };
 
   return (
-    <div className="space-y-2 p-3 border rounded-md shadow-sm">
+    <div className="space-y-2">
       <div className="flex items-center justify-between">
         <div className="text-md font-medium">无人机绑定</div>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="h-8 w-8 p-0"
-          onClick={handleToggleCollapse}
-        >
-          {collapsed ? (
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <polyline points="6 9 12 15 18 9"></polyline>
-            </svg>
-          ) : (
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <polyline points="18 15 12 9 6 15"></polyline>
-            </svg>
-          )}
-        </Button>
       </div>
 
-      {!collapsed && (
-        <>
-          {selectedDrones.length === 0 ? (
-            <div className="text-sm text-gray-500">
-              请先选择要执飞的无人机机型
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {selectedDrones.map((drone, index) => {
-                const mapping = droneMappings.find(
-                  (m) => m.selectedDroneKey === drone.key
-                );
-                return (
-                  <div key={drone.key} className="py-2">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center space-x-2">
-                        <div
-                          className="h-3 w-3 rounded-full"
-                          style={{ backgroundColor: drone.color }}
-                        ></div>
-                        <span className="text-sm font-medium">
-                          {drone.name}
-                        </span>
-
-                        {mapping && (
-                          <div
-                            className={`w-16 text-center text-xs px-2 py-1 rounded-lg ${
-                              mapping.physicalDroneSN.length > 0
-                                ? "bg-green-100 text-green-800"
-                                : "bg-amber-100 text-amber-800"
-                            }`}
-                          >
-                            {mapping.physicalDroneSN.length > 0
-                              ? "已绑定"
-                              : "未绑定"}
-                          </div>
-                        )}
-                      </div>
+      {/* 内容始终显示，移除折叠状态判断 */}
+      <div className="mt-2">
+        {selectedDrones.length === 0 ? (
+          <div className="text-sm text-gray-500">
+            请先选择要执飞的无人机机型
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {selectedDrones.map((drone, index) => {
+              const mapping = droneMappings.find(
+                (m) => m.selectedDroneKey === drone.key
+              );
+              return (
+                <div key={drone.key} className="py-2">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center space-x-2">
+                      <div
+                        className="h-3 w-3 rounded-full"
+                        style={{ backgroundColor: drone.color }}
+                      ></div>
+                      <span className="text-sm font-medium">{drone.name}</span>
                     </div>
 
-                    {isEditMode && (
-                      <FormItem>
-                        <Select
-                          onValueChange={(value) =>
-                            handleDroneSelection(drone.key, value)
-                          }
-                        >
-                          <SelectTrigger className="w-full h-8">
-                            <SelectValue placeholder="选择物理无人机" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectGroup>
-                              {availablePhysicalDronesByModelId(drone.id).map(
-                                (physicalDrone) => (
-                                  <SelectItem
-                                    key={physicalDrone.id}
-                                    value={String(physicalDrone.id)}
-                                    disabled={
-                                      droneMappings.some(
-                                        (m) =>
-                                          m.physicalDroneId === physicalDrone.id
-                                      ) &&
-                                      mapping?.physicalDroneId !==
-                                        physicalDrone.id
-                                    }
-                                  >
-                                    {physicalDrone.callsign} -{" "}
-                                    {physicalDrone.sn}
-                                  </SelectItem>
-                                )
-                              )}
-                              {availablePhysicalDronesByModelId(drone.id)
-                                .length === 0 && (
-                                <SelectItem disabled value="0">
-                                  无可用物理无人机
-                                </SelectItem>
-                              )}
-                            </SelectGroup>
-                          </SelectContent>
-                        </Select>
-                      </FormItem>
-                    )}
-
-                    {!isEditMode && mapping && (
-                      <div className="text-sm text-gray-600">
-                        绑定到物理机: {mapping.physicalDroneSN}
+                    {mapping && (
+                      <div
+                        className={`w-16 text-center text-xs px-2 py-1 rounded-lg ${
+                          mapping.physicalDroneSN.length > 0
+                            ? "bg-green-100 text-green-800"
+                            : "bg-amber-100 text-amber-800"
+                        }`}
+                      >
+                        {mapping.physicalDroneSN.length > 0
+                          ? "已绑定"
+                          : "未绑定"}
                       </div>
-                    )}
-
-                    {!isEditMode && !mapping && (
-                      <div className="text-sm text-gray-500 italic">
-                        未绑定物理无人机
-                      </div>
-                    )}
-
-                    {index < selectedDrones.length - 1 && (
-                      <Separator className="my-2" />
                     )}
                   </div>
-                );
-              })}
-            </div>
-          )}
-        </>
-      )}
+
+                  {isEditMode && (
+                    <FormItem>
+                      <Select
+                        onValueChange={(value) =>
+                          handleDroneSelection(drone.key, value)
+                        }
+                      >
+                        <SelectTrigger className="w-full h-8">
+                          <SelectValue placeholder="选择物理无人机" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectGroup>
+                            {availablePhysicalDronesByModelId(drone.id).map(
+                              (physicalDrone) => (
+                                <SelectItem
+                                  key={physicalDrone.id}
+                                  value={String(physicalDrone.id)}
+                                  disabled={
+                                    droneMappings.some(
+                                      (m) =>
+                                        m.physicalDroneId === physicalDrone.id
+                                    ) &&
+                                    mapping?.physicalDroneId !==
+                                      physicalDrone.id
+                                  }
+                                >
+                                  {physicalDrone.callsign} - {physicalDrone.sn}
+                                </SelectItem>
+                              )
+                            )}
+                            {availablePhysicalDronesByModelId(drone.id)
+                              .length === 0 && (
+                              <SelectItem disabled value="0">
+                                无可用物理无人机
+                              </SelectItem>
+                            )}
+                          </SelectGroup>
+                        </SelectContent>
+                      </Select>
+                    </FormItem>
+                  )}
+
+                  {!isEditMode && mapping && (
+                    <div className="text-sm text-gray-600">
+                      绑定到物理机: {mapping.physicalDroneSN}
+                    </div>
+                  )}
+
+                  {!isEditMode && !mapping && (
+                    <div className="text-sm text-gray-500 italic">
+                      未绑定物理无人机
+                    </div>
+                  )}
+
+                  {index < selectedDrones.length - 1 && (
+                    <Separator className="my-2" />
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
