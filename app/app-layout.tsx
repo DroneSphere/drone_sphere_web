@@ -29,7 +29,7 @@ export default function AppLayout({
     <div className="flex flex-col h-screen overflow-hidden">
       <div className="flex items-center justify-between w-full px-8 h-16 bg-sidebar shrink-0">
         <div className="flex-1" />
-        <h1 className="flex-1 font-semibold text-center text-2xl">
+        <h1 className="flex-1 font-bold text-center text-2xl text-white tracking-wide drop-shadow-sm">
           无人机集群搜索系统
         </h1>
 
@@ -39,11 +39,11 @@ export default function AppLayout({
               <DropdownMenuTrigger asChild>
                 <Button
                   variant="ghost"
-                  className="flex items-center gap-2 px-2 hover:bg-gray-100 rounded"
+                  className="flex items-center gap-2 px-2 text-white hover:bg-sidebar-accent hover:text-white rounded transition-colors"
                 >
-                  <Avatar className="h-8 w-8">
+                  <Avatar className="h-8 w-8 border-2 border-white/20">
                     <AvatarImage src="" alt={user.username} />
-                    <AvatarFallback className="bg-primary text-primary-foreground">
+                    <AvatarFallback className="bg-sidebar-primary text-white">
                       {user.username
                         .split(" ")
                         .map((name) => name[0])
@@ -69,7 +69,10 @@ export default function AppLayout({
         )}
         {(isLoading || !user) && <div className="flex-1 flex justify-end" />}
       </div>
-      <SidebarProvider id="sidebar-provider" className="flex-1 flex overflow-hidden">
+      <SidebarProvider
+        id="sidebar-provider"
+        className="flex-1 flex overflow-hidden"
+      >
         <AppSidebar className="pt-20 h-full overflow-y-auto" />
         <SidebarInset className="w-[calc(100vw-280px)] h-full overflow-hidden flex flex-col">
           <div className="flex items-center gap-2 px-4 py-2 shrink-0">

@@ -39,13 +39,18 @@ body {
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
     --radius: 0.5rem;
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 240 5.9% 10%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 240 4.8% 95.9%;
-    --sidebar-accent-foreground: 240 5.9% 10%;
-    --sidebar-border: 220 13% 91%;
+    /* 更明亮的蓝色背景，适合2B商务风格 */
+    --sidebar-background: 210 60% 40%;
+    /* 保持亮白色文本，提供良好对比度 */
+    --sidebar-foreground: 210 15% 98%;
+    /* 更亮、更鲜明的蓝色，用于主要元素 */
+    --sidebar-primary: 210 70% 50%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    /* 略深的强调色，用于悬停状态 */
+    --sidebar-accent: 210 55% 45%;
+    --sidebar-accent-foreground: 210 10% 98%;
+    /* 略深的边框色，确保边界可见 */
+    --sidebar-border: 210 40% 35%;
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
   .dark {
