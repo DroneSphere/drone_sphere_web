@@ -48,3 +48,30 @@ export async function deleteResult(id: number): Promise<boolean> {
   console.log("删除检测结果", res.data);
   return res.data.data;
 }
+
+/**
+ * 创建检测结果
+ * @param data 检测结果数据
+ * @returns 创建成功返回结果ID
+ */
+export async function createResult(data: {
+  job_id: number;
+  wayline_id: number;
+  drone_id: number;
+  object_type_id: number;
+  object_confidence: number;
+  position: {
+    x: number;
+    y: number;
+    w: number;
+    h: number;
+  };
+  coordinate: {
+    lng: number;
+    lat: number;
+  };
+}): Promise<number> {
+  const res = await httpClient.instance.post<Response<number>>('results', data);
+  console.log("创建检测结果", res.data);
+  return res.data.data;
+}

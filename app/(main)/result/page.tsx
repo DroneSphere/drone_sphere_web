@@ -30,6 +30,7 @@ import { ResultItem, ResultQuery, ObjectTypeOption } from "./types";
 import ViewDialog from "./view-dialog";
 import DeleteDialog from "./delete-dialog";
 import { Search } from "lucide-react";
+import AddDialog from "./add-dialog"; // 导入添加对话框组件
 
 // 定义表格列
 const columnHelper = createColumnHelper<ResultItem>();
@@ -177,6 +178,9 @@ export default function ResultPage() {
           <Search className="h-4 w-4 mr-1" />
           搜索
         </Button>
+        <div className="flex-1" />
+        {/* 添加结果按钮 */}
+        <AddDialog onSuccess={() => refetch()} />
       </div>
 
       {(isLoading || isFetching) && (
