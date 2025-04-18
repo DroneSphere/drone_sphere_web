@@ -48,13 +48,6 @@ interface Point {
 const formSchema = z.object({
   name: z.string().min(1, "区域名称不能为空"),
   description: z.string().optional(),
-  points: z.array(
-    z.object({
-      index: z.number().optional(),
-      lng: z.number().optional(),
-      lat: z.number().optional(),
-    })
-  ),
 });
 
 export default function AreaDetailPage() {
@@ -67,7 +60,6 @@ export default function AreaDetailPage() {
   const markersRef = useRef<AMap.Marker[]>([]); // 新增: 用于存储顶点 Marker 的 ref
   const polygonEditorRef = useRef<AMap.PolygonEditor | null>(null);
   const [amapLoaded, setAmapLoaded] = useState(false);
-  const [isEditing, setIsEditing] = useState(true);
   const [polygonPoints, setPolygonPoints] = useState<Point[]>([]);
 
   const { isCreateMode: isCreating, idPart } = useIsCreateMode();
@@ -101,7 +93,6 @@ export default function AreaDetailPage() {
     mutationFn: updateArea,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["areas", idPart] });
-      setIsEditing(false);
       toast({
         title: "更新成功",
         description: "区域信息已更新",
@@ -115,10 +106,8 @@ export default function AreaDetailPage() {
     defaultValues: {
       name: "",
       description: "",
-      points: [],
     },
   });
-
   // 处理多边形点数据，过滤无效点并返回有效点数组
   const processPolygonPoints = (
     polygonPoints: { lng?: number; lat?: number }[]
@@ -200,7 +189,7 @@ export default function AreaDetailPage() {
       cell: (info) => {
         const pointIndex = info.row.original.index - 1; // 获取原始数据索引 (假设 index 从 1 开始)
         const value = info.getValue();
-        return isEditing ? ( // 如果是编辑模式
+        return (
           <Input
             type="number" // 使用 number 类型以便输入
             step="0.000001" // 修改步长，控制增减粒度为小数点后6位
@@ -209,8 +198,6 @@ export default function AreaDetailPage() {
             className="h-8 p-1 text-center border-none focus-visible:ring-1 focus-visible:ring-offset-0" // 简化样式
             // 可以添加 onKeyDown 处理 Enter 键提交等
           />
-        ) : (
-          value // 非编辑模式直接显示值
         );
       },
     }),
@@ -220,7 +207,7 @@ export default function AreaDetailPage() {
       cell: (info) => {
         const pointIndex = info.row.original.index - 1; // 获取原始数据索引
         const value = info.getValue();
-        return isEditing ? (
+        return (
           <Input
             type="number"
             step="0.000001" // 修改步长，控制增减粒度为小数点后6位
@@ -228,8 +215,6 @@ export default function AreaDetailPage() {
             onBlur={(e) => handlePointUpdate(pointIndex, "lat", e.target.value)}
             className="h-8 p-1 text-center border-none focus-visible:ring-1 focus-visible:ring-offset-0"
           />
-        ) : (
-          value
         );
       },
     }),
@@ -269,11 +254,10 @@ export default function AreaDetailPage() {
 
   // 初始化数据
   useEffect(() => {
-    if (query.data && !isCreating) {
+    if (query.data) {
       form.reset({
         name: query.data.name || "",
         description: query.data.description || "",
-        points: query.data.points,
       });
       // 设置多边形点数据
       if (query.data.points) {
@@ -282,6 +266,8 @@ export default function AreaDetailPage() {
           lng: point.lng,
           lat: point.lat,
         }));
+        console.log("points", points);
+
         setPolygonPoints(points);
       } else {
         setPolygonPoints([]);
@@ -292,7 +278,7 @@ export default function AreaDetailPage() {
         });
       }
     }
-  }, [query.data, isCreating, form]);
+  }, [query.data, form]);
 
   // 处理地图绘制的多边形
   useEffect(() => {
@@ -362,8 +348,8 @@ export default function AreaDetailPage() {
 
       mapRef.current.setFitView([polygon]);
 
-      // 如果处于创建或编辑模式，启用多边形编辑
-      if ((isCreating || isEditing) && polygonEditorRef.current) {
+      // 如果处于创建模式，启用多边形编辑
+      if (polygonEditorRef.current) {
         polygonEditorRef.current.setTarget(polygon);
         polygonEditorRef.current.open();
         console.log("polygonEditorRef.current", polygonEditorRef.current);
@@ -375,7 +361,7 @@ export default function AreaDetailPage() {
         polygonRef.current.setMap(null);
       }
     };
-  }, [polygonPoints, amapLoaded, isCreating, isEditing]);
+  }, [polygonPoints, amapLoaded, isCreating]);
 
   // 挂载地图
   useEffect(() => {
@@ -631,81 +617,65 @@ export default function AreaDetailPage() {
                 {/* flex-1 使其填充剩余空间, overflow-y-auto 启用滚动, space-y-4 添加间距 */}
                 {/* 将区域名称和描述移动到这里 */}
                 <div className="space-y-2 p-3 border rounded-md shadow-sm">
-                  {isCreating || isEditing ? (
-                    <div className="space-y-2">
-                      <FormField
-                        control={form.control}
-                        name="name"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>区域名称</FormLabel>
-                            <FormControl>
-                              <Input placeholder="请输入区域名称" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="description"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>区域描述</FormLabel>
-                            <FormControl>
-                              <Textarea
-                                placeholder="请输入区域描述"
-                                {...field}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-                  ) : (
-                    <div className="space-y-2">
-                      <div className="text-xl">{query.data?.name}</div>
-                      <div className="text-sm text-gray-500">
-                        {query.data?.description}
-                      </div>
-                    </div>
-                  )}
-                </div>
-                {(isCreating || isEditing) && (
-                  <div>
-                    <div className="space-y-2 pb-2 border-t border-l border-r rounded-t-md shadow-sm">
-                      <div className="px-3 mt-3 text-sm font-medium">
-                        地图搜索
-                      </div>
-                      <div className="px-3 pb-2">
-                        <Input
-                          placeholder="输入地点名称搜索"
-                          onChange={(e) => {
-                            if (
-                              placeSearchRef.current &&
-                              e.target.value.trim()
-                            ) {
-                              // @ts-expect-error - PlaceSearch type not properly defined
-                              placeSearchRef.current.search(e.target.value);
-                            }
-                          }}
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter" && placeSearchRef.current) {
-                              e.preventDefault();
-                              // @ts-expect-error - PlaceSearch type not properly defined
-                              placeSearchRef.current.search(
-                                e.currentTarget.value
-                              );
-                            }
-                          }}
-                          className="p-2 border rounded-md shadow-sm"
-                        />
-                      </div>
-                    </div>
-                    <div id="search-panel" className="w-full h-full" />
+                  <div className="space-y-2">
+                    <FormField
+                      control={form.control}
+                      name="name"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>区域名称</FormLabel>
+                          <FormControl>
+                            <Input placeholder="请输入区域名称" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="description"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>区域描述</FormLabel>
+                          <FormControl>
+                            <Textarea placeholder="请输入区域描述" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
                   </div>
-                )}
+                </div>
+                <div>
+                  <div className="space-y-2 pb-2 border-t border-l border-r rounded-t-md shadow-sm">
+                    <div className="px-3 mt-3 text-sm font-medium">
+                      地图搜索
+                    </div>
+                    <div className="px-3 pb-2">
+                      <Input
+                        placeholder="输入地点名称搜索"
+                        onChange={(e) => {
+                          if (placeSearchRef.current && e.target.value.trim()) {
+                            // @ts-expect-error - PlaceSearch type not properly defined
+                            placeSearchRef.current.search(e.target.value);
+                          }
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" && placeSearchRef.current) {
+                            e.preventDefault();
+                            // @ts-expect-error - PlaceSearch type not properly defined
+                            placeSearchRef.current.search(
+                              e.currentTarget.value
+                            );
+                          }
+                        }}
+                        className="p-2 border rounded-md shadow-sm"
+                      />
+                    </div>
+                  </div>
+                  <div id="search-panel" className="w-full h-full" />
+                </div>
+
                 {polygonPoints.length > 0 && (
                   <div className="space-y-2 overflow-auto border rounded-md shadow-sm">
                     <div className="px-3 mt-3 text-sm font-medium">
