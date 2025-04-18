@@ -2,15 +2,6 @@
 
 import { Button } from "@/components/ui/button";
 import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import {
   Form,
   FormControl,
   FormDescription,
@@ -48,12 +39,19 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { createArea, deleteArea, fetchArea, updateArea } from "./requests";
 
-const columnHelper = createColumnHelper<{
-  lng?: number;
-  lat?: number;
-}>();
+interface Point {
+  index: number;
+  lng: number;
+  lat: number;
+}
+
+const columnHelper = createColumnHelper<Point>();
 
 const columns = [
+  columnHelper.accessor("index", {
+    header: () => "序号",
+    cell: (info) => info.getValue(),
+  }),
   columnHelper.accessor("lng", {
     header: () => "经度",
   }),
@@ -67,6 +65,7 @@ const formSchema = z.object({
   description: z.string().optional(),
   points: z.array(
     z.object({
+      index: z.number().optional(),
       lng: z.number().optional(),
       lat: z.number().optional(),
     })
@@ -82,10 +81,8 @@ export default function AreaDetailPage() {
   const polygonRef = useRef<AMap.Polygon | null>(null);
   const polygonEditorRef = useRef<AMap.PolygonEditor | null>(null);
   const [amapLoaded, setAmapLoaded] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
-  const [polygonPoints, setPolygonPoints] = useState<
-    { lng?: number; lat?: number }[]
-  >([]);
+  const [isEditing, setIsEditing] = useState(true);
+  const [polygonPoints, setPolygonPoints] = useState<Point[]>([]);
 
   const { isCreateMode: isCreating, idPart } = useIsCreateMode();
 
@@ -233,7 +230,8 @@ export default function AreaDetailPage() {
       });
       // 设置多边形点数据
       if (query.data.points) {
-        const points = query.data.points.map((point) => ({
+        const points: Point[] = query.data.points.map((point, index) => ({
+          index,
           lng: point.lng,
           lat: point.lat,
         }));
@@ -290,6 +288,7 @@ export default function AreaDetailPage() {
       if ((isCreating || isEditing) && polygonEditorRef.current) {
         polygonEditorRef.current.setTarget(polygon);
         polygonEditorRef.current.open();
+        console.log("polygonEditorRef.current", polygonEditorRef.current);
       }
     }
 
@@ -347,7 +346,70 @@ export default function AreaDetailPage() {
 
             // 初始化多边形编辑器
             polygonEditorRef.current = new AMap.PolygonEditor(mapRef.current);
-
+            // 监听编辑事件
+            AMap.Event.addListener(
+              polygonEditorRef.current,
+              "adjust",
+              function () {
+                // 获取多边形路径
+                const newPath = polygonRef.current?.getPath();
+                if (!newPath) return;
+                // 更新多边形路径点
+                const newPoints: Point[] = [];
+                (newPath as AMap.LngLat[]).forEach((point, index) => {
+                  if (point instanceof AMap.LngLat) {
+                    newPoints.push({
+                      index,
+                      lng: point.getLng(),
+                      lat: point.getLat(),
+                    });
+                  }
+                });
+                setPolygonPoints(newPoints);
+              }
+            );
+            // 监听删除事件
+            AMap.Event.addListener(
+              polygonEditorRef.current,
+              "addnode",
+              function () {
+                const newPath = polygonRef.current?.getPath();
+                if (!newPath) return;
+                // 更新多边形路径点
+                const newPoints: Point[] = [];
+                (newPath as AMap.LngLat[]).forEach((point, index) => {
+                  if (point instanceof AMap.LngLat) {
+                    newPoints.push({
+                      index,
+                      lng: point.getLng(),
+                      lat: point.getLat(),
+                    });
+                  }
+                });
+                setPolygonPoints(newPoints);
+              }
+            );
+            // 监听删除事件
+            AMap.Event.addListener(
+              polygonEditorRef.current,
+              "removenode",
+              function () {
+                const newPath = polygonRef.current?.getPath();
+                if (!newPath) return;
+                // 更新多边形路径点
+                const newPoints: Point[] = [];
+                (newPath as AMap.LngLat[]).forEach((point, index) => {
+                  if (point instanceof AMap.LngLat) {
+                    newPoints.push({
+                      index,
+                      lng: point.getLng(),
+                      lat: point.getLat(),
+                    });
+                  }
+                });
+                setPolygonPoints(newPoints);
+              }
+            );
             // 如果是创建模式，初始化鼠标绘制工具
             if (isCreating) {
               const mouseTool = new AMap.MouseTool(mapRef.current);
@@ -369,12 +431,16 @@ export default function AreaDetailPage() {
 
                 // 保存多边形路径点
                 const path = polygon.getPath();
-                const points = path.map(
-                  (point: { getLng: () => number; getLat: () => number }) => ({
-                    lng: point.getLng(),
-                    lat: point.getLat(),
-                  })
-                );
+                const points: Point[] = [];
+                (path as AMap.LngLat[]).forEach((point, index) => {
+                  if (point instanceof AMap.LngLat) {
+                    points.push({
+                      index: index + 1,
+                      lng: point.getLng(),
+                      lat: point.getLat(),
+                    });
+                  }
+                });
 
                 setPolygonPoints(points);
 
@@ -382,35 +448,9 @@ export default function AreaDetailPage() {
                 polygonEditorRef.current?.setTarget(polygon);
                 polygonEditorRef.current?.open();
 
-                // 监听编辑事件
-                AMap.Event.addListener(
-                  polygonEditorRef.current,
-                  "adjust",
-                  function () {
-                    const newPath = polygon.getPath();
-                    const newPoints = newPath.map(
-                      (point: {
-                        getLng: () => number;
-                        getLat: () => number;
-                      }) => ({
-                        lng: point.getLng(),
-                        lat: point.getLat(),
-                      })
-                    );
-                    setPolygonPoints(newPoints);
-                  }
-                );
-                // 监听删除事件
-                AMap.Event.addListener(
-                  polygonEditorRef.current,
-                  "delete",
-                  function () {
-                    // 清除多边形
-                    polygon.setMap(null);
-                    polygonRef.current = null;
-                    setPolygonPoints([]);
-                  }
-                );
+                // 清除当前鼠标绘制工具
+                polygon.setMap(null);
+                mouseTool.close();
               });
             }
 
@@ -487,19 +527,17 @@ export default function AreaDetailPage() {
         "adjust",
         function () {
           const newPath = polygonRef.current!.getPath();
-          const newPoints = newPath!.map((point) => {
-            // Check if point is a LngLat instance
-            if (point instanceof AMapRef.current!.LngLat) {
-              return {
+          if (!newPath) return;
+          // 更新多边形路径点
+          const newPoints: Point[] = [];
+          (newPath as AMap.LngLat[]).forEach((point, index) => {
+            if (point instanceof AMap.LngLat) {
+              newPoints.push({
+                index,
                 lng: point.getLng(),
                 lat: point.getLat(),
-              };
+              });
             }
-            // Handle case where point might be an array
-            return {
-              lng: 0,
-              lat: 0,
-            };
           });
           setPolygonPoints(newPoints);
         }
@@ -513,7 +551,13 @@ export default function AreaDetailPage() {
 
     // 重置为原始数据
     if (query.data?.points) {
-      setPolygonPoints(query.data.points);
+      setPolygonPoints(
+        query.data.points.map((point, index) => ({
+          index,
+          lng: point.lng,
+          lat: point.lat,
+        }))
+      );
       form.reset({
         points: query.data.points,
       });
@@ -549,267 +593,197 @@ export default function AreaDetailPage() {
     <div className="px-4 mb-2">
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-          {/* 标题与描述 */}
-          <div className="flex-1">
-            {isCreating || isEditing ? (
-              <div className="space-y-2">
-                <FormField
-                  control={form.control}
-                  name="name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>区域名称</FormLabel>
-                      <FormControl>
-                        <Input placeholder="请输入区域名称" {...field} />
-                      </FormControl>
-                      <FormDescription>
-                        该名称将用于识别区域，请确保其唯一性。
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="description"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>区域描述</FormLabel>
-                      <FormControl>
-                        <Textarea placeholder="请输入区域描述" {...field} />
-                      </FormControl>
-                      <FormDescription>
-                        描述用于对该区域进行标识和说明，可以是任何信息。
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-            ) : (
-              <div className="space-y-2">
-                <div className="text-xl">{query.data?.name}</div>
-                <div className="text-sm text-gray-500">
-                  {query.data?.description}
-                </div>
-              </div>
-            )}
-          </div>
-
           <div className="flex space-x-4">
             <div
               id="map"
-              className="h-[calc(100vh-200px)] w-full border rounded-md shadow-sm"
+              className="h-[calc(100vh-132px)] w-full border rounded-md shadow-sm"
             ></div>
-
-            <div className="flex flex-col w-[400px] gap-4">
-              {(isCreating || isEditing) && (
-                <div>
-                  <div className="space-y-2 pb-2 border-t border-l border-r rounded-t-md shadow-sm">
-                    <div className="px-3 mt-3 text-sm font-medium">
-                      地图搜索
-                    </div>
-                    <div className="px-3 pb-2">
-                      <Input
-                        placeholder="输入地点名称搜索"
-                        onChange={(e) => {
-                          if (placeSearchRef.current && e.target.value.trim()) {
-                            // @ts-expect-error - PlaceSearch type not properly defined
-                            placeSearchRef.current.search(e.target.value);
-                          }
-                        }}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter" && placeSearchRef.current) {
-                            e.preventDefault();
-                            // @ts-expect-error - PlaceSearch type not properly defined
-                            placeSearchRef.current.search(
-                              e.currentTarget.value
-                            );
-                          }
-                        }}
-                        className="p-2 border rounded-md shadow-sm"
+            {/* 修改右侧面板容器结构 */}
+            <div className="flex flex-col w-[400px] h-[calc(100vh-132px)]">
+              {/* 主容器，设置高度 */}
+              {/* 内部滚动容器 */}
+              <div className="flex-1 overflow-y-auto pr-2 space-y-4 mb-4">
+                {/* flex-1 使其填充剩余空间, overflow-y-auto 启用滚动, space-y-4 添加间距 */}
+                {/* 将区域名称和描述移动到这里 */}
+                <div className="space-y-2 p-3 border rounded-md shadow-sm">
+                  {isCreating || isEditing ? (
+                    <div className="space-y-2">
+                      <FormField
+                        control={form.control}
+                        name="name"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>区域名称</FormLabel>
+                            <FormControl>
+                              <Input placeholder="请输入区域名称" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="description"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>区域描述</FormLabel>
+                            <FormControl>
+                              <Textarea
+                                placeholder="请输入区域描述"
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
                       />
                     </div>
-                  </div>
-                  <div id="search-panel" className="w-full h-full" />
+                  ) : (
+                    <div className="space-y-2">
+                      <div className="text-xl">{query.data?.name}</div>
+                      <div className="text-sm text-gray-500">
+                        {query.data?.description}
+                      </div>
+                    </div>
+                  )}
                 </div>
-              )}
-              {polygonPoints.length > 0 && (
-                <div className="space-y-2 overflow-auto border rounded-md shadow-sm">
-                  <div className="px-3 mt-3 text-sm font-medium">节点信息</div>
-                  <Table className="">
-                    <TableHeader className="bg-gray-100">
-                      <TableRow>
-                        {table.getHeaderGroups().map((headerGroup) =>
-                          headerGroup.headers.map((header) => (
-                            <TableHead
-                              key={header.id}
-                              className="text-center text-sm h-8 min-w-32"
-                            >
-                              {header.isPlaceholder
-                                ? null
-                                : flexRender(
-                                    header.column.columnDef.header,
-                                    header.getContext()
-                                  )}
-                            </TableHead>
-                          ))
-                        )}
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {table.getRowModel().rows.map((row) => (
-                        <TableRow
-                          key={row.id}
-                          className="text-sm hover:bg-gray-50 "
-                        >
-                          {row.getVisibleCells().map((cell) => (
-                            // 居中
-                            <TableCell
-                              key={cell.id}
-                              className="text-center py-2 px-0"
-                            >
-                              {flexRender(
-                                cell.column.columnDef.cell,
-                                cell.getContext()
-                              )}
-                            </TableCell>
-                          ))}
+                {(isCreating || isEditing) && (
+                  <div>
+                    <div className="space-y-2 pb-2 border-t border-l border-r rounded-t-md shadow-sm">
+                      <div className="px-3 mt-3 text-sm font-medium">
+                        地图搜索
+                      </div>
+                      <div className="px-3 pb-2">
+                        <Input
+                          placeholder="输入地点名称搜索"
+                          onChange={(e) => {
+                            if (
+                              placeSearchRef.current &&
+                              e.target.value.trim()
+                            ) {
+                              // @ts-expect-error - PlaceSearch type not properly defined
+                              placeSearchRef.current.search(e.target.value);
+                            }
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" && placeSearchRef.current) {
+                              e.preventDefault();
+                              // @ts-expect-error - PlaceSearch type not properly defined
+                              placeSearchRef.current.search(
+                                e.currentTarget.value
+                              );
+                            }
+                          }}
+                          className="p-2 border rounded-md shadow-sm"
+                        />
+                      </div>
+                    </div>
+                    <div id="search-panel" className="w-full h-full" />
+                  </div>
+                )}
+                {polygonPoints.length > 0 && (
+                  <div className="space-y-2 overflow-auto border rounded-md shadow-sm">
+                    <div className="px-3 mt-3 text-sm font-medium">
+                      节点信息
+                    </div>
+                    <Table className="">
+                      <TableHeader className="bg-gray-100">
+                        <TableRow>
+                          {table.getHeaderGroups().map((headerGroup) =>
+                            headerGroup.headers.map((header) => (
+                              <TableHead
+                                key={header.id}
+                                className="text-center text-sm h-8 min-w-16"
+                              >
+                                {header.isPlaceholder
+                                  ? null
+                                  : flexRender(
+                                      header.column.columnDef.header,
+                                      header.getContext()
+                                    )}
+                              </TableHead>
+                            ))
+                          )}
                         </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              )}
-              {polygonPoints.length > 0 && (
-                <div className="space-y-2 p-3 border rounded-md shadow-sm">
-                  <div className="text-sm font-medium">区域信息</div>
-                  <div className="grid grid-cols-2 gap-1">
-                    <span className="text-sm text-gray-500">总面积:</span>
-                    <span className="text-sm font-medium">
-                      {areaSizeDisplay}
-                    </span>
-
-                    <span className="text-sm text-gray-500">总顶点:</span>
-                    <span className="text-sm font-medium">
-                      {polygonPoints.length}个
-                    </span>
-
-                    <span className="text-sm text-gray-500">周长:</span>
-                    <span className="text-sm font-medium">
-                      {areaLengthDisplay}
-                    </span>
-
-                    {query.data?.created_at && (
-                      <>
-                        <span className="text-sm text-gray-500">创建日期:</span>
-                        <span className="text-sm font-medium">
-                          {query.data.created_at}
-                        </span>
-                      </>
-                    )}
-                    {query.data?.updated_at && (
-                      <>
-                        <span className="text-sm text-gray-500">编辑日期:</span>
-                        <span className="text-sm font-medium">
-                          {query.data.updated_at}
-                        </span>
-                      </>
-                    )}
+                      </TableHeader>
+                      <TableBody>
+                        {table.getRowModel().rows.map((row) => (
+                          <TableRow
+                            key={row.id}
+                            className="text-sm hover:bg-gray-50 "
+                          >
+                            {row.getVisibleCells().map((cell) => (
+                              // 居中
+                              <TableCell
+                                key={cell.id}
+                                className="text-center py-2 px-0"
+                              >
+                                {flexRender(
+                                  cell.column.columnDef.cell,
+                                  cell.getContext()
+                                )}
+                              </TableCell>
+                            ))}
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
                   </div>
-                </div>
-              )}
+                )}
+                {polygonPoints.length > 0 && (
+                  <div className="space-y-2 p-3 border rounded-md shadow-sm">
+                    <div className="text-sm font-medium">区域信息</div>
+                    <div className="grid grid-cols-2 gap-1">
+                      <span className="text-sm text-gray-500">总面积:</span>
+                      <span className="text-sm font-medium">
+                        {areaSizeDisplay}
+                      </span>
 
-              {/* 控制按钮 */}
-              {polygonPoints.length > 0 && (
-                <div className="flex space-x-2 justify-end">
-                  {/* 创建模式 */}
-                  {isCreating && !isEditing && (
-                    <>
-                      <Button
-                        size="sm"
-                        variant="default"
-                        type="submit"
-                        disabled={isLoading}
-                      >
-                        保存
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => router.push("/areas")}
-                      >
-                        取消
-                      </Button>
-                    </>
-                  )}
-                  {/* 编辑模式 */}
-                  {isEditing && !isCreating && (
-                    <>
-                      <Button
-                        size="sm"
-                        variant="default"
-                        type="submit"
-                        disabled={isLoading}
-                      >
-                        保存
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={handleCancelEditing}
-                      >
-                        取消
-                      </Button>
-                    </>
-                  )}
-                  {/* 查看模式 */}
-                  {!isEditing && !isCreating && (
-                    <>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        type="button"
-                        onClick={handleStartEditing}
-                      >
-                        编辑
-                      </Button>
-                      <Dialog>
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          type="button"
-                          asChild
-                        >
-                          <DialogTrigger>删除</DialogTrigger>
-                        </Button>
-                        <DialogContent>
-                          <DialogHeader>
-                            <DialogTitle>删除区域</DialogTitle>
-                            <DialogDescription>
-                              您确定要删除这个区域吗？此操作不可撤销。
-                            </DialogDescription>
-                          </DialogHeader>
-                          <DialogFooter>
-                            <Button
-                              variant="destructive"
-                              onClick={() => deleteMutation.mutate(idPart)}
-                              disabled={deleteMutation.isPending}
-                            >
-                              {deleteMutation.isPending
-                                ? "删除中..."
-                                : "确认删除"}
-                            </Button>
-                            <DialogClose asChild>
-                              <Button variant="outline">取消</Button>
-                            </DialogClose>
-                          </DialogFooter>
-                        </DialogContent>
-                      </Dialog>
-                    </>
-                  )}
-                </div>
-              )}
+                      <span className="text-sm text-gray-500">总顶点:</span>
+                      <span className="text-sm font-medium">
+                        {polygonPoints.length}个
+                      </span>
+
+                      <span className="text-sm text-gray-500">周长:</span>
+                      <span className="text-sm font-medium">
+                        {areaLengthDisplay}
+                      </span>
+
+                      {query.data?.created_at && (
+                        <>
+                          <span className="text-sm text-gray-500">
+                            创建日期:
+                          </span>
+                          <span className="text-sm font-medium">
+                            {query.data.created_at}
+                          </span>
+                        </>
+                      )}
+                      {query.data?.updated_at && (
+                        <>
+                          <span className="text-sm text-gray-500">
+                            编辑日期:
+                          </span>
+                          <span className="text-sm font-medium">
+                            {query.data.updated_at}
+                          </span>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+              <div className="flex space-x-2 justify-end pt-2 border-t">
+                {/* 编辑模式 */}
+                <Button
+                  size="sm"
+                  variant="default"
+                  type="submit" // 表单提交按钮
+                  disabled={isLoading}
+                >
+                  保存
+                </Button>
+              </div>
             </div>
           </div>
         </form>
