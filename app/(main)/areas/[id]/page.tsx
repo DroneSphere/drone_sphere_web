@@ -45,21 +45,6 @@ interface Point {
   lat: number;
 }
 
-const columnHelper = createColumnHelper<Point>();
-
-const columns = [
-  columnHelper.accessor("index", {
-    header: () => "序号",
-    cell: (info) => info.getValue(),
-  }),
-  columnHelper.accessor("lng", {
-    header: () => "经度",
-  }),
-  columnHelper.accessor("lat", {
-    header: () => "纬度",
-  }),
-];
-
 const formSchema = z.object({
   name: z.string().min(1, "区域名称不能为空"),
   description: z.string().optional(),
@@ -79,6 +64,7 @@ export default function AreaDetailPage() {
   const mapRef = useRef<AMap.Map | null>(null);
   const placeSearchRef = useRef<unknown | null>(null);
   const polygonRef = useRef<AMap.Polygon | null>(null);
+  const markersRef = useRef<AMap.Marker[]>([]); // 新增: 用于存储顶点 Marker 的 ref
   const polygonEditorRef = useRef<AMap.PolygonEditor | null>(null);
   const [amapLoaded, setAmapLoaded] = useState(false);
   const [isEditing, setIsEditing] = useState(true);
@@ -120,19 +106,6 @@ export default function AreaDetailPage() {
         title: "更新成功",
         description: "区域信息已更新",
       });
-    },
-  });
-
-  // 删除区域的mutation
-  const deleteMutation = useMutation({
-    mutationFn: deleteArea,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["areas"] });
-      toast({
-        title: "删除成功",
-        description: "区域已删除",
-      });
-      router.push("/areas");
     },
   });
 
@@ -213,12 +186,86 @@ export default function AreaDetailPage() {
     }
   };
 
+  const columnHelper = createColumnHelper<Point>();
+
+  const columns = [
+    columnHelper.accessor("index", {
+      header: () => "序号",
+      cell: (info) => info.getValue(),
+      size: 40, // 可以指定一个较小的尺寸
+    }),
+    columnHelper.accessor("lng", {
+      header: () => "经度",
+      // 在表格渲染时动态决定单元格内容
+      cell: (info) => {
+        const pointIndex = info.row.original.index - 1; // 获取原始数据索引 (假设 index 从 1 开始)
+        const value = info.getValue();
+        return isEditing ? ( // 如果是编辑模式
+          <Input
+            type="number" // 使用 number 类型以便输入
+            step="0.000001" // 修改步长，控制增减粒度为小数点后6位
+            defaultValue={value} // 使用 defaultValue 避免每次渲染重置光标
+            onBlur={(e) => handlePointUpdate(pointIndex, "lng", e.target.value)} // 失去焦点时更新
+            className="h-8 p-1 text-center border-none focus-visible:ring-1 focus-visible:ring-offset-0" // 简化样式
+            // 可以添加 onKeyDown 处理 Enter 键提交等
+          />
+        ) : (
+          value // 非编辑模式直接显示值
+        );
+      },
+    }),
+    columnHelper.accessor("lat", {
+      header: () => "纬度",
+      // 类似地处理纬度
+      cell: (info) => {
+        const pointIndex = info.row.original.index - 1; // 获取原始数据索引
+        const value = info.getValue();
+        return isEditing ? (
+          <Input
+            type="number"
+            step="0.000001" // 修改步长，控制增减粒度为小数点后6位
+            defaultValue={value}
+            onBlur={(e) => handlePointUpdate(pointIndex, "lat", e.target.value)}
+            className="h-8 p-1 text-center border-none focus-visible:ring-1 focus-visible:ring-offset-0"
+          />
+        ) : (
+          value
+        );
+      },
+    }),
+  ];
+
   // 节点信息表格
   const table = useReactTable({
     data: polygonPoints,
     columns,
     getCoreRowModel: getCoreRowModel(),
   });
+
+  const handlePointUpdate = (
+    index: number,
+    field: "lng" | "lat",
+    value: string
+  ) => {
+    const numericValue = parseFloat(value); // 将输入值转为数字
+    if (isNaN(numericValue)) {
+      // 可以添加错误提示，例如使用 toast
+      toast({
+        title: "输入无效",
+        description: "请输入有效的经纬度数值",
+        variant: "destructive",
+      });
+      return; // 如果转换失败则不更新
+    }
+
+    setPolygonPoints((currentPoints) => {
+      const newPoints = [...currentPoints]; // 创建新数组以避免直接修改状态
+      if (newPoints[index]) {
+        newPoints[index] = { ...newPoints[index], [field]: numericValue }; // 更新对应点的经纬度
+      }
+      return newPoints; // 返回更新后的数组
+    });
+  };
 
   // 初始化数据
   useEffect(() => {
@@ -259,9 +306,32 @@ export default function AreaDetailPage() {
 
     // 如果有点数据，绘制多边形
     if (polygonPoints.length > 2) {
-      const path = polygonPoints.map(
-        (point) => new AMapRef.current!.LngLat(point.lng!, point.lat!)
-      );
+      const path: AMap.LngLat[] = []; // 用于存储多边形路径点
+      const newMarkers: AMap.Marker[] = []; // 用于临时存储新创建的 Markers
+
+      // 遍历状态中的多边形点
+      polygonPoints.forEach((point) => {
+        // 确保点坐标有效
+        if (point.lng !== undefined && point.lat !== undefined) {
+          const lngLat = new AMapRef.current!.LngLat(point.lng, point.lat);
+          path.push(lngLat); // 添加到多边形路径
+
+          // 创建一个新的 Marker
+          const marker = new AMapRef.current!.Marker({
+            position: lngLat, // 设置 Marker 位置
+            // icon: "//a.amap.com/jsapi_demos/static/demo-center/icons/poi-marker-default.png", // 可选：自定义图标
+            offset: new AMapRef.current!.Pixel(-1, -1), // 可选：图标偏移量
+            title: `${point.index}`, // 可选：鼠标悬停提示
+            label: {
+              // 可选：添加标签显示序号
+              content: `${point.index}`,
+              offset: new AMapRef.current!.Pixel(-16, -2), // 标签相对图标的位置
+              direction: "center", // 标签方向
+            },
+          });
+          newMarkers.push(marker); // 将新 Marker 添加到临时数组
+        }
+      });
 
       const polygon = new AMapRef.current!.Polygon();
       polygon.setPath(path);
@@ -281,7 +351,15 @@ export default function AreaDetailPage() {
       });
 
       polygon.setMap(mapRef.current);
+      // 清除之前的 Marker
+      markersRef.current.forEach((marker) => {
+        marker.setMap(null);
+      });
+      mapRef.current?.add(newMarkers);
+
       polygonRef.current = polygon;
+      markersRef.current = newMarkers; // 更新引用
+
       mapRef.current.setFitView([polygon]);
 
       // 如果处于创建或编辑模式，启用多边形编辑
@@ -320,6 +398,7 @@ export default function AreaDetailPage() {
 
         AMap.plugin(
           [
+            "AMap.MapType",
             "AMap.ToolBar",
             "AMap.Scale",
             "AMap.PolygonEditor",
@@ -328,6 +407,11 @@ export default function AreaDetailPage() {
             "AMap.PlaceSearch",
           ],
           function () {
+            const mapType = new AMap.MapType({
+              defaultType: 0, //使用2D
+            });
+            mapRef.current?.addControl(mapType);
+
             const tool = new AMap.ToolBar();
             mapRef.current?.addControl(tool);
 
@@ -511,64 +595,6 @@ export default function AreaDetailPage() {
     return length;
   };
 
-  // 开启编辑模式
-  const handleStartEditing = () => {
-    setIsEditing(true);
-    console.log("handleStartEditing", polygonRef.current);
-
-    // 如果已有多边形，启用编辑
-    if (polygonRef.current && polygonEditorRef.current) {
-      polygonEditorRef.current.setTarget(polygonRef.current);
-      polygonEditorRef.current.open();
-
-      // 监听编辑事件
-      AMapRef.current?.Event.addListener(
-        polygonEditorRef.current,
-        "adjust",
-        function () {
-          const newPath = polygonRef.current!.getPath();
-          if (!newPath) return;
-          // 更新多边形路径点
-          const newPoints: Point[] = [];
-          (newPath as AMap.LngLat[]).forEach((point, index) => {
-            if (point instanceof AMap.LngLat) {
-              newPoints.push({
-                index,
-                lng: point.getLng(),
-                lat: point.getLat(),
-              });
-            }
-          });
-          setPolygonPoints(newPoints);
-        }
-      );
-    }
-  };
-
-  // 取消编辑模式
-  const handleCancelEditing = () => {
-    setIsEditing(false);
-
-    // 重置为原始数据
-    if (query.data?.points) {
-      setPolygonPoints(
-        query.data.points.map((point, index) => ({
-          index,
-          lng: point.lng,
-          lat: point.lat,
-        }))
-      );
-      form.reset({
-        points: query.data.points,
-      });
-    }
-
-    // 关闭多边形编辑器
-    if (polygonEditorRef.current) {
-      polygonEditorRef.current.close();
-    }
-  };
-
   // 计算区域面积
   const areaSize = calculateArea();
   const areaSizeDisplay =
@@ -586,8 +612,7 @@ export default function AreaDetailPage() {
   const isLoading =
     (isCreating ? false : query.isLoading) ||
     createMutation.isPending ||
-    updateMutation.isPending ||
-    deleteMutation.isPending;
+    updateMutation.isPending;
 
   return (
     <div className="px-4 mb-2">
