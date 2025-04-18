@@ -42,7 +42,7 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import { format } from "date-fns";
-import { CalendarIcon, Trash, View } from "lucide-react";
+import { CalendarIcon, PlusCircle, Search, Trash, View } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { deleteArea } from "./[id]/requests";
@@ -56,9 +56,8 @@ export default function AreasPage() {
     null
   );
   const queryClient = useQueryClient();
-  const queryKey = ["areas"];
   const query = useQuery({
-    queryKey: queryKey,
+    queryKey: ["areas"],
     queryFn: () => {
       return selectAllAreas(searchParams);
     },
@@ -267,22 +266,26 @@ export default function AreasPage() {
             </PopoverContent>
           </Popover>
         </div>
-        <div className="flex-1"></div>
         <Button
           onClick={() => {
-            queryClient.invalidateQueries({ queryKey: ["areas"] });
+            query.refetch();
           }}
           disabled={query.isPending}
+          className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
         >
+          <Search className="mr-1 h-4 w-4" />
           搜索
         </Button>
-        {/* 创建 */}
+        <div className="flex-1"></div>
+
         <Button
+          variant="default"
+          size="default"
           onClick={() => router.push("/areas/new")}
-          disabled={query.isPending}
-          variant="outline"
+          className="rounded-sm bg-green-500 text-gray-100 hover:bg-green-600"
         >
-          创建
+          <PlusCircle className="h-4 w-4 mr-1" />
+          添加
         </Button>
       </div>
       {
