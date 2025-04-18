@@ -65,7 +65,7 @@ function Calendar({
       }}
       formatters={{
         // 自定义日期格式化
-        formatCaption: (date, options) => {
+        formatCaption: (date) => {
           return `${date.getFullYear()}年${date.getMonth() + 1}月`;
         },
       }}
