@@ -125,20 +125,22 @@ export default function AreasPage() {
         <div className="flex justify-center space-x-2">
           <Button
             variant="secondary"
-            size="icon"
-            className="h-8 w-8 bg-blue-400 text-gray-100 hover:bg-blue-500"
+            size="sm"
+            className="bg-blue-400 text-gray-100 hover:bg-blue-500 px-2"
             onClick={() => router.push(`/areas/${info.row.original.id}`)}
           >
             <View className="h-4 w-4" />
+            编辑
           </Button>
           <Dialog>
             <Button
-              size="icon"
               variant="destructive"
-              className="h-8 w-8 bg-red-400 text-gray-100 hover:bg-red-500"
+              size="sm"
+              className="bg-red-400 text-gray-100 hover:bg-red-500 px-2"
             >
-              <DialogTrigger>
+              <DialogTrigger className="flex items-center">
                 <Trash className="h-4 w-4" />
+                删除
               </DialogTrigger>
             </Button>
 
@@ -292,13 +294,16 @@ export default function AreasPage() {
         )
       }
       {query.isSuccess && (
-        <div className="my-4">
-          <Table className="border border-gray-200 rounded-md">
+        <div className="my-4 max-w-full overflow-x-auto">
+          <Table className="border border-gray-200 rounded-md border-collapse">
             <TableHeader className="bg-gray-100">
-              <TableRow>
+              <TableRow className="border-b border-gray-300">
                 {table.getHeaderGroups().map((headerGroup) =>
                   headerGroup.headers.map((header) => (
-                    <TableHead key={header.id} className="text-center">
+                    <TableHead
+                      key={header.id}
+                      className="text-center border border-gray-300 p-2"
+                    >
                       {header.isPlaceholder
                         ? null
                         : flexRender(
@@ -312,10 +317,16 @@ export default function AreasPage() {
             </TableHeader>
             <TableBody>
               {table.getRowModel().rows.map((row) => (
-                <TableRow key={row.id} className="hover:bg-gray-50">
+                <TableRow
+                  key={row.id}
+                  className="hover:bg-gray-50 border-b border-gray-200"
+                >
                   {row.getVisibleCells().map((cell) => (
-                    // 居中
-                    <TableCell key={cell.id} className="text-center p-2">
+                    // 居中显示单元格内容
+                    <TableCell
+                      key={cell.id}
+                      className="text-center p-2 border-x border-gray-200"
+                    >
                       {flexRender(
                         cell.column.columnDef.cell,
                         cell.getContext()
