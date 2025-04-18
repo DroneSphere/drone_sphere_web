@@ -696,13 +696,13 @@ export default function Page() {
       <div className="flex gap-4">
         <div
           id="map"
-          className="h-[calc(100vh-200px)] w-full border rounded-md shadow-sm"
+          className="h-[calc(100vh-132px)] w-full border rounded-md shadow-sm"
         />
         <div className="w-[460px]">
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
               {/* 将四个面板放入一个可滚动的 div 容器中 */}
-              <div className="max-h-[calc(100vh-200px)] overflow-y-auto pl-2 pr-4 space-y-4">
+              <div className="max-h-[calc(100vh-180px)] overflow-y-auto pl-2 pr-4 space-y-4">
                 <TaskInfoPanel
                   isEditing={isEditing}
                   isCreating={isCreating}
@@ -743,7 +743,7 @@ export default function Page() {
                 <Button
                   disabled={!isMapLoaded || createMutation.isPending}
                   type="submit"
-                  size="sm"
+                  className="px-4 bg-blue-400 text-gray-100 hover:bg-blue-500 flex items-center"
                 >
                   保存
                 </Button>
