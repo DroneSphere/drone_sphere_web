@@ -19,6 +19,6 @@ export interface PointResult {
 // 区域搜索参数接口
 export interface AreaSearchParams {
   name?: string; // 区域名称
-  createAtBegin?: string; // 创建时间开始
-  createAtEnd?: string; // 创建时间结束
+  created_at_begin?: string; // 创建时间开始
+  created_at_end?: string; // 创建时间结束
 }
