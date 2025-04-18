@@ -29,6 +29,7 @@ import DroneModelMappingPanel, {
   DroneMapping,
 } from "./drone-model-mapping-panel";
 import { useRouter } from "next/navigation";
+import { Separator } from "@/components/ui/separator";
 
 const formSchema = z.object({
   name: z.string().optional(),
@@ -142,13 +143,13 @@ export default function Page() {
       schedule_time: dataQuery.data.schedule_time,
       area_id: dataQuery.data.area?.id || 0,
     });
-    
+
     // 注释掉这里的直接设置操作，避免循环更新
     // 这些操作已经在 dataQuery useEffect 中处理
     // setSelectedDrones(formattedDronesData);
     // setDroneMappings(formattedMappingsData);
     // setWaylineAreas(formattedWaylineAreasData);
-  }, [dataQuery.data, form]);  // 只依赖 dataQuery.data 和 form
+  }, [dataQuery.data, form]); // 只依赖 dataQuery.data 和 form
 
   function onSubmit(data: z.infer<typeof formSchema>) {
     console.log("onSubmit", data);
@@ -285,11 +286,11 @@ export default function Page() {
   // 修复 formattedMappingsData，移除对 selectedDrones 的依赖
   const formattedMappingsData = useMemo(() => {
     if (!dataQuery.data?.mappings || !dataQuery.data?.drones) return [];
-    
+
     // 使用 dataQuery.data.drones 替代 selectedDrones
     // 避免对 selectedDrones 的依赖，防止形成循环依赖
     const mappingDrones = dataQuery.data.drones;
-    
+
     return dataQuery.data.mappings.map((mapping) => ({
       selectedDroneIndex: Number(mapping.selected_drone_key.split("-")[0]) || 0,
       seletedDroneId: Number(mapping.selected_drone_key.split("-")[1]) || 0,
@@ -388,13 +389,12 @@ export default function Page() {
 
     // 设置表单数据 - 调用包装后的函数，而不是内联设置
     fillFormWithExistingData();
-    
+
     // 单独设置状态，避免在 fillFormWithExistingData 中设置
     // 使用格式化后的数据更新状态
     setSelectedDrones(formattedDronesData);
     setDroneMappings(formattedMappingsData);
     setWaylineAreas(formattedWaylineAreasData);
-
   }, [
     dataQuery.isSuccess,
     dataQuery.data,
@@ -402,7 +402,7 @@ export default function Page() {
     AMapRef,
     fillFormWithExistingData,
     formattedDronesData,
-    formattedMappingsData, 
+    formattedMappingsData,
     formattedWaylineAreasData,
     // 移除不必要的依赖 form
   ]);
@@ -712,14 +712,21 @@ export default function Page() {
                   setPath={setPath}
                   AMapRef={AMapRef}
                 />
-
+                <Separator className="my-2" />
                 <DroneSelectionPanel
                   selectedDrones={selectedDrones}
                   setSelectedDrones={setSelectedDrones}
                   isEditMode={isCreating || isEditing}
                   availableDrones={optionsQuery.data?.drones || []}
                 />
-
+                <Separator className="my-2" />
+                <DroneModelMappingPanel
+                  selectedDrones={selectedDrones}
+                  isEditMode={isCreating || isEditing}
+                  droneMappings={droneMappings}
+                  setDroneMappings={setDroneMappings}
+                />
+                <Separator className="my-2" />
                 <WaylinePanel
                   selectedDrones={selectedDrones}
                   waylineAreas={waylineAreas}
@@ -728,13 +735,6 @@ export default function Page() {
                   AMapRef={AMapRef}
                   mapRef={mapRef}
                   isEditMode={isCreating || isEditing}
-                />
-
-                <DroneModelMappingPanel
-                  selectedDrones={selectedDrones}
-                  isEditMode={isCreating || isEditing}
-                  droneMappings={droneMappings}
-                  setDroneMappings={setDroneMappings}
                 />
               </div>
 
