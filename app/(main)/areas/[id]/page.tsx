@@ -266,13 +266,20 @@ export default function AreaDetailPage() {
       if (query.data.points) {
         // 确保 index 从 1 开始
         const points: Point[] = query.data.points.map((point, idx) => ({
-          index: idx + 1, // index 设置为 1-based
+          index: idx,
           lng: point.lng,
           lat: point.lat,
         }));
         console.log("points loaded", points);
 
         setPolygonPoints(points);
+
+        // 等待一段时间设置地图视野
+        setTimeout(() => {
+          if (mapRef.current && polygonRef.current) {
+            mapRef.current.setFitView([polygonRef.current], true);
+          }
+        }, 500);
       } else {
         setPolygonPoints([]);
         // 移除之前的 toast 提示，因为可能是新创建的区域
@@ -351,7 +358,7 @@ export default function AreaDetailPage() {
       polygonRef.current = polygon;
       markersRef.current = newMarkers; // 更新引用
 
-      mapRef.current.setFitView([polygon]);
+      // mapRef.current.setFitView([polygon]);
 
       // 如果处于创建模式，启用多边形编辑
       if (polygonEditorRef.current) {
@@ -666,7 +673,7 @@ export default function AreaDetailPage() {
                     />
                   </div>
                 </div>
-                <div>
+                {isCreating && (
                   <div className="space-y-2 pb-2 border-t border-l border-r rounded-t-md shadow-sm">
                     <div className="px-3 mt-3 text-sm font-medium">
                       地图搜索
@@ -692,9 +699,9 @@ export default function AreaDetailPage() {
                         className="p-2 border rounded-md shadow-sm"
                       />
                     </div>
+                    <div id="search-panel" className="w-full h-full" />
                   </div>
-                  <div id="search-panel" className="w-full h-full" />
-                </div>
+                )}
 
                 {polygonPoints.length > 0 && (
                   <div className="space-y-2 overflow-auto border rounded-md shadow-sm">
