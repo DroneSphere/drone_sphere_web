@@ -3,6 +3,7 @@
 import { selectAllAreas } from "@/app/(main)/areas/requests";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
+import { zhCN } from "date-fns/locale";
 import {
   Dialog,
   DialogClose,
@@ -192,21 +193,26 @@ export default function AreasPage() {
           }
           value={searchParams?.name || ""}
         />
-        <div className="flex gap-2 items-center">
-          <span>开始时间:</span>
+
+        {/* 时间选择器组 */}
+        <div className="flex items-center gap-4">
           <Popover>
             <PopoverTrigger asChild>
               <Button
                 variant={"outline"}
                 className={cn(
-                  "w-[200px] justify-start text-left font-normal",
+                  "w-[180px] justify-start text-left font-normal",
                   !searchParams?.created_at_begin && "text-muted-foreground"
                 )}
               >
                 <CalendarIcon className="mr-2 h-4 w-4" />
                 {searchParams?.created_at_begin
-                  ? format(new Date(searchParams.created_at_begin), "PPP")
-                  : "选择日期"}
+                  ? format(
+                      new Date(searchParams.created_at_begin),
+                      "yyyy年MM月dd日",
+                      { locale: zhCN }
+                    )
+                  : "开始时间"}
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0">
@@ -229,22 +235,24 @@ export default function AreasPage() {
               />
             </PopoverContent>
           </Popover>
-        </div>
-        <div className="flex gap-2 items-center">
-          <span>结束时间:</span>
+
           <Popover>
             <PopoverTrigger asChild>
               <Button
                 variant={"outline"}
                 className={cn(
-                  "w-[200px] justify-start text-left font-normal",
+                  "w-[180px] justify-start text-left font-normal",
                   !searchParams?.created_at_end && "text-muted-foreground"
                 )}
               >
                 <CalendarIcon className="mr-2 h-4 w-4" />
                 {searchParams?.created_at_end
-                  ? format(new Date(searchParams.created_at_end), "PPP")
-                  : "选择日期"}
+                  ? format(
+                      new Date(searchParams.created_at_end),
+                      "yyyy年MM月dd日",
+                      { locale: zhCN }
+                    )
+                  : "结束时间"}
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0">
@@ -268,12 +276,13 @@ export default function AreasPage() {
             </PopoverContent>
           </Popover>
         </div>
+
         <Button
           onClick={() => {
             query.refetch();
           }}
           disabled={query.isPending}
-          className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
+          className="bg-blue-500 text-white rounded-md hover:bg-blue-600"
         >
           <Search className="mr-1 h-4 w-4" />
           搜索
