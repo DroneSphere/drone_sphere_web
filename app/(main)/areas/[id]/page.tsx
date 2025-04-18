@@ -40,7 +40,7 @@ import { z } from "zod";
 import { createArea, deleteArea, fetchArea, updateArea } from "./requests";
 
 interface Point {
-  index: number;
+  index: number; // 保持 index 用于显示 (1-based)
   lng: number;
   lat: number;
 }
@@ -180,21 +180,21 @@ export default function AreaDetailPage() {
   const columns = [
     columnHelper.accessor("index", {
       header: () => "序号",
-      cell: (info) => info.getValue(),
+      cell: (info) => info.getValue(), // 直接显示 point.index
       size: 40, // 可以指定一个较小的尺寸
     }),
     columnHelper.accessor("lng", {
       header: () => "经度",
       // 在表格渲染时动态决定单元格内容
       cell: (info) => {
-        const pointIndex = info.row.original.index - 1; // 获取原始数据索引 (假设 index 从 1 开始)
+        const rowIndex = info.row.index; // 获取当前行的实际数组索引 (0-based)
         const value = info.getValue();
         return (
           <Input
             type="number" // 使用 number 类型以便输入
-            step="0.000001" // 修改步长，控制增减粒度为小数点后6位
+            step="0.00001" // 修改步长，控制增减粒度为小数点后6位
             defaultValue={value} // 使用 defaultValue 避免每次渲染重置光标
-            onBlur={(e) => handlePointUpdate(pointIndex, "lng", e.target.value)} // 失去焦点时更新
+            onBlur={(e) => handlePointUpdate(rowIndex, "lng", e.target.value)} // 失去焦点时更新，传递 rowIndex
             className="h-8 p-1 text-center border-none focus-visible:ring-1 focus-visible:ring-offset-0" // 简化样式
             // 可以添加 onKeyDown 处理 Enter 键提交等
           />
@@ -205,14 +205,14 @@ export default function AreaDetailPage() {
       header: () => "纬度",
       // 类似地处理纬度
       cell: (info) => {
-        const pointIndex = info.row.original.index - 1; // 获取原始数据索引
+        const rowIndex = info.row.index; // 获取当前行的实际数组索引 (0-based)
         const value = info.getValue();
         return (
           <Input
             type="number"
-            step="0.000001" // 修改步长，控制增减粒度为小数点后6位
+            step="0.00001" // 修改步长，控制增减粒度为小数点后6位
             defaultValue={value}
-            onBlur={(e) => handlePointUpdate(pointIndex, "lat", e.target.value)}
+            onBlur={(e) => handlePointUpdate(rowIndex, "lat", e.target.value)} // 失去焦点时更新，传递 rowIndex
             className="h-8 p-1 text-center border-none focus-visible:ring-1 focus-visible:ring-offset-0"
           />
         );
@@ -227,8 +227,9 @@ export default function AreaDetailPage() {
     getCoreRowModel: getCoreRowModel(),
   });
 
+  // 修改 handlePointUpdate 接受 rowIndex
   const handlePointUpdate = (
-    index: number,
+    rowIndex: number, // 参数改为 rowIndex (0-based)
     field: "lng" | "lat",
     value: string
   ) => {
@@ -245,8 +246,10 @@ export default function AreaDetailPage() {
 
     setPolygonPoints((currentPoints) => {
       const newPoints = [...currentPoints]; // 创建新数组以避免直接修改状态
-      if (newPoints[index]) {
-        newPoints[index] = { ...newPoints[index], [field]: numericValue }; // 更新对应点的经纬度
+      if (newPoints[rowIndex]) {
+        // 使用 rowIndex 访问
+        // 只更新经纬度，不改变 index
+        newPoints[rowIndex] = { ...newPoints[rowIndex], [field]: numericValue };
       }
       return newPoints; // 返回更新后的数组
     });
@@ -261,21 +264,23 @@ export default function AreaDetailPage() {
       });
       // 设置多边形点数据
       if (query.data.points) {
-        const points: Point[] = query.data.points.map((point, index) => ({
-          index,
+        // 确保 index 从 1 开始
+        const points: Point[] = query.data.points.map((point, idx) => ({
+          index: idx + 1, // index 设置为 1-based
           lng: point.lng,
           lat: point.lat,
         }));
-        console.log("points", points);
+        console.log("points loaded", points);
 
         setPolygonPoints(points);
       } else {
         setPolygonPoints([]);
-        toast({
-          title: "区域数据错误",
-          description: "区域数据不完整，请检查数据",
-          variant: "destructive",
-        });
+        // 移除之前的 toast 提示，因为可能是新创建的区域
+        // toast({
+        //   title: "区域数据错误",
+        //   description: "区域数据不完整，请检查数据",
+        //   variant: "destructive",
+        // });
       }
     }
   }, [query.data, form]);
@@ -416,41 +421,48 @@ export default function AreaDetailPage() {
 
             // 初始化多边形编辑器
             polygonEditorRef.current = new AMap.PolygonEditor(mapRef.current);
-            // 监听编辑事件
+
+            // --- 修改 PolygonEditor 事件监听器 ---
+
+            // 监听 adjust 事件 (拖拽调整顶点)
             AMap.Event.addListener(
               polygonEditorRef.current,
               "adjust",
               function () {
-                // 获取多边形路径
                 const newPath = polygonRef.current?.getPath();
                 if (!newPath) return;
-                // 更新多边形路径点
-                const newPoints: Point[] = [];
-                (newPath as AMap.LngLat[]).forEach((point, index) => {
-                  if (point instanceof AMap.LngLat) {
-                    newPoints.push({
-                      index,
-                      lng: point.getLng(),
-                      lat: point.getLat(),
-                    });
-                  }
+
+                // 只更新经纬度，不改变 index 或顺序
+                setPolygonPoints((currentPoints) => {
+                  const updatedPoints = currentPoints.map((point, idx) => {
+                    const newLngLat = (newPath as AMap.LngLat[])[idx];
+                    if (newLngLat instanceof AMap.LngLat) {
+                      return {
+                        ...point, // 保留原始 index
+                        lng: newLngLat.getLng(),
+                        lat: newLngLat.getLat(),
+                      };
+                    }
+                    return point; // Fallback, should not happen if lengths match
+                  });
+                  return updatedPoints;
                 });
-                setPolygonPoints(newPoints);
               }
             );
-            // 监听删除事件
+
+            // 监听 addnode 事件 (添加顶点)
             AMap.Event.addListener(
               polygonEditorRef.current,
               "addnode",
               function () {
                 const newPath = polygonRef.current?.getPath();
                 if (!newPath) return;
-                // 更新多边形路径点
+                // 重新生成 points 数组，并重新分配 index
                 const newPoints: Point[] = [];
-                (newPath as AMap.LngLat[]).forEach((point, index) => {
+                (newPath as AMap.LngLat[]).forEach((point, idx) => {
                   if (point instanceof AMap.LngLat) {
                     newPoints.push({
-                      index,
+                      index: idx + 1, // 重新分配 1-based index
                       lng: point.getLng(),
                       lat: point.getLat(),
                     });
@@ -459,19 +471,20 @@ export default function AreaDetailPage() {
                 setPolygonPoints(newPoints);
               }
             );
-            // 监听删除事件
+
+            // 监听 removenode 事件 (删除顶点)
             AMap.Event.addListener(
               polygonEditorRef.current,
               "removenode",
               function () {
                 const newPath = polygonRef.current?.getPath();
                 if (!newPath) return;
-                // 更新多边形路径点
+                // 重新生成 points 数组，并重新分配 index
                 const newPoints: Point[] = [];
-                (newPath as AMap.LngLat[]).forEach((point, index) => {
+                (newPath as AMap.LngLat[]).forEach((point, idx) => {
                   if (point instanceof AMap.LngLat) {
                     newPoints.push({
-                      index,
+                      index: idx + 1, // 重新分配 1-based index
                       lng: point.getLng(),
                       lat: point.getLat(),
                     });
@@ -480,6 +493,7 @@ export default function AreaDetailPage() {
                 setPolygonPoints(newPoints);
               }
             );
+
             // 如果是创建模式，初始化鼠标绘制工具
             if (isCreating) {
               const mouseTool = new AMap.MouseTool(mapRef.current);
@@ -505,7 +519,7 @@ export default function AreaDetailPage() {
                 (path as AMap.LngLat[]).forEach((point, index) => {
                   if (point instanceof AMap.LngLat) {
                     points.push({
-                      index: index + 1,
+                      index: index + 1, // 确保 index 从 1 开始
                       lng: point.getLng(),
                       lat: point.getLat(),
                     });
@@ -551,7 +565,7 @@ export default function AreaDetailPage() {
       mapRef.current?.destroy();
       setAmapLoaded(false);
     };
-  }, [isCreating]);
+  }, [isCreating]); // 依赖项保持不变
 
   // 计算面积
   const calculateArea = () => {
@@ -569,14 +583,20 @@ export default function AreaDetailPage() {
 
   // 计算长度
   const calculateLength = () => {
-    if (!polygonPoints || polygonPoints.length < 2 || !AMapRef.current)
+    // 至少需要3个点才能形成一个闭合多边形来计算周长
+    if (!polygonPoints || polygonPoints.length < 3 || !AMapRef.current)
       return 0;
 
     const path = polygonPoints.map(
       (point) => new AMapRef.current!.LngLat(point.lng!, point.lat!)
     );
 
-    // 计算多边形周长（米）
+    // 将第一个点添加到路径末尾以闭合多边形
+    path.push(
+      new AMapRef.current!.LngLat(polygonPoints[0].lng!, polygonPoints[0].lat!)
+    );
+
+    // 计算闭合多边形的总周长（米）
     const length = AMapRef.current.GeometryUtil.distanceOfLine(path);
     return length;
   };
