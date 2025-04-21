@@ -31,7 +31,7 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import { format } from "date-fns";
-import { CalendarIcon, Edit, Search, Trash } from "lucide-react";
+import { CalendarIcon, Edit, PlusCircle, Search, Trash } from "lucide-react";
 import { useMemo, useState } from "react";
 import { JobItemResult, JobSearchParams } from "./types";
 import { fetchAllJobs } from "./requests";
@@ -242,12 +242,15 @@ export default function JobListPage() {
         </Button>
         <div className="flex-1"></div>
         <Button
+          variant="default"
+          size="default"
+          className="rounded-sm bg-green-500 text-gray-100 hover:bg-green-600"
           onClick={() => {
             window.location.href = "/jobs/new";
           }}
-          disabled={query.isPending}
         >
-          创建任务
+          <PlusCircle className="h-4 w-4 mr-1" />
+          创建
         </Button>
       </div>
       {/* 加载 */}
