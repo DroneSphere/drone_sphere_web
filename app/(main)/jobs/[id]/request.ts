@@ -41,8 +41,8 @@ export async function getJobPhysicalDrones(): Promise<PhysicalDrone[]> {
  */
 export async function createJob(
   data: JobCreationRequest
-): Promise<JobDetailResult> {
-  const res = await httpClient.instance.post<Response<JobDetailResult>>(
+): Promise<number> {
+  const res = await httpClient.instance.post<Response<number>>(
     `${prefix}`,
     data
   );

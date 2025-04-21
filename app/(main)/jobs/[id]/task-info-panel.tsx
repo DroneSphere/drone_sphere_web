@@ -82,18 +82,15 @@ export default function TaskInfoPanel({
     // 根据修改的类型更新对应的时间值
     let newDate = "";
     if (type === "year") {
-      newDate = `${value}-${month}-${day}T${hour}:${minute}:00`;
+      newDate = `${value}-${month}-${day} ${hour}:${minute}`;
     } else if (type === "month") {
-      newDate = `${year}-${value}-${day}T${hour}:${minute}:00`;
+      newDate = `${year}-${value}-${day} ${hour}:${minute}`;
     } else if (type === "day") {
-      newDate = `${year}-${month}-${value}T${hour}:${minute}:00`;
+      newDate = `${year}-${month}-${value} ${hour}:${minute}`;
     } else if (type === "hour") {
-      newDate = `${year}-${month}-${day}T${value.padStart(
-        2,
-        "0"
-      )}:${minute}:00`;
+      newDate = `${year}-${month}-${day} ${value.padStart(2, "0")}:${minute}`;
     } else {
-      newDate = `${year}-${month}-${day}T${hour}:${value.padStart(2, "0")}:00`;
+      newDate = `${year}-${month}-${day} ${hour}:${value.padStart(2, "0")}`;
     }
 
     form.setValue("schedule_time", newDate);
@@ -123,7 +120,7 @@ export default function TaskInfoPanel({
     const day = date.getDate().toString().padStart(2, "0");
 
     // 更新表单值
-    const newDate = `${year}-${month}-${day}T${hour}:${minute}:00`;
+    const newDate = `${year}-${month}-${day} ${hour}:${minute}`;
     form.setValue("schedule_time", newDate);
   };
 
@@ -134,13 +131,26 @@ export default function TaskInfoPanel({
     const defaultYear = today.getFullYear().toString();
     const defaultMonth = (today.getMonth() + 1).toString().padStart(2, "0");
     const defaultDay = today.getDate().toString().padStart(2, "0");
-    const defaultHour = "00";
-    const defaultMinute = "00";
+    const defaultHour = today.getHours().toString().padStart(2, "0");
+    const defaultMinute = today.getMinutes().toString().padStart(2, "0");
 
-    // 从表单获取当前值，或使用默认值
-    const currentDateTime =
-      form.getValues("schedule_time") ||
-      `${defaultYear}-${defaultMonth}-${defaultDay}T${defaultHour}:${defaultMinute}:00`;
+    // 如果 schedule_time 为空，则返回当前时间
+    if (!form.getValues("schedule_time")) {
+      // 设置默认时间到表单
+      const defaultDateTime = `${defaultYear}-${defaultMonth}-${defaultDay} ${defaultHour}:${defaultMinute}`;
+      form.setValue("schedule_time", defaultDateTime);
+
+      return {
+        year: defaultYear,
+        month: defaultMonth,
+        day: defaultDay,
+        hour: defaultHour,
+        minute: defaultMinute,
+      };
+    }
+
+    // 从表单获取当前值
+    const currentDateTime = form.getValues("schedule_time")!;
 
     try {
       // 如果是旧格式（HH:MM:SS），转换为新格式
@@ -155,8 +165,10 @@ export default function TaskInfoPanel({
         };
       }
 
-      // 解析ISO格式的日期时间
-      const [datePart, timePart] = currentDateTime.split("T");
+      // 解析日期时间格式
+      const [datePart, timePart] = currentDateTime.includes("T")
+        ? currentDateTime.split("T")
+        : currentDateTime.split(" ");
       const [year, month, day] = datePart.split("-");
       const [hour, minute] = timePart.split(":");
 
@@ -168,7 +180,10 @@ export default function TaskInfoPanel({
         minute: minute || defaultMinute,
       };
     } catch {
-      // 解析出错时返回默认值
+      // 解析出错时返回当前时间
+      const defaultDateTime = `${defaultYear}-${defaultMonth}-${defaultDay} ${defaultHour}:${defaultMinute}`;
+      form.setValue("schedule_time", defaultDateTime);
+
       return {
         year: defaultYear,
         month: defaultMonth,
@@ -226,97 +241,26 @@ export default function TaskInfoPanel({
                       <Input
                         placeholder="选择器选择的时间将在此处显示"
                         value={
-                          form
-                            .getValues("schedule_time")
-                            ?.replace("T", " ")
-                            .split(":00")[0] || ""
+                          form.getValues("schedule_time")
+                            ? new Date(
+                                form.getValues("schedule_time") || ""
+                              ).toLocaleString("zh-CN", {
+                                year: "numeric",
+                                month: "2-digit",
+                                day: "2-digit",
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })
+                            : ""
                         }
                         readOnly={true}
                         className="mb-2 bg-gray-50"
                       />
                     </FormControl>
 
-                    {/* 年月日选择器 - 第一行 */}
-                    <div className="flex gap-1 w-full mb-2">
-                      {/* 注释掉原有年月日选择器代码，保留代码以便将来可以恢复
-                      
-                      <Select
-                        onValueChange={(value) =>
-                          handleTimeChange("year", value)
-                        }
-                        defaultValue={getCurrentTimeValues().year}
-                      >
-                        <FormControl>
-                          <SelectTrigger className="flex-5">
-                            <SelectValue placeholder="年" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {Array.from({ length: 10 }, (_, i) => {
-                            const year = (
-                              new Date().getFullYear() + i
-                            ).toString();
-                            return (
-                              <SelectItem key={year} value={year}>
-                                {year}年
-                              </SelectItem>
-                            );
-                          })}
-                        </SelectContent>
-                      </Select>
-
-                      <Select
-                        onValueChange={(value) =>
-                          handleTimeChange("month", value)
-                        }
-                        defaultValue={getCurrentTimeValues().month}
-                      >
-                        <FormControl>
-                          <SelectTrigger className="flex-3">
-                            <SelectValue placeholder="月" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {Array.from({ length: 12 }, (_, i) => (
-                            <SelectItem
-                              key={i}
-                              value={(i + 1).toString().padStart(2, "0")}
-                            >
-                              {(i + 1).toString().padStart(2, "0")}月
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-
-                      <Select
-                        onValueChange={(value) =>
-                          handleTimeChange("day", value)
-                        }
-                        defaultValue={getCurrentTimeValues().day}
-                      >
-                        <FormControl>
-                          <SelectTrigger className="flex-3">
-                            <SelectValue placeholder="日" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {Array.from({ length: 31 }, (_, i) => (
-                            <SelectItem
-                              key={i}
-                              value={(i + 1).toString().padStart(2, "0")}
-                            >
-                              {(i + 1).toString().padStart(2, "0")}日
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      */}
-
-                      {/* 弹出式日历选择器实现 */}
-                    </div>
-
-                    {/* 时分选择器 - 第二行 */}
+                    {/* 时间选择器 */}
                     <div className="flex gap-1 w-full">
+                      {/* 日期选择器 */}
                       <div className="flex-1">
                         <Popover>
                           <PopoverTrigger asChild>
@@ -345,18 +289,21 @@ export default function TaskInfoPanel({
                                 form.getValues("schedule_time")
                               )}
                               onSelect={handleDateSelect}
-                              disabled={(date) => date < new Date("2024-01-01")}
+                              disabled={(date) =>
+                                date < new Date()
+                              } /* 禁用过去的日期 */
                               initialFocus
                             />
                           </PopoverContent>
                         </Popover>
                       </div>
+
                       {/* 小时选择器 */}
                       <Select
                         onValueChange={(value) =>
                           handleTimeChange("hour", value)
                         }
-                        defaultValue={getCurrentTimeValues().hour}
+                        value={getCurrentTimeValues().hour}
                       >
                         <FormControl>
                           <SelectTrigger className="flex-1">
@@ -380,7 +327,7 @@ export default function TaskInfoPanel({
                         onValueChange={(value) =>
                           handleTimeChange("minute", value)
                         }
-                        defaultValue={getCurrentTimeValues().minute}
+                        value={getCurrentTimeValues().minute}
                       >
                         <FormControl>
                           <SelectTrigger className="flex-1">

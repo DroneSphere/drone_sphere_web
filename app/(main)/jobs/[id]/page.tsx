@@ -37,8 +37,8 @@ const formSchema = z.object({
   schedule_time: z
     .string()
     .regex(
-      /^([01]?[0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]$/,
-      "请输入有效的时间格式 (HH:mm:ss)"
+      /^\d{4}-([0][1-9]|1[0-2])-([0-2][0-9]|3[0-1])\s([01][0-9]|2[0-3]):[0-5][0-9]$/,
+      "请输入有效的时间格式 (yyyy-MM-DD HH:mm)"
     )
     .optional(),
   area_id: z.number().optional(),
@@ -228,6 +228,13 @@ export default function Page() {
       return createJob(data);
     },
     onSuccess: (data) => {
+      if (!data || data <= 0) {
+        toast({
+          title: "操作失败",
+          description: "任务创建失败",
+        });
+        return;
+      }
       console.log("创建任务成功", data);
       toast({
         title: "操作成功",
@@ -739,11 +746,12 @@ export default function Page() {
               </div>
 
               <div className="mt-4 flex justify-end gap-4">
-                {/* 移除编辑和取消编辑按钮，保留保存按钮 */}
                 <Button
                   disabled={!isMapLoaded || createMutation.isPending}
-                  type="submit"
                   className="px-4 bg-blue-400 text-gray-100 hover:bg-blue-500 flex items-center"
+                  onClick={() => {
+                    onSubmit(form.getValues());
+                  }}
                 >
                   保存
                 </Button>

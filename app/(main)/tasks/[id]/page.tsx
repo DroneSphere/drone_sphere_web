@@ -1,12 +1,18 @@
 "use client";
 
+import { DroneState } from "@/app/(main)/drones/types";
+import { baseURL } from "@/api/http_client";
 import { getJobDetailById } from "@/app/(main)/jobs/[id]/request";
 import AMapLoader from "@amap/amap-jsapi-loader";
 import "@amap/amap-jsapi-types";
 import { useQuery } from "@tanstack/react-query";
 import { usePathname } from "next/navigation";
-import { useEffect, useRef } from "react";
-import DroneMonitorPanel from "./right-panel";
+import { useEffect, useRef, useState } from "react";
+import { SearchResultItem } from "./type";
+import { getSearchResults } from "./request";
+import DroneCardList from "./drone-card-list";
+import SearchResultList from "./search-result-list";
+import { DroneData } from "./types";
 
 export default function JobDetailPage() {
   const pathname = usePathname();
@@ -19,13 +25,26 @@ export default function JobDetailPage() {
       return getJobDetailById(Number(id));
     },
   });
+
+  // 地图相关引用
   const AMapRef = useRef<typeof AMap | null>(null);
   const mapRef = useRef<AMap.Map | null>(null);
-
-  // 记录所有地图元素的引用，以便清除
   const polygonsRef = useRef<AMap.Polygon[]>([]);
   const polylinesRef = useRef<AMap.Polyline[]>([]);
   const markersRef = useRef<AMap.Marker[][]>([]);
+
+  // 无人机状态管理
+  const [droneStates, setDroneStates] = useState<Record<string, DroneState>>(
+    {}
+  );
+  const [droneMarkers, setDroneMarkers] = useState<
+    Record<string, AMap.Marker | undefined>
+  >({});
+  const [droneConnections, setDroneConnections] = useState<
+    Record<string, boolean>
+  >({});
+  const [searchResults, setSearchResults] = useState<SearchResultItem[]>([]);
+  const eventSourcesRef = useRef<Record<string, EventSource>>({});
 
   // 处理drones和mappings数据，生成合并后的无人机数据
   const processedDrones = () => {
@@ -33,38 +52,37 @@ export default function JobDetailPage() {
 
     const { drones, mappings } = query.data;
 
-    // 将mappings中的信息合并到对应的drone型号中
     return mappings.map((mapping) => {
-      // 查找对应的drone型号数据
       const droneType = drones.find(
         (d) => d.key === mapping.selected_drone_key
       );
-      if (!droneType) return mapping; // 如果没找到对应型号，直接返回mapping数据
-      console.log("droneType", droneType, mapping);
-      
+      if (!droneType)
+        return {
+          ...mapping,
+          color: "#FF0000", // 为未找到型号的无人机设置默认颜色
+        };
 
       // 合并drone型号数据和mapping中的具体无人机数据
       return {
         ...droneType,
         ...mapping,
-        // 确保保留mapping中的重要字段，如sn等
         sn: mapping.physical_drone_sn,
         callsign: mapping.physical_drone_callsign,
         model: droneType.name,
+        color: droneType.color || "#3366FF", // 确保color属性存在
       };
     });
   };
 
-  // 完成数据加载后开始处理挂载地图逻辑
-  // 首次渲染时挂载地图，并添加AMapRef
+  // 首次渲染时挂载地图
   useEffect(() => {
     window._AMapSecurityConfig = {
       securityJsCode: "4ef657a379f13efbbf096baf8b08b3ed",
     };
 
     AMapLoader.load({
-      key: "82ea7ca3d47546f079185e7ccdade9ba", // 申请好的Web端开发者Key，首次调用 load 时必填
-      version: "2.0", // 指定要加载的 JSAPI 的版本，缺省时默认为 1.4.15
+      key: "82ea7ca3d47546f079185e7ccdade9ba",
+      version: "2.0",
     })
       .then((AMap) => {
         AMapRef.current = AMap;
@@ -74,7 +92,7 @@ export default function JobDetailPage() {
           viewMode: "3D",
           zoom: 17,
         });
-        // 添加工具条
+
         AMap.plugin(["AMap.ToolBar", "AMap.Scale"], () => {
           const toolBar = new AMap.ToolBar();
           const scale = new AMap.Scale();
@@ -95,7 +113,6 @@ export default function JobDetailPage() {
   useEffect(() => {
     if (!AMapRef.current || !mapRef.current || !query.data) return;
     const { area, drones, waylines, mappings } = query.data;
-    console.log("map", area, drones, waylines, mappings);
     if (!area || !area.points || !drones) return;
 
     // 清除之前的地图元素
@@ -174,7 +191,6 @@ export default function JobDetailPage() {
           points.forEach((point, pointIndex) => {
             const marker = new AMapRef.current!.Marker({
               position: point,
-              offset: new AMapRef.current!.Pixel(-8, -8), // 居中偏移
               content: `<div style="
                 background-color: ${drone.color};
                 width: 16px;
@@ -189,9 +205,9 @@ export default function JobDetailPage() {
                 font-size: 10px;
                 font-weight: bold;
               ">${pointIndex + 1}</div>`,
+              offset: new AMapRef.current!.Pixel(-8, -8),
             });
 
-            // 为每个标记添加鼠标悬停信息窗口
             const markerInfo = new AMapRef.current!.InfoWindow({
               content: `<div style="padding: 5px;">
                         <p>航点 ${pointIndex + 1}</p>
@@ -222,6 +238,180 @@ export default function JobDetailPage() {
     mapRef.current.setFitView();
   }, [query.data]);
 
+  // SSE连接管理
+  useEffect(() => {
+    const drones = processedDrones();
+    if (!drones || drones.length === 0) return;
+
+    // 初始化连接状态
+    setDroneConnections((prev) => {
+      const updatedConnections = { ...prev };
+      drones.forEach((drone) => {
+        if (
+          drone.physical_drone_sn &&
+          updatedConnections[drone.physical_drone_sn] === undefined
+        ) {
+          updatedConnections[drone.physical_drone_sn] = false;
+        }
+      });
+      return updatedConnections;
+    });
+
+    // 创建和保存EventSource实例
+    drones.forEach((drone) => {
+      if (!drone.physical_drone_sn) return;
+      if (eventSourcesRef.current[drone.physical_drone_sn]) return;
+
+      const droneSN = drone.physical_drone_sn;
+      const sseUrl = `${baseURL}/drone/state/sse?sn=${droneSN}`;
+      const source = new EventSource(sseUrl);
+      eventSourcesRef.current[droneSN] = source;
+
+      source.onopen = () => {
+        setDroneConnections((prev) => ({
+          ...prev,
+          [droneSN]: true,
+        }));
+      };
+
+      source.onmessage = (event) => {
+        try {
+          const newState: DroneState = JSON.parse(event.data);
+          setDroneStates((prev) => ({
+            ...prev,
+            [droneSN]: newState,
+          }));
+          setDroneConnections((prev) => ({
+            ...prev,
+            [droneSN]: true,
+          }));
+        } catch (error) {
+          console.error(`Error processing message for ${droneSN}:`, error);
+        }
+      };
+
+      source.onerror = () => {
+        setDroneConnections((prev) => ({
+          ...prev,
+          [droneSN]: false,
+        }));
+      };
+    });
+
+    const currentEventSources = eventSourcesRef.current;
+    return () => {
+      Object.keys(currentEventSources).forEach((key) => {
+        currentEventSources[key]?.close();
+        delete currentEventSources[key];
+      });
+    };
+  }, [query.data]);
+
+  // 无人机位置标记更新
+  useEffect(() => {
+    if (!AMapRef.current || !mapRef.current) return;
+
+    Object.entries(droneStates).forEach(([droneSN, state]) => {
+      const drone = processedDrones().find(
+        (d) => d.physical_drone_sn === droneSN
+      );
+      if (!drone) return;
+
+      const lng = state.lng;
+      const lat = state.lat;
+      const droneColor = drone.color || "#3366FF";
+      const markerContent = `
+        <div style="position: relative;">
+          <div style="
+            width: 28px; 
+            height: 28px; 
+            background-color: ${droneColor}; 
+            border-radius: 50%; 
+            border: 2px solid white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 3px 6px rgba(0,0,0,0.3);
+            transform: rotate(${state.heading || 0}deg);
+          ">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 2L4.5 20.29l.71.71L12 18l6.79 3 .71-.71z"></path>
+            </svg>
+          </div>
+          <div style="
+            position: absolute;
+            top: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(0,0,0,0.7);
+            color: white;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 10px;
+            white-space: nowrap;
+          ">${drone.physical_drone_callsign || droneSN}</div>
+        </div>
+      `;
+
+      const existingMarker = droneMarkers[droneSN];
+      if (existingMarker) {
+        existingMarker.setPosition([lng, lat]);
+        existingMarker.setContent(markerContent);
+      } else {
+        try {
+          const marker = new AMapRef.current!.Marker({
+            position: new AMapRef.current!.LngLat(lng, lat),
+            title: drone.physical_drone_callsign || droneSN,
+            content: markerContent,
+            anchor: "center",
+            zIndex: 100,
+          });
+
+          mapRef.current!.add(marker);
+          setDroneMarkers((prev) => ({
+            ...prev,
+            [droneSN]: marker,
+          }));
+        } catch (error) {
+          console.error(`Error creating marker for drone ${droneSN}:`, error);
+        }
+      }
+    });
+
+    Object.entries(droneMarkers).forEach(([sn, marker]) => {
+      if (!droneStates[sn] && marker) {
+        mapRef.current?.remove(marker);
+        setDroneMarkers((prev) => {
+          const updated = { ...prev };
+          delete updated[sn];
+          return updated;
+        });
+      }
+    });
+  }, [droneStates]);
+
+  // 搜索结果管理
+  useEffect(() => {
+    const jobId = id;
+    const intervalId = setInterval(async () => {
+      try {
+        const result = await getSearchResults(jobId);
+        setSearchResults(result.data.items);
+      } catch (error) {
+        console.error("获取搜索结果失败:", error);
+      }
+    }, 1000);
+
+    return () => clearInterval(intervalId);
+  }, [id]);
+
+  // 处理搜索结果点击
+  const handleSearchResultClick = (result: SearchResultItem) => {
+    if (!mapRef.current) return;
+    mapRef.current.setCenter([Number(result.lng), Number(result.lat)]);
+    mapRef.current.setZoom(18);
+  };
+
   return (
     <div className="px-4">
       <div className="flex gap-4">
@@ -229,12 +419,25 @@ export default function JobDetailPage() {
           id="map"
           className="h-[calc(100vh-160px)] flex-1 border rounded-md shadow-sm"
         />
-        {/* 右侧边栏组件 - 传递合并后的drones数据 */}
-        <DroneMonitorPanel
-          drones={processedDrones()}
-          mapRef={mapRef}
-          AMapRef={AMapRef}
-        />
+        {/* 右侧面板 */}
+        <div className="flex flex-col gap-3 w-96 max-h-[calc(100vh-4rem)]">
+          {/* 实时数据区域 */}
+          <div className="flex-1 h-auto overflow-y-auto flex flex-col gap-3 p-3 border rounded-md shadow-sm bg-background">
+            <DroneCardList
+              drones={processedDrones()}
+              droneStates={droneStates}
+              droneConnections={droneConnections}
+            />
+          </div>
+
+          {/* 搜索结果区域 */}
+          <div className="h-[300px] overflow-y-auto flex flex-col gap-3 p-3 border rounded-md shadow-sm bg-background">
+            <SearchResultList
+              searchResults={searchResults}
+              onResultClick={handleSearchResultClick}
+            />
+          </div>
+        </div>
       </div>
     </div>
   );
