@@ -19,7 +19,15 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
-import { Eye, EyeOff, Layers, Plus, Settings, Trash, Trash2 } from "lucide-react";
+import {
+  Eye,
+  EyeOff,
+  Layers,
+  Plus,
+  Settings,
+  Trash,
+  Trash2,
+} from "lucide-react";
 import { useState } from "react";
 import { getJobPhysicalDrones } from "./request";
 
@@ -34,12 +42,8 @@ import { getJobPhysicalDrones } from "./request";
  * @property {string} color - 在UI中表示此无人机的颜色
  */
 export interface DroneMapping {
-  selectedDroneIndex: number;
-  selectedDroneKey: string;
-  seletedDroneId: number;
-  physicalDroneId: number;
-  physicalDroneSN: string;
-  color: string;
+  selected_drone_key: string;
+  physical_drone_id: number;
 }
 
 interface DronePanelProps {
@@ -51,7 +55,7 @@ interface DronePanelProps {
   setDroneMappings: React.Dispatch<React.SetStateAction<DroneMapping[]>>;
   isEditMode: boolean; // 是否处于编辑模式
   availableDrones: JobCreationResult["drones"]; // 可选的无人机列表
-  
+
   // 仅用于显示与无人机关联的航线信息
   waylineAreas: {
     droneKey: string;
@@ -62,7 +66,7 @@ interface DronePanelProps {
     gimbalPitch?: number;
     gimbalZoom?: number;
   }[];
-  
+
   // 添加用于控制航线可见性
   setWaylineAreas?: React.Dispatch<
     React.SetStateAction<
@@ -189,12 +193,8 @@ export default function DronePanel({
       return [
         ...prev,
         {
-          selectedDroneIndex: index,
-          selectedDroneKey: newDroneKey,
-          seletedDroneId: droneId,
-          physicalDroneId: 0,
-          physicalDroneSN: "",
-          color: color,
+          selected_drone_key: newDroneKey,
+          physical_drone_id: -1, // 初始时没有绑定物理无人机
         },
       ];
     });
@@ -204,7 +204,7 @@ export default function DronePanel({
   const handleRemoveDrone = (droneKey: string) => {
     setSelectedDrones((prev) => prev.filter((d) => d.key !== droneKey));
     setDroneMappings((prev) =>
-      prev.filter((m) => m.selectedDroneKey !== droneKey)
+      prev.filter((m) => m.selected_drone_key !== droneKey)
     );
     setSelectedDroneKey(undefined);
 
@@ -223,7 +223,6 @@ export default function DronePanel({
     const physicalDrone = physicalQuery.data?.find(
       (d) => d.id === Number(physicalDroneId)
     );
-
     if (!droneModel || !physicalDrone) {
       toast({
         title: "选择错误",
@@ -232,58 +231,60 @@ export default function DronePanel({
       });
       return;
     }
+    console.log("handleDroneSelection", droneModel, physicalDrone);
 
-    // 检查该物理无人机是否已被其他型号的无人机映射
-    const existingIndex = droneMappings.findIndex(
-      (m) =>
-        m.physicalDroneId === physicalDrone.id &&
-        m.selectedDroneKey !== droneModelKey
-    );
+    // if (!droneModel || !physicalDrone) {
+    //   toast({
+    //     title: "选择错误",
+    //     description: "无法找到所选无人机",
+    //     variant: "destructive",
+    //   });
+    //   return;
+    // }
 
-    if (existingIndex >= 0) {
-      toast({
-        title: "禁止操作",
-        description: `物理无人机${physicalDrone.sn}已被映射到其他机型`,
-        variant: "destructive",
-      });
-      return;
-    }
+    // // 检查该物理无人机是否已被其他型号的无人机映射
+    // const existingIndex = droneMappings.findIndex(
+    //   (m) =>
+    //     m.physical_drone_id === physicalDrone.id &&
+    //     m.selected_drone_key !== droneModelKey
+    // );
+
+    // if (existingIndex >= 0) {
+    //   toast({
+    //     title: "禁止操作",
+    //     description: `物理无人机${physicalDrone.sn}已被映射到其他机型`,
+    //     variant: "destructive",
+    //   });
+    //   return;
+    // }
 
     // 更新映射关系
     setDroneMappings((prev) => {
-      const existingDroneKeyIndex = prev.findIndex(
-        (m) => m.selectedDroneKey === droneModelKey
-      );
+      // 更新已有映射
+      console.log("Updating existing mapping", droneModelKey);
+      console.log("Current mapping", prev);
 
-      if (existingDroneKeyIndex >= 0) {
-        // 更新已有映射
-        const updated = [...prev];
-        updated[existingDroneKeyIndex] = {
-          ...updated[existingDroneKeyIndex],
-          physicalDroneId: physicalDrone.id,
-          physicalDroneSN: physicalDrone.sn,
-        };
-        return updated;
-      } else {
-        // 创建新映射
-        return [
-          ...prev,
-          {
-            selectedDroneIndex: parseInt(droneModel.key.split("-")[0]) || 0,
-            selectedDroneKey: droneModel.key,
-            seletedDroneId: droneModel.id,
-            physicalDroneId: physicalDrone.id,
-            physicalDroneSN: physicalDrone.sn,
-            color: droneModel.color,
-          },
-        ];
-      }
+      // 重新创建所有映射
+      const res = prev.map((mapping) => {
+        if (mapping.selected_drone_key === droneModelKey) {
+          return {
+            ...mapping,
+            physical_drone_id: physicalDrone.id,
+          };
+        }
+        return mapping;
+      });
+      console.log("New mapping", res);
+      return res;
     });
+
+    // 注意：不要在这里打印droneMappings，因为状态更新是异步的，此时打印的仍然是旧值
 
     // 同时更新selectedDrones中相应无人机的physicalDrone信息
     setSelectedDrones((prev) => {
       return prev.map((drone) => {
         if (drone.key === droneModelKey) {
+          console.log("Updating drone with key:", droneModelKey);
           return {
             ...drone,
             physicalDrone: physicalDrone,
@@ -292,6 +293,8 @@ export default function DronePanel({
         return drone;
       });
     });
+
+    console.log("Updated selectedDrones", selectedDrones);
   };
 
   // 根据无人机型号ID过滤可用的物理无人机
@@ -391,7 +394,7 @@ export default function DronePanel({
 
       {selectedDrones?.map((drone, idx) => {
         const mapping = droneMappings.find(
-          (m) => m.selectedDroneKey === drone.key
+          (m) => m.selected_drone_key === drone.key
         );
 
         return (
@@ -463,41 +466,52 @@ export default function DronePanel({
                 <div className="flex items-center justify-between mb-1">
                   <div className="text-xs text-gray-500">航线信息</div>
                   {/* 找到当前无人机的航线信息 */}
-                  {waylineAreas.find(w => w.droneKey === drone.key) && setWaylineAreas && (
-                    <div className="flex items-center">
-                      {/* 显示航线可见性状态 */}
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-6 w-6"
-                        onClick={() => {
-                          // 切换航线可见性
-                          setWaylineAreas(prev => 
-                            prev.map(area => 
-                              area.droneKey === drone.key 
-                                ? {...area, visible: !area.visible} 
-                                : area
-                            )
-                          );
-                        }}
-                      >
-                        {waylineAreas.find(w => w.droneKey === drone.key)?.visible 
-                          ? <Eye className="h-3 w-3" /> 
-                          : <EyeOff className="h-3 w-3" />}
-                      </Button>
-                    </div>
-                  )}
+                  {waylineAreas.find((w) => w.droneKey === drone.key) &&
+                    setWaylineAreas && (
+                      <div className="flex items-center">
+                        {/* 显示航线可见性状态 */}
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6"
+                          onClick={() => {
+                            // 切换航线可见性
+                            setWaylineAreas((prev) =>
+                              prev.map((area) =>
+                                area.droneKey === drone.key
+                                  ? { ...area, visible: !area.visible }
+                                  : area
+                              )
+                            );
+                          }}
+                        >
+                          {waylineAreas.find((w) => w.droneKey === drone.key)
+                            ?.visible ? (
+                            <Eye className="h-3 w-3" />
+                          ) : (
+                            <EyeOff className="h-3 w-3" />
+                          )}
+                        </Button>
+                      </div>
+                    )}
                 </div>
-                
+
                 {/* 显示航线详细信息 */}
-                {waylineAreas.find(w => w.droneKey === drone.key) ? (
+                {waylineAreas.find((w) => w.droneKey === drone.key) ? (
                   <div className="text-xs text-gray-600 flex flex-col space-y-1">
                     <div>
-                      航点数: {waylineAreas.find(w => w.droneKey === drone.key)?.points?.length || 0}
+                      航点数:{" "}
+                      {waylineAreas.find((w) => w.droneKey === drone.key)
+                        ?.points?.length || 0}
                     </div>
                     <div>
-                      云台参数: {waylineAreas.find(w => w.droneKey === drone.key)?.gimbalPitch || -90}°, 
-                      {waylineAreas.find(w => w.droneKey === drone.key)?.gimbalZoom || 1}倍
+                      云台参数:{" "}
+                      {waylineAreas.find((w) => w.droneKey === drone.key)
+                        ?.gimbalPitch || -90}
+                      °,
+                      {waylineAreas.find((w) => w.droneKey === drone.key)
+                        ?.gimbalZoom || 1}
+                      倍
                     </div>
                   </div>
                 ) : (
@@ -512,7 +526,7 @@ export default function DronePanel({
             <div className="mt-2">
               <div className="flex items-center justify-between mb-1">
                 <div className="text-xs text-gray-500">物理无人机绑定</div>
-                {mapping && mapping.physicalDroneSN && (
+                {mapping && mapping.physical_drone_id > 0 && (
                   <div className="w-16 text-center text-xs px-2 py-1 rounded-lg bg-green-100 text-green-800">
                     已绑定
                   </div>
@@ -523,8 +537,8 @@ export default function DronePanel({
                 <FormItem>
                   <Select
                     value={
-                      mapping?.physicalDroneId
-                        ? String(mapping.physicalDroneId)
+                      mapping?.physical_drone_id
+                        ? String(mapping.physical_drone_id)
                         : undefined
                     }
                     onValueChange={(value) =>
@@ -543,8 +557,8 @@ export default function DronePanel({
                               value={String(physicalDrone.id)}
                               disabled={droneMappings.some(
                                 (m) =>
-                                  m.physicalDroneId === physicalDrone.id &&
-                                  m.selectedDroneKey !== drone.key
+                                  m.physical_drone_id === physicalDrone.id &&
+                                  m.selected_drone_key !== drone.key
                               )}
                             >
                               {physicalDrone.callsign} - {physicalDrone.sn}
@@ -563,8 +577,8 @@ export default function DronePanel({
                 </FormItem>
               ) : (
                 <div className="text-sm text-gray-600">
-                  {mapping && mapping.physicalDroneSN ? (
-                    `绑定到物理机: ${mapping.physicalDroneSN}`
+                  {mapping && mapping.physical_drone_id ? (
+                    `绑定到物理机: ${mapping.physical_drone_id}`
                   ) : (
                     <div className="text-sm text-gray-500 italic">
                       未绑定物理无人机

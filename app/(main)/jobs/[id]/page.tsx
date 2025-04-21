@@ -262,17 +262,34 @@ export default function Page() {
   useEffect(() => {
     if (!isCreating && !isEditing) return;
 
-    // 更新无人机映射关系
-    const newDroneMappings = selectedDrones.map((drone) => ({
-      selectedDroneIndex: drone.index || 0,
-      selectedDroneKey: drone.key,
-      seletedDroneId: drone.id,
-      physicalDroneId: 0,
-      physicalDroneSN: "",
-      color: drone.color,
-    }));
+    // 仅为新添加的无人机创建映射关系，保留已有的映射
+    setDroneMappings((currentMappings) => {
+      // 获取所有已有的映射关系的键
+      const existingMappedKeys = new Set(
+        currentMappings.map((mapping) => mapping.selected_drone_key)
+      );
 
-    setDroneMappings(newDroneMappings);
+      // 处理新增的无人机
+      const newMappings = selectedDrones
+        .filter((drone) => !existingMappedKeys.has(drone.key))
+        .map((drone) => ({
+          selected_drone_key: drone.key,
+          physical_drone_id: 0, // 新增无人机初始无映射
+        }));
+
+      // 移除不再存在的无人机的映射
+      const currentDroneKeys = new Set(
+        selectedDrones.map((drone) => drone.key)
+      );
+      const validCurrentMappings = currentMappings.filter((mapping) =>
+        currentDroneKeys.has(mapping.selected_drone_key)
+      );
+
+      // 返回合并后的映射关系：保留已有的有效映射 + 添加新的映射
+      return [...validCurrentMappings, ...newMappings];
+    });
+
+    console.log("已更新无人机映射关系");
   }, [isCreating, isEditing, selectedDrones]); // 添加 selectedDrones 作为依赖
 
   // 编辑和创建需要的参数
@@ -349,6 +366,24 @@ export default function Page() {
       return;
     }
 
+    // 检查是否所有无人机都已映射到实际物理无人机
+    const invalidMappings = droneMappings.filter(
+      (mapping) => mapping.physical_drone_id <= 0
+    );
+    if (invalidMappings.length > 0) {
+      toast({
+        title: "操作失败",
+        description: "存在未绑定物理无人机的机型，请完成所有无人机的绑定",
+        variant: "destructive",
+      });
+      console.log("未绑定的映射关系:", invalidMappings);
+      return;
+    }
+
+    console.log("selectedDrones", selectedDrones);
+    console.log("droneMappings", droneMappings);
+    console.log("waylineAreas", waylineAreas);
+
     const submitData = {
       name: data.name || "",
       description: data.description,
@@ -379,9 +414,9 @@ export default function Page() {
         })),
       })),
       mappings: droneMappings.map((mapping) => ({
-        selected_drone_key: mapping.selectedDroneKey,
-        physical_drone_id: mapping.physicalDroneId,
-        physical_drone_sn: mapping.physicalDroneSN,
+        selected_drone_key: mapping.selected_drone_key,
+        physical_drone_id: mapping.physical_drone_id,
+        // physical_drone_sn: mapping.physical_drone_id,
       })),
     };
     console.log("submitData", submitData);
@@ -473,14 +508,14 @@ export default function Page() {
     const mappingDrones = dataQuery.data.drones;
 
     return dataQuery.data.mappings.map((mapping) => ({
-      selectedDroneIndex: Number(mapping.selected_drone_key.split("-")[0]) || 0,
-      seletedDroneId: Number(mapping.selected_drone_key.split("-")[1]) || 0,
-      selectedDroneKey: mapping.selected_drone_key,
-      physicalDroneId: mapping.physical_drone_id,
-      physicalDroneSN: mapping.physical_drone_sn,
-      color:
-        mappingDrones.find((dr) => dr.key === mapping.selected_drone_key)
-          ?.color || "",
+      // selectedDroneIndex: Number(mapping.selected_drone_key.split("-")[0]) || 0,
+      // seletedDroneId: Number(mapping.selected_drone_key.split("-")[1]) || 0,
+      selected_drone_key: mapping.selected_drone_key,
+      physical_drone_id: mapping.physical_drone_id,
+      // physicalDroneSN: mapping.physical_drone_sn,
+      // color:
+      //   mappingDrones.find((dr) => dr.key === mapping.selected_drone_key)
+      //     ?.color || "",
     }));
   }, [dataQuery.data?.mappings, dataQuery.data?.drones]); // 只依赖于 dataQuery 数据
 
@@ -921,9 +956,9 @@ export default function Page() {
                 <Button
                   disabled={!isMapLoaded || createMutation.isPending}
                   className="px-4 bg-blue-400 text-gray-100 hover:bg-blue-500 flex items-center"
-                  onClick={() => {
-                    onSubmit(form.getValues());
-                  }}
+                  // onClick={() => {
+                  //   onSubmit(form.getValues());
+                  // }}
                 >
                   保存
                 </Button>

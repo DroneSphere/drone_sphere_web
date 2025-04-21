@@ -103,7 +103,7 @@ export interface JobCreationRequest {
     /** 物理无人机的系统ID */
     physical_drone_id: number;
     /** 物理无人机的序列号（SN），用于唯一标识设备 */
-    physical_drone_sn: string;
+    physical_drone_sn?: string;
   }[];
 }
 
