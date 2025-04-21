@@ -116,11 +116,8 @@ export default function DronesPage() {
       }),
       columnHelper.accessor("status", {
         header: "状态",
-        cell: (info) => (
-          <div className="w-8">
-            {info.getValue() || <span className="text-gray-400">未知</span>}
-          </div>
-        ),
+        cell: (info) =>
+          info.getValue() || <span className="text-gray-400">未知</span>,
       }),
       // columnHelper.accessor("description", {
       //   header: "描述",
