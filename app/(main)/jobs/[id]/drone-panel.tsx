@@ -435,11 +435,6 @@ export default function DronePanel({
                 <div className="text-xs text-gray-500 whitespace-nowrap">
                   绑定无人机
                 </div>
-                {/* {mapping && mapping.physical_drone_id > 0 && (
-                  <div className="text-center text-xs px-1.5 py-0.5 rounded-lg bg-green-100 text-green-800 whitespace-nowrap">
-                    已绑定
-                  </div>
-                )} */}
 
                 {isEditMode ? (
                   <FormItem className="flex-1 m-0">
@@ -454,7 +449,20 @@ export default function DronePanel({
                       }
                     >
                       <SelectTrigger className="w-full h-8 text-xs">
-                        <SelectValue placeholder="选择物理无人机" />
+                        <SelectValue placeholder="选择物理无人机">
+                          {mapping && mapping?.physical_drone_id > 0
+                            ? (() => {
+                                // 查找当前绑定的物理无人机
+                                const physicalDrone = physicalQuery.data?.find(
+                                  (pd) => pd.id === mapping.physical_drone_id
+                                );
+                                // 显示物理无人机的呼号和序列号
+                                return physicalDrone
+                                  ? `${physicalDrone.callsign} - ${physicalDrone.sn}`
+                                  : "选择物理无人机";
+                              })()
+                            : "选择物理无人机"}
+                        </SelectValue>
                       </SelectTrigger>
                       <SelectContent>
                         <SelectGroup>
@@ -522,66 +530,67 @@ export default function DronePanel({
             </div>
 
             {/* 航线信息区域 */}
-            {waylineAreas.length > 0 && (
-              <div className="mt-2">
-                <div className="flex items-center justify-between mb-1">
-                  <div className="text-xs text-gray-500">航线信息</div>
-                  {/* 找到当前无人机的航线信息 */}
-                  {waylineAreas.find((w) => w.droneKey === drone.key) &&
-                    setWaylineAreas && (
-                      <div className="flex items-center">
-                        {/* 显示航线可见性状态 */}
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-6 w-6"
-                          onClick={() => {
-                            // 切换航线可见性
-                            setWaylineAreas((prev) =>
-                              prev.map((area) =>
-                                area.droneKey === drone.key
-                                  ? { ...area, visible: !area.visible }
-                                  : area
-                              )
-                            );
-                          }}
-                        >
-                          {waylineAreas.find((w) => w.droneKey === drone.key)
-                            ?.visible ? (
-                            <Eye className="h-3 w-3" />
-                          ) : (
-                            <EyeOff className="h-3 w-3" />
-                          )}
-                        </Button>
-                      </div>
-                    )}
-                </div>
-
-                {/* 显示航线详细信息 */}
-                {waylineAreas.find((w) => w.droneKey === drone.key) ? (
-                  <div className="text-xs text-gray-600 flex flex-col space-y-1">
-                    <div>
-                      航点数:{" "}
-                      {waylineAreas.find((w) => w.droneKey === drone.key)
-                        ?.points?.length || 0}
-                    </div>
-                    <div>
-                      云台参数:{" "}
-                      {waylineAreas.find((w) => w.droneKey === drone.key)
-                        ?.gimbalPitch || -90}
-                      °,
-                      {waylineAreas.find((w) => w.droneKey === drone.key)
-                        ?.gimbalZoom || 1}
-                      倍
-                    </div>
-                  </div>
-                ) : (
-                  <div className="text-xs text-gray-500 italic">
-                    尚未生成航线
-                  </div>
-                )}
-              </div>
-            )}
+            {
+              // waylineAreas.length > 0 && (
+              //   <div className="mt-2">
+              //     <div className="flex items-center justify-between mb-1">
+              //       <div className="text-xs text-gray-500">航线信息</div>
+              //       {/* 找到当前无人机的航线信息 */}
+              //       {waylineAreas.find((w) => w.droneKey === drone.key) &&
+              //         setWaylineAreas && (
+              //           <div className="flex items-center">
+              //             {/* 显示航线可见性状态 */}
+              //             <Button
+              //               variant="ghost"
+              //               size="icon"
+              //               className="h-6 w-6"
+              //               onClick={() => {
+              //                 // 切换航线可见性
+              //                 setWaylineAreas((prev) =>
+              //                   prev.map((area) =>
+              //                     area.droneKey === drone.key
+              //                       ? { ...area, visible: !area.visible }
+              //                       : area
+              //                   )
+              //                 );
+              //               }}
+              //             >
+              //               {waylineAreas.find((w) => w.droneKey === drone.key)
+              //                 ?.visible ? (
+              //                 <Eye className="h-3 w-3" />
+              //               ) : (
+              //                 <EyeOff className="h-3 w-3" />
+              //               )}
+              //             </Button>
+              //           </div>
+              //         )}
+              //     </div>
+              //     {/* 显示航线详细信息 */}
+              //     {waylineAreas.find((w) => w.droneKey === drone.key) ? (
+              //       <div className="text-xs text-gray-600 flex flex-col space-y-1">
+              //         <div>
+              //           航点数:{" "}
+              //           {waylineAreas.find((w) => w.droneKey === drone.key)
+              //             ?.points?.length || 0}
+              //         </div>
+              //         <div>
+              //           云台参数:{" "}
+              //           {waylineAreas.find((w) => w.droneKey === drone.key)
+              //             ?.gimbalPitch || -90}
+              //           °,
+              //           {waylineAreas.find((w) => w.droneKey === drone.key)
+              //             ?.gimbalZoom || 1}
+              //           倍
+              //         </div>
+              //       </div>
+              //     ) : (
+              //       <div className="text-xs text-gray-500 italic">
+              //         尚未生成航线
+              //       </div>
+              //     )}
+              //   </div>
+              // )
+            }
           </div>
         );
       })}

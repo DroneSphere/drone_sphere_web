@@ -374,7 +374,18 @@ export default function TaskInfoPanel({
                         }}
                       >
                         <SelectTrigger>
-                          <SelectValue placeholder="请选择区域" />
+                          {/* <SelectValue placeholder="请选择区域" /> */}
+                          {field.value ? (
+                            <SelectValue
+                              placeholder={
+                                optionsQuery.data?.areas.find(
+                                  (e) => e.id === field.value
+                                )?.name || "请选择区域"
+                              }
+                            />
+                          ) : (
+                            <SelectValue placeholder="请选择区域" />
+                          )}
                         </SelectTrigger>
                         <SelectContent>
                           {optionsQuery.data?.areas.map((e) => (
