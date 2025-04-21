@@ -796,10 +796,11 @@ export default function AreaDetailPage() {
               <div className="flex space-x-2 justify-end pt-2 border-t">
                 {/* 编辑模式 */}
                 <Button
-                  size="sm"
+                  size="default"
                   variant="default"
                   type="submit" // 表单提交按钮
                   disabled={isLoading}
+                  className="bg-blue-500 hover:bg-blue-600 focus:ring-blue-500 focus:ring-offset-0"
                 >
                   保存
                 </Button>
