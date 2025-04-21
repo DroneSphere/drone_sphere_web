@@ -379,7 +379,12 @@ export default function Page() {
         });
 
         // Add standard controls
-        AMap.plugin(["AMap.ToolBar", "AMap.Scale"], function () {
+        AMap.plugin(["AMap.ToolBar", "AMap.Scale", "AMap.MapType"], function () {
+          const mapType = new AMap.MapType({
+            defaultType: 0, //使用2D
+          });
+          mapRef.current?.addControl(mapType);
+
           const tool = new AMap.ToolBar();
           mapRef.current?.addControl(tool);
           const scale = new AMap.Scale();
