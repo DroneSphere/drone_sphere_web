@@ -412,6 +412,8 @@ export default function JobDetailPage() {
   // 处理搜索结果点击
   const handleSearchResultClick = (result: SearchResultItem) => {
     if (!mapRef.current) return;
+    console.log("SearchResultItem", result);
+
     // mapRef.current.setCenter([Number(result.lng), Number(result.lat)]);
     // mapRef.current.setZoom(18);
   };

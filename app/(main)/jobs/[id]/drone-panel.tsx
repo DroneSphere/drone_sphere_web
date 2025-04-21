@@ -19,7 +19,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
-import { Eye, EyeOff, Plus, Trash, Trash2 } from "lucide-react";
+import { Plus, Trash, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { getJobPhysicalDrones } from "./request";
 
@@ -89,6 +89,15 @@ export default function DronePanel({
   waylineAreas,
   setWaylineAreas,
 }: DronePanelProps) {
+  console.log("DronePanel", {
+    selectedDrones,
+    droneMappings,
+    isEditMode,
+    availableDrones,
+    waylineAreas,
+    setWaylineAreas,
+  });
+
   const { toast } = useToast();
   const [selectedDroneKey, setSelectedDroneKey] = useState<string | undefined>(
     undefined
