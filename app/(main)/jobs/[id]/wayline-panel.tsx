@@ -118,8 +118,6 @@ function dividePolygonAmongDrones(
   const lastIntersection = turf.intersect(
     turf.featureCollection([turfPolygon, lastRectangle])
   );
-  // const lastIntersection = intersect(turfPolygon, lastRectangle);
-  // // const lastIntersection = turf.intersect(turfPolygon, lastRectangle);
   if (lastIntersection && lastIntersection.geometry.coordinates.length > 0) {
     droneSubRegions.push(
       lastIntersection.geometry.coordinates[0].map(
@@ -141,18 +139,20 @@ function dividePolygonAmongDrones(
  * @returns 航点数组
  */
 function generateWaypoints(
-  path: AMap.LngLat[], 
+  path: AMap.LngLat[],
   droneParams: {
-    flyingHeight: number;  // 飞行高度（米）
+    flyingHeight: number; // 飞行高度（米）
     coverageWidth: number; // 在指定高度下的地面覆盖宽度（米）
-    overlapRate: number;   // 旁向重叠率（0-1之间）
+    overlapRate: number; // 旁向重叠率（0-1之间）
+    gimbalPitch: number; // 云台俯仰角度（-90为垂直向下，0为水平）
+    gimbalZoom: number; // 云台放大倍数
   },
   AMapRef: MutableRefObject<typeof AMap | null>
 ): AMap.LngLat[] {
   if (path.length < 3 || !AMapRef.current) return [];
 
   // 转换为turf多边形
-  const coordinates = path.map(p => [p.getLng(), p.getLat()]);
+  const coordinates = path.map((p) => [p.getLng(), p.getLat()]);
   // 确保多边形是闭合的
   const firstCoord = coordinates[0];
   const lastCoord = coordinates[coordinates.length - 1];
@@ -161,17 +161,18 @@ function generateWaypoints(
   }
 
   const polygon = turf.polygon([coordinates]);
-  
+
   // 获取多边形的边界盒
   const bbox = turf.bbox(polygon);
   const minLng = bbox[0];
   const minLat = bbox[1];
   const maxLng = bbox[2];
   const maxLat = bbox[3];
-  
+
   // 计算航线间距（考虑覆盖宽度和重叠率）
-  const effectiveWidth = droneParams.coverageWidth * (1 - droneParams.overlapRate);
-  
+  const effectiveWidth =
+    droneParams.coverageWidth * (1 - droneParams.overlapRate);
+
   // 使用经纬度转换为米的简单计算（这只是一个近似值）
   // 在不同纬度，经度1度代表的距离不同
   const midLat = (minLat + maxLat) / 2;
@@ -179,50 +180,54 @@ function generateWaypoints(
     new AMapRef.current.LngLat(0, midLat),
     new AMapRef.current.LngLat(1, midLat)
   );
-  
+
   // 计算在当前纬度下需要间隔多少经度以达到所需的米数
   const lngSpacing = effectiveWidth / metersPerLngDegree;
-  
+
   // 确定扫描方向（这里选择东西方向）
   const waypoints: AMap.LngLat[] = [];
   let scanDirection = true; // true为从南到北，false为从北到南
-  
+
   // 从西向东，在整个区域创建平行线
   for (let lng = minLng; lng <= maxLng; lng += lngSpacing) {
     // 创建当前经线
     const line = turf.lineString([
       [lng, scanDirection ? minLat : maxLat],
-      [lng, scanDirection ? maxLat : minLat]
+      [lng, scanDirection ? maxLat : minLat],
     ]);
-    
+
     // 计算当前线与多边形的交点
     const intersection = turf.lineIntersect(polygon, line);
-    
+
     // 排序交点（从南到北或从北到南）
-    const points = intersection.features.map(f => f.geometry.coordinates);
+    const points = intersection.features.map((f) => f.geometry.coordinates);
     points.sort((a, b) => {
-      return scanDirection 
-        ? a[1] - b[1]  // 从南到北
+      return scanDirection
+        ? a[1] - b[1] // 从南到北
         : b[1] - a[1]; // 从北到南
     });
-    
+
     // 如果有交点，添加到航点
     if (points.length >= 2) {
       // 每对交点创建一条路径段
       for (let i = 0; i < points.length; i += 2) {
         if (i + 1 < points.length) {
-          waypoints.push(new AMapRef.current.LngLat(points[i][0], points[i][1]));
-          waypoints.push(new AMapRef.current.LngLat(points[i+1][0], points[i+1][1]));
+          waypoints.push(
+            new AMapRef.current.LngLat(points[i][0], points[i][1])
+          );
+          waypoints.push(
+            new AMapRef.current.LngLat(points[i + 1][0], points[i + 1][1])
+          );
         }
       }
     }
-    
+
     // 切换扫描方向
     scanDirection = !scanDirection;
   }
-  
-  // 添加飞行高度信息（这里可以扩展为添加到点的属性中）
-  // 对于简单示例，我们只返回平面上的点
+
+  // 注意: 云台参数 (gimbalPitch 和 gimbalZoom) 应该被传递到实际的飞行控制系统
+  // 在这里我们仅返回航点坐标，但在实际应用中这些参数会与航点一起使用
   return waypoints;
 }
 
@@ -234,6 +239,8 @@ interface WaylinePanelProps {
     path: AMap.LngLat[];
     points?: AMap.LngLat[];
     visible?: boolean;
+    gimbalPitch?: number;
+    gimbalZoom?: number;
   }[];
   setWaylineAreas: React.Dispatch<
     React.SetStateAction<
@@ -243,6 +250,8 @@ interface WaylinePanelProps {
         path: AMap.LngLat[];
         points?: AMap.LngLat[];
         visible?: boolean;
+        gimbalPitch?: number;
+        gimbalZoom?: number;
       }[]
     >
   >;
@@ -262,13 +271,14 @@ export default function WaylinePanel({
   isEditMode,
 }: WaylinePanelProps) {
   const { toast } = useToast();
-  // 移除折叠状态，内容始终可见
 
-  // 添加无人机飞行参数状态
+  // 添加无人机飞行参数状态，增加云台相关参数
   const [droneParams, setDroneParams] = useState({
     flyingHeight: 30, // 默认飞行高度30米
     coverageWidth: 20, // 默认每次覆盖20米宽
     overlapRate: 0.2, // 默认20%的重叠率
+    gimbalPitch: -90, // 默认云台俯仰角-90度（垂直向下）
+    gimbalZoom: 1, // 默认放大倍数1x
   });
 
   return (
@@ -312,7 +322,7 @@ export default function WaylinePanel({
                 return;
               }
 
-              // 生成新的航线区域
+              // 生成新的航线区域，包含云台参数
               const newWaylineAreas = selectedDrones.map((drone, index) => {
                 // 获取对应的子区域路径，如果index超出了subPaths的长度，则使用最后一个
                 const subPath =
@@ -321,7 +331,7 @@ export default function WaylinePanel({
                     : subPaths[subPaths.length - 1];
 
                 // 使用当前设置的参数生成航点
-                 const waypoints = generateWaypoints(
+                const waypoints = generateWaypoints(
                   subPath,
                   droneParams,
                   AMapRef
@@ -333,6 +343,8 @@ export default function WaylinePanel({
                   path: subPath,
                   points: waypoints,
                   visible: true,
+                  gimbalPitch: droneParams.gimbalPitch,
+                  gimbalZoom: droneParams.gimbalZoom,
                 };
               });
 
@@ -349,11 +361,11 @@ export default function WaylinePanel({
         )}
       </div>
 
-      {/* 添加无人机参数设置 */}
+      {/* 添加无人机参数设置，增加云台参数 */}
       {isEditMode && (
         <div className="mt-2 border p-2 rounded-md">
           <p className="text-sm font-medium mb-1">航线参数</p>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-3 gap-2 mb-2">
             <div>
               <label className="text-xs text-gray-500">飞行高度(米)</label>
               <input
@@ -403,58 +415,55 @@ export default function WaylinePanel({
               />
             </div>
           </div>
-        </div>
-      )}
 
-      {/* 显示已生成的航线 */}
-      {waylineAreas.length > 0 && (
-        <div className="space-y-1 mt-2">
-          {waylineAreas.map((e, i) => (
-            <div
-              key={e.droneKey}
-              className="flex items-center justify-between p-2 border rounded-md"
-            >
-              <div>
-                <p className="text-xs font-medium">
-                  {selectedDrones.find((d) => d.key === e.droneKey)?.name ||
-                    `无人机 ${i + 1}`}
-                </p>
-                {e.points && (
-                  <p className="text-xs text-gray-500">
-                    航点数: {e.points.length}
-                  </p>
-                )}
-              </div>
-              <div className="flex-1" />
-              {/* 一个颜色指示器，方便快速识别 */}
-              <div
-                className={`rounded-full h-4 w-4 m-2`}
-                style={{ backgroundColor: e.color }}
+          {/* 新增云台参数 */}
+          <p className="text-sm font-medium mb-1">云台参数</p>
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="text-xs text-gray-500">俯仰角(度)</label>
+              <input
+                type="number"
+                className="w-full border rounded px-2 py-1 text-sm"
+                value={droneParams.gimbalPitch}
+                onChange={(e) =>
+                  setDroneParams({
+                    ...droneParams,
+                    gimbalPitch: Math.max(
+                      -90,
+                      Math.min(0, Number(e.target.value))
+                    ),
+                  })
+                }
+                min="-90"
+                max="0"
+                step="5"
               />
-
-              {/* Replace delete button with eye icon toggle */}
-              <Button
-                variant="outline"
-                size="icon"
-                className="h-8 w-8"
-                onClick={() => {
-                  setWaylineAreas((prev) =>
-                    prev.map((item) =>
-                      item.droneKey === e.droneKey
-                        ? { ...item, visible: !item.visible }
-                        : item
-                    )
-                  );
-                }}
-              >
-                {e.visible ? (
-                  <Eye className="h-4 w-4" />
-                ) : (
-                  <EyeOff className="h-4 w-4" />
-                )}
-              </Button>
+              <div className="text-xs text-gray-400">
+                (-90°垂直向下，0°水平)
+              </div>
             </div>
-          ))}
+            <div>
+              <label className="text-xs text-gray-500">放大倍数</label>
+              <input
+                type="number"
+                className="w-full border rounded px-2 py-1 text-sm"
+                value={droneParams.gimbalZoom}
+                onChange={(e) =>
+                  setDroneParams({
+                    ...droneParams,
+                    gimbalZoom: Math.max(
+                      1,
+                      Math.min(30, Number(e.target.value))
+                    ),
+                  })
+                }
+                min="1"
+                max="30"
+                step="0.5"
+              />
+              <div className="text-xs text-gray-400">(1-30倍)</div>
+            </div>
+          </div>
         </div>
       )}
     </div>

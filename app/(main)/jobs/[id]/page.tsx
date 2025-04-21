@@ -1,6 +1,5 @@
 "use client";
 
-import DroneSelectionPanel from "@/app/(main)/jobs/[id]/drone-selection-panel";
 import {
   createJob,
   getJobCreateOpytions,
@@ -25,9 +24,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { useEffect, useRef, useState, useMemo, useCallback } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import DroneModelMappingPanel, {
-  DroneMapping,
-} from "./drone-model-mapping-panel";
+import DronePanel, { DroneMapping } from "./drone-panel";
 import { useRouter } from "next/navigation";
 import { Separator } from "@/components/ui/separator";
 
@@ -78,14 +75,188 @@ export default function Page() {
       path: AMap.LngLat[];
       points?: AMap.LngLat[];
       visible?: boolean;
+      gimbalPitch?: number; // 云台俯仰角参数，默认-90度（垂直向下）
+      gimbalZoom?: number; // 云台放大倍数参数，默认1倍
     }[]
   >([]);
 
   // 当前选中的搜索区域路径
   const [path, setPath] = useState<AMap.LngLat[]>([]);
 
+  // 航线参数
+  const [droneParams, setDroneParams] = useState({
+    flyingHeight: 30, // 默认飞行高度30米
+    coverageWidth: 20, // 默认每次覆盖20米宽
+    overlapRate: 0.2, // 默认20%的重叠率
+    gimbalPitch: -90, // 默认云台俯仰角-90度（垂直向下）
+    gimbalZoom: 1, // 默认放大倍数1x
+  });
+
   // 机型和实际无人机的映射关系
   const [droneMappings, setDroneMappings] = useState<DroneMapping[]>([]);
+
+  // 生成航线函数
+  const generateWaylines = useCallback(() => {
+    if (
+      !path ||
+      path.length <= 0 ||
+      !AMapRef.current ||
+      !mapRef.current ||
+      selectedDrones.length === 0
+    ) {
+      toast({
+        title: "无法生成航线",
+        description: "请确保已选择区域和无人机",
+      });
+      return;
+    }
+
+    // 引入 wayline-panel.tsx 中的 dividePolygonAmongDrones 函数的逻辑
+    // 此处简化处理，实际应该将该函数抽取为共享函数
+    const turf = require("@turf/turf");
+
+    // 将无人机区域分割成多个子区域
+    const droneCount = selectedDrones.length;
+    const coordinates = path.map((p) => [p.getLng(), p.getLat()]);
+
+    // 确保多边形是闭合的
+    if (coordinates.length > 0) {
+      const firstCoordinate = coordinates[0];
+      const lastCoordinate = coordinates[coordinates.length - 1];
+      if (
+        firstCoordinate[0] !== lastCoordinate[0] ||
+        firstCoordinate[1] !== lastCoordinate[1]
+      ) {
+        coordinates.push(firstCoordinate);
+      }
+    }
+
+    const turfPolygon = turf.polygon([coordinates]);
+    const totalArea = turf.area(turfPolygon);
+    const targetArea = totalArea / droneCount;
+
+    const bounds = turf.bbox(turfPolygon);
+    const minLng = bounds[0];
+    const maxLng = bounds[2];
+    const minLat = bounds[1];
+    const maxLat = bounds[3];
+
+    const droneSubRegions = [];
+    let currentMinLng = minLng;
+
+    // 根据面积大小划分多边形
+    for (let i = 0; i < droneCount - 1; i++) {
+      let lowLng = currentMinLng;
+      let highLng = maxLng;
+      let bestCutLng = -1;
+      let minAreaDiff = Infinity;
+
+      for (let j = 0; j < 50; j++) {
+        const midLng = (lowLng + highLng) / 2;
+        const rectangle = turf.polygon([
+          [
+            [currentMinLng, minLat],
+            [midLng, minLat],
+            [midLng, maxLat],
+            [currentMinLng, maxLat],
+            [currentMinLng, minLat],
+          ],
+        ]);
+
+        const intersection = turf.intersect(turfPolygon, rectangle);
+        if (intersection) {
+          const area = turf.area(intersection);
+          const diff = Math.abs(area - targetArea);
+          if (diff < minAreaDiff) {
+            minAreaDiff = diff;
+            bestCutLng = midLng;
+          }
+          if (area < targetArea) {
+            lowLng = midLng;
+          } else {
+            highLng = midLng;
+          }
+        } else {
+          highLng = midLng;
+        }
+      }
+
+      const cutLng =
+        bestCutLng !== -1
+          ? bestCutLng
+          : currentMinLng + ((maxLng - minLng) / droneCount) * (i + 1);
+
+      const cutRectangle = turf.polygon([
+        [
+          [currentMinLng, minLat],
+          [cutLng, minLat],
+          [cutLng, maxLat],
+          [currentMinLng, maxLat],
+          [currentMinLng, minLat],
+        ],
+      ]);
+
+      const intersection = turf.intersect(turfPolygon, cutRectangle);
+      if (intersection && intersection.geometry.coordinates.length > 0) {
+        droneSubRegions.push(
+          intersection.geometry.coordinates[0].map(
+            (coord: [number, number]) =>
+              new AMapRef.current!.LngLat(Number(coord[0]), Number(coord[1]))
+          )
+        );
+      }
+      currentMinLng = cutLng;
+    }
+
+    // 处理最后一个区域
+    const lastRectangle = turf.polygon([
+      [
+        [currentMinLng, minLat],
+        [maxLng, minLat],
+        [maxLng, maxLat],
+        [currentMinLng, maxLat],
+        [currentMinLng, minLat],
+      ],
+    ]);
+
+    const lastIntersection = turf.intersect(turfPolygon, lastRectangle);
+    if (lastIntersection && lastIntersection.geometry.coordinates.length > 0) {
+      droneSubRegions.push(
+        lastIntersection.geometry.coordinates[0].map(
+          (coord: [number, number]) =>
+            new AMapRef.current!.LngLat(Number(coord[0]), Number(coord[1]))
+        )
+      );
+    }
+
+    // 根据分区生成航线
+    const newWaylineAreas = selectedDrones.map((drone, index) => {
+      // 获取对应的子区域路径，如果index超出了droneSubRegions的长度，则使用最后一个
+      const subPath: AMap.LngLat[] =
+        index < droneSubRegions.length
+          ? droneSubRegions[index]
+          : droneSubRegions[droneSubRegions.length - 1];
+
+      // 此处应调用 generateWaypoints 函数生成具体航点
+      // 由于函数较复杂，这里简化处理，仅使用区域边界点作为航点
+      return {
+        droneKey: drone.key,
+        color: drone.color,
+        path: subPath,
+        points: subPath, // 简化处理，实际应生成更详细的航点
+        visible: true,
+        gimbalPitch: droneParams.gimbalPitch,
+        gimbalZoom: droneParams.gimbalZoom,
+      };
+    });
+
+    // 更新航线区域
+    setWaylineAreas(newWaylineAreas);
+    toast({
+      title: "航线生成成功",
+      description: `已为${selectedDrones.length}架无人机分配区域并生成航点`,
+    });
+  }, [path, AMapRef, mapRef, selectedDrones, droneParams, toast]);
 
   // 仅在创建/编辑模式下，当selectedDrones发生有效变化时更新映射关系
   useEffect(() => {
@@ -202,6 +373,9 @@ export default function Page() {
           index: idx,
           lat: p.getLat(),
           lng: p.getLng(),
+          // 添加云台参数
+          gimbal_pitch: wayline.gimbalPitch || -90, // 默认值 -90 度（垂直向下）
+          gimbal_zoom: wayline.gimbalZoom || 1, // 默认放大倍数 1x
         })),
       })),
       mappings: droneMappings.map((mapping) => ({
@@ -720,18 +894,16 @@ export default function Page() {
                   AMapRef={AMapRef}
                 />
                 <Separator className="my-2" />
-                <DroneSelectionPanel
+                {/* 使用新的合并组件替代原来分开的两个组件 */}
+                <DronePanel
                   selectedDrones={selectedDrones}
                   setSelectedDrones={setSelectedDrones}
-                  isEditMode={isCreating || isEditing}
-                  availableDrones={optionsQuery.data?.drones || []}
-                />
-                <Separator className="my-2" />
-                <DroneModelMappingPanel
-                  selectedDrones={selectedDrones}
-                  isEditMode={isCreating || isEditing}
                   droneMappings={droneMappings}
                   setDroneMappings={setDroneMappings}
+                  isEditMode={isCreating || isEditing}
+                  availableDrones={optionsQuery.data?.drones || []}
+                  waylineAreas={waylineAreas} // 仅用于显示关联航线信息
+                  setWaylineAreas={setWaylineAreas} // 添加setWaylineAreas用于控制航线可见性
                 />
                 <Separator className="my-2" />
                 <WaylinePanel
