@@ -141,7 +141,7 @@ export default function Page() {
     const minLat = bounds[1];
     const maxLat = bounds[3];
 
-    const droneSubRegions = [];
+    const droneSubRegions: AMap.LngLat[][] = [];
     let currentMinLng = minLng;
 
     // 根据面积大小划分多边形
