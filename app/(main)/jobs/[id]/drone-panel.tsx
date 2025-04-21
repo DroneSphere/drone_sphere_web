@@ -19,15 +19,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
-import {
-  Eye,
-  EyeOff,
-  Layers,
-  Plus,
-  Settings,
-  Trash,
-  Trash2,
-} from "lucide-react";
+import { Eye, EyeOff, Plus, Trash, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { getJobPhysicalDrones } from "./request";
 

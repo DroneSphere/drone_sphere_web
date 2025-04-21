@@ -12,7 +12,6 @@ import { SearchResultItem } from "./type";
 import { getSearchResults } from "./request";
 import DroneCardList from "./drone-card-list";
 import SearchResultList from "./search-result-list";
-import { DroneData } from "./types";
 
 export default function JobDetailPage() {
   const pathname = usePathname();
@@ -112,7 +111,7 @@ export default function JobDetailPage() {
   // 数据刷新时修改地图
   useEffect(() => {
     if (!AMapRef.current || !mapRef.current || !query.data) return;
-    const { area, drones, waylines, mappings } = query.data;
+    const { area, drones, waylines } = query.data;
     if (!area || !area.points || !drones) return;
 
     // 清除之前的地图元素

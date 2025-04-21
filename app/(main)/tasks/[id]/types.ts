@@ -1,5 +1,3 @@
-import { DroneState } from "../../drones/types";
-
 export interface DroneData {
   sn?: string;
   callsign?: string;

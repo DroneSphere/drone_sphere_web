@@ -93,6 +93,8 @@ export default function JobListPage() {
           return format(new Date(scheduleTime), "yyyy-MM-dd HH:mm");
         } catch (error) {
           // 处理无效日期
+          console.log(error);
+
           return <span className="text-gray-400">日期格式错误</span>;
         }
       },

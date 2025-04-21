@@ -163,12 +163,12 @@ export default function Page() {
               variant={"outline"}
               className={cn(
                 "w-[128px] justify-start text-left font-normal",
-                !searchParams?.createAtBegin && "text-muted-foreground"
+                !searchParams?.schedule_time_start && "text-muted-foreground"
               )}
             >
               <CalendarIcon className="mr-2 h-4 w-4" />
-              {searchParams?.createAtBegin
-                ? format(new Date(searchParams.createAtBegin), "PPP")
+              {searchParams?.schedule_time_start
+                ? format(new Date(searchParams.schedule_time_start), "PPP")
                 : "开始时间"}
             </Button>
           </PopoverTrigger>
@@ -176,8 +176,8 @@ export default function Page() {
             <Calendar
               mode="single"
               selected={
-                searchParams?.createAtBegin
-                  ? new Date(searchParams.createAtBegin)
+                searchParams?.schedule_time_start
+                  ? new Date(searchParams.schedule_time_start)
                   : undefined
               }
               onSelect={(date) =>
@@ -197,12 +197,12 @@ export default function Page() {
               variant={"outline"}
               className={cn(
                 "w-[128px] justify-start text-left font-normal",
-                !searchParams?.createAtEnd && "text-muted-foreground"
+                !searchParams?.schedule_time_end && "text-muted-foreground"
               )}
             >
               <CalendarIcon className="mr-2 h-4 w-4" />
-              {searchParams?.createAtEnd
-                ? format(new Date(searchParams.createAtEnd), "PPP")
+              {searchParams?.schedule_time_end
+                ? format(new Date(searchParams.schedule_time_end), "PPP")
                 : "结束时间"}
             </Button>
           </PopoverTrigger>
@@ -210,8 +210,8 @@ export default function Page() {
             <Calendar
               mode="single"
               selected={
-                searchParams?.createAtEnd
-                  ? new Date(searchParams.createAtEnd)
+                searchParams?.schedule_time_end
+                  ? new Date(searchParams.schedule_time_end)
                   : undefined
               }
               onSelect={(date) =>
