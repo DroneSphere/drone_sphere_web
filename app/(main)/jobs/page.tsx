@@ -31,6 +31,7 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import { format } from "date-fns";
+import { zhCN } from "date-fns/locale";
 import { CalendarIcon, Edit, PlusCircle, Search, Trash } from "lucide-react";
 import { useMemo, useState } from "react";
 import { JobItemResult, JobSearchParams } from "./types";
@@ -44,7 +45,7 @@ export default function JobListPage() {
     null
   );
   const query = useQuery({
-    queryKey: ["jobs", searchParams],
+    queryKey: ["jobs"],
     queryFn: () => {
       return fetchAllJobs(searchParams);
     },
@@ -80,12 +81,28 @@ export default function JobListPage() {
           <span className="text-gray-400">无</span>
         ),
     }),
+    columnHelper.accessor("schedule_time", {
+      header: () => <div className="min-w-8">计划飞行时间</div>,
+      cell: (info) => {
+        // 格式化日期时间显示
+        const scheduleTime = info.getValue();
+        if (!scheduleTime) return <span className="text-gray-400">未安排</span>;
+
+        try {
+          // 将时间格式化为更友好的显示方式
+          return format(new Date(scheduleTime), "yyyy-MM-dd HH:mm");
+        } catch (error) {
+          // 处理无效日期
+          return <span className="text-gray-400">日期格式错误</span>;
+        }
+      },
+    }),
     columnHelper.accessor("description", {
       header: () => <div className="min-w-12">描述</div>,
       cell: (info) => (
         <HoverCard>
           <HoverCardTrigger>
-            <div className="text-left overflow-hidden text-ellipsis whitespace-nowrap max-w-36">
+            <div className="text-left overflow-hidden text-ellipsis whitespace-nowrap">
               {info.getValue() || <span className="text-gray-400">无</span>}
             </div>
           </HoverCardTrigger>
@@ -168,28 +185,34 @@ export default function JobListPage() {
             <Button
               variant={"outline"}
               className={cn(
-                "w-[128px] justify-start text-left font-normal",
-                !searchParams?.createAtBegin && "text-muted-foreground"
+                "w-[180px] justify-start text-left font-normal",
+                !searchParams?.schedule_time_start && "text-muted-foreground"
               )}
             >
               <CalendarIcon className="mr-2 h-4 w-4" />
-              {searchParams?.createAtBegin
-                ? format(new Date(searchParams.createAtBegin), "PPP")
-                : "开始时间"}
+              {searchParams?.schedule_time_start
+                ? format(
+                    new Date(searchParams.schedule_time_start),
+                    "yyyy年MM月dd日",
+                    { locale: zhCN }
+                  )
+                : "计划开始时间"}
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-auto p-0">
             <Calendar
               mode="single"
               selected={
-                searchParams?.createAtBegin
-                  ? new Date(searchParams.createAtBegin)
+                searchParams?.schedule_time_start
+                  ? new Date(searchParams.schedule_time_start)
                   : undefined
               }
               onSelect={(date) =>
                 setSearchParams((prev) => ({
                   ...prev,
-                  createAtBegin: date ? format(date, "yyyy-MM-dd") : undefined,
+                  schedule_time_start: date
+                    ? format(date, "yyyy-MM-dd")
+                    : undefined,
                 }))
               }
               initialFocus
@@ -202,28 +225,34 @@ export default function JobListPage() {
             <Button
               variant={"outline"}
               className={cn(
-                "w-[128px] justify-start text-left font-normal",
-                !searchParams?.createAtEnd && "text-muted-foreground"
+                "w-[180px] justify-start text-left font-normal",
+                !searchParams?.schedule_time_end && "text-muted-foreground"
               )}
             >
               <CalendarIcon className="mr-2 h-4 w-4" />
-              {searchParams?.createAtEnd
-                ? format(new Date(searchParams.createAtEnd), "PPP")
-                : "结束时间"}
+              {searchParams?.schedule_time_end
+                ? format(
+                    new Date(searchParams.schedule_time_end),
+                    "yyyy年MM月dd日",
+                    { locale: zhCN }
+                  )
+                : "计划结束时间"}
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-auto p-0">
             <Calendar
               mode="single"
               selected={
-                searchParams?.createAtEnd
-                  ? new Date(searchParams.createAtEnd)
+                searchParams?.schedule_time_end
+                  ? new Date(searchParams.schedule_time_end)
                   : undefined
               }
               onSelect={(date) =>
                 setSearchParams((prev) => ({
                   ...prev,
-                  createAtEnd: date ? format(date, "yyyy-MM-dd") : undefined,
+                  schedule_time_end: date
+                    ? format(date, "yyyy-MM-dd")
+                    : undefined,
                 }))
               }
               initialFocus

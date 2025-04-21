@@ -7,10 +7,11 @@ export interface JobSearchParams {
   job_name?: string;
   /** 区域 */
   area_name?: string;
-  /** 创建开始时间 */
-  createAtBegin?: string;
-  /** 创建结束时间 */
-  createAtEnd?: string;
+
+  /** 计划开始时间 */
+  schedule_time_start?: string;
+  /** 计划结束时间 */
+  schedule_time_end?: string;
 }
 
 /**
