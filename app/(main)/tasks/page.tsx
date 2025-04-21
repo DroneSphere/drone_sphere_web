@@ -44,6 +44,9 @@ const columns = [
   columnHelper.accessor("job_name", {
     header: "任务名称",
   }),
+  columnHelper.accessor("area_name", {
+    header: "区域名称",
+  }),
   columnHelper.accessor("job_status", {
     header: "任务状态",
     cell: (info) => {
@@ -65,7 +68,7 @@ const columns = [
           break;
       }
       return (
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-2 justify-center">
           {indicator}
           <span className="ml-2">{statusText}</span>
         </div>

@@ -73,6 +73,7 @@ const SearchResultList = ({ searchResults, onResultClick }: SearchResultListProp
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>检测结果详情</DialogTitle>
+            <div >{detailDialog.result?.image_url}</div>
           </DialogHeader>
 
           <div className="space-y-4">
@@ -82,9 +83,10 @@ const SearchResultList = ({ searchResults, onResultClick }: SearchResultListProp
                 <Image
                   src={detailDialog.result.image_url}
                   alt={detailDialog.result.target_label}
-                  fill
-                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                  style={{ objectFit: "contain" }}
+                  // sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                  // style={{ objectFit: "contain" }}
+                  width={300}
+                  height={200}
                   onError={(e) => {
                     console.log("图片加载失败:", detailDialog.result?.image_url);
                     const imgElement = e.target as HTMLImageElement;

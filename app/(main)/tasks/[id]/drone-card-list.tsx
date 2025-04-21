@@ -58,7 +58,7 @@ const DroneCardList = ({ drones, droneStates, droneConnections }: DroneCardListP
                 onClick={() => openVideoDialog(drone)}
               >
                 <img
-                  src="/api/placeholder/400/320"
+                  src="http://47.245.40.222:9001/buckets/image/WX20250421-150551%402x.png"
                   alt="无人机视角"
                   className="w-full h-full object-cover"
                 />
@@ -127,7 +127,7 @@ const DroneCardList = ({ drones, droneStates, droneConnections }: DroneCardListP
           <div className="w-full aspect-video bg-black rounded-md overflow-hidden">
             <div className="w-full h-full flex items-center justify-center text-white">
               <img
-                src="/api/placeholder/720/480"
+                src="https://telegraph-image-92x.pages.dev/file/32a8d9c690af7f9ffc374-cd506c69962d3a4af0.png"
                 alt="无人机直播视频"
                 className="w-full h-full object-cover"
               />

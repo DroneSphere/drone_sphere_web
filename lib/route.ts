@@ -47,18 +47,18 @@ export const routeMap = {
           title: "机型管理",
           url: "/models/drones",
         },
+        // {
+        //   title: "网关管理",
+        //   url: "/models/gateways",
+        // },
         {
-          title: "网关管理",
-          url: "/models/gateways",
-        },
-        {
-          title: "负载管理",
+          title: "相机管理",
           url: "/models/gimbals",
         },
-        {
-          title: "载荷管理",
-          url: "/models/payloads",
-        },
+        // {
+        //   title: "载荷管理",
+        //   url: "/models/payloads",
+        // },
       ],
     },
     {

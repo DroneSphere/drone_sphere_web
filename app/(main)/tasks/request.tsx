@@ -21,6 +21,7 @@ export async function getTasks(
       job_name: job.name,
       job_description: job.description,
       job_status: TaskStatus.NOT_STARTED, // 任务状态默认为未开始
+      area_name: job.area_name,
       schedule_time: job.schedule_time,
       created_by: "system", // 暂时使用默认值
     }));

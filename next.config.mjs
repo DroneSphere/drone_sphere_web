@@ -32,6 +32,12 @@ const nextConfig = {
         hostname: "telegraph-image-92x.pages.dev",
         port: "",
         pathname: "/**",
+      },
+      {
+        protocol: "http",
+        hostname: "47.245.40.222",
+        port: "9001",
+        pathname: "/**",
       }
     ],
   },

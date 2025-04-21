@@ -92,7 +92,12 @@ export default function JobDetailPage() {
           zoom: 17,
         });
 
-        AMap.plugin(["AMap.ToolBar", "AMap.Scale"], () => {
+        AMap.plugin(["AMap.ToolBar", "AMap.Scale", "AMap.MapType"], () => {
+          // 添加地图控件
+          const mapType = new AMap.MapType({
+            defaultType: 0,
+          });
+          mapRef.current?.addControl(mapType);
           const toolBar = new AMap.ToolBar();
           const scale = new AMap.Scale();
           mapRef.current?.addControl(toolBar);
@@ -399,7 +404,7 @@ export default function JobDetailPage() {
       } catch (error) {
         console.error("获取搜索结果失败:", error);
       }
-    }, 1000);
+    }, 3000);
 
     return () => clearInterval(intervalId);
   }, [id]);
@@ -407,8 +412,8 @@ export default function JobDetailPage() {
   // 处理搜索结果点击
   const handleSearchResultClick = (result: SearchResultItem) => {
     if (!mapRef.current) return;
-    mapRef.current.setCenter([Number(result.lng), Number(result.lat)]);
-    mapRef.current.setZoom(18);
+    // mapRef.current.setCenter([Number(result.lng), Number(result.lat)]);
+    // mapRef.current.setZoom(18);
   };
 
   return (
