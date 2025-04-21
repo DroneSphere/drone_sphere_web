@@ -322,7 +322,7 @@ export default function DronePanel({
             >
               <FormControl>
                 <SelectTrigger>
-                  <SelectValue placeholder="请选择无人机">
+                  <SelectValue placeholder="选择要添加的机型">
                     {selectedDroneKey
                       ? (() => {
                           const droneId = parseInt(
@@ -389,7 +389,9 @@ export default function DronePanel({
 
       {/* 已选择的无人机列表 */}
       {selectedDrones?.length === 0 && (
-        <div className="text-sm text-gray-500 mt-2">请选择无人机</div>
+        <div className="text-sm text-gray-500 mt-2 text-center">
+          {isEditMode ? "请添加无人机机型" : "当前没有选择任何无人机机型"}
+        </div>
       )}
 
       {selectedDrones?.map((drone, idx) => {
@@ -435,6 +437,73 @@ export default function DronePanel({
               载荷: {drone.variantion.payload?.name ?? "无载荷"}
             </div> */}
 
+            {/* 物理无人机绑定选择器 */}
+            <div className="mt-2">
+              <div className="flex items-center space-x-2">
+                <div className="text-xs text-gray-500 whitespace-nowrap">
+                  绑定无人机
+                </div>
+                {/* {mapping && mapping.physical_drone_id > 0 && (
+                  <div className="text-center text-xs px-1.5 py-0.5 rounded-lg bg-green-100 text-green-800 whitespace-nowrap">
+                    已绑定
+                  </div>
+                )} */}
+
+                {isEditMode ? (
+                  <FormItem className="flex-1 m-0">
+                    <Select
+                      value={
+                        mapping?.physical_drone_id
+                          ? String(mapping.physical_drone_id)
+                          : undefined
+                      }
+                      onValueChange={(value) =>
+                        handleDroneSelection(drone.key, value)
+                      }
+                    >
+                      <SelectTrigger className="w-full h-8 text-xs">
+                        <SelectValue placeholder="选择物理无人机" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectGroup>
+                          {availablePhysicalDronesByModelId(drone.id).map(
+                            (physicalDrone) => (
+                              <SelectItem
+                                key={physicalDrone.id}
+                                value={String(physicalDrone.id)}
+                                disabled={droneMappings.some(
+                                  (m) =>
+                                    m.physical_drone_id === physicalDrone.id &&
+                                    m.selected_drone_key !== drone.key
+                                )}
+                              >
+                                {physicalDrone.callsign} - {physicalDrone.sn}
+                              </SelectItem>
+                            )
+                          )}
+                          {availablePhysicalDronesByModelId(drone.id).length ===
+                            0 && (
+                            <SelectItem disabled value="0">
+                              无可用物理无人机
+                            </SelectItem>
+                          )}
+                        </SelectGroup>
+                      </SelectContent>
+                    </Select>
+                  </FormItem>
+                ) : (
+                  <div className="text-sm text-gray-600">
+                    {mapping && mapping.physical_drone_id ? (
+                      `绑定到物理机: ${mapping.physical_drone_id}`
+                    ) : (
+                      <div className="text-sm text-gray-500 italic">
+                        未绑定物理无人机
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
             {/* 无人机功能状态 */}
             <div className="text-xs text-gray-500 flex items-center">
               <div
@@ -521,72 +590,6 @@ export default function DronePanel({
                 )}
               </div>
             )}
-
-            {/* 物理无人机绑定选择器 */}
-            <div className="mt-2">
-              <div className="flex items-center justify-between mb-1">
-                <div className="text-xs text-gray-500">物理无人机绑定</div>
-                {mapping && mapping.physical_drone_id > 0 && (
-                  <div className="w-16 text-center text-xs px-2 py-1 rounded-lg bg-green-100 text-green-800">
-                    已绑定
-                  </div>
-                )}
-              </div>
-
-              {isEditMode ? (
-                <FormItem>
-                  <Select
-                    value={
-                      mapping?.physical_drone_id
-                        ? String(mapping.physical_drone_id)
-                        : undefined
-                    }
-                    onValueChange={(value) =>
-                      handleDroneSelection(drone.key, value)
-                    }
-                  >
-                    <SelectTrigger className="w-full h-8 text-xs">
-                      <SelectValue placeholder="选择物理无人机" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectGroup>
-                        {availablePhysicalDronesByModelId(drone.id).map(
-                          (physicalDrone) => (
-                            <SelectItem
-                              key={physicalDrone.id}
-                              value={String(physicalDrone.id)}
-                              disabled={droneMappings.some(
-                                (m) =>
-                                  m.physical_drone_id === physicalDrone.id &&
-                                  m.selected_drone_key !== drone.key
-                              )}
-                            >
-                              {physicalDrone.callsign} - {physicalDrone.sn}
-                            </SelectItem>
-                          )
-                        )}
-                        {availablePhysicalDronesByModelId(drone.id).length ===
-                          0 && (
-                          <SelectItem disabled value="0">
-                            无可用物理无人机
-                          </SelectItem>
-                        )}
-                      </SelectGroup>
-                    </SelectContent>
-                  </Select>
-                </FormItem>
-              ) : (
-                <div className="text-sm text-gray-600">
-                  {mapping && mapping.physical_drone_id ? (
-                    `绑定到物理机: ${mapping.physical_drone_id}`
-                  ) : (
-                    <div className="text-sm text-gray-500 italic">
-                      未绑定物理无人机
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
           </div>
         );
       })}

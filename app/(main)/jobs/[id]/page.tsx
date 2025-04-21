@@ -935,7 +935,7 @@ export default function Page() {
                   setSelectedDrones={setSelectedDrones}
                   droneMappings={droneMappings}
                   setDroneMappings={setDroneMappings}
-                  isEditMode={isCreating || isEditing}
+                  isEditMode={true}
                   availableDrones={optionsQuery.data?.drones || []}
                   waylineAreas={waylineAreas} // 仅用于显示关联航线信息
                   setWaylineAreas={setWaylineAreas} // 添加setWaylineAreas用于控制航线可见性
@@ -948,7 +948,7 @@ export default function Page() {
                   path={path}
                   AMapRef={AMapRef}
                   mapRef={mapRef}
-                  isEditMode={isCreating || isEditing}
+                  isEditMode={true}
                 />
               </div>
 
