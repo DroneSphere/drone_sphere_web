@@ -209,10 +209,10 @@ export default function DronePanel({
     );
     setSelectedDroneKey(undefined);
 
-    toast({
-      title: "无人机已移除",
-      description: "无人机已从任务中移除",
-    });
+    // toast({
+    //   title: "无人机已移除",
+    //   description: "无人机已从任务中移除",
+    // });
   };
 
   // 为无人机绑定物理机

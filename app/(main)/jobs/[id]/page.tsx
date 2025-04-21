@@ -363,10 +363,6 @@ export default function Page() {
 
   // 完成数据加载后开始处理挂载地图逻辑
   useEffect(() => {
-    window._AMapSecurityConfig = {
-      securityJsCode: "4ef657a379f13efbbf096baf8b3ed",
-    };
-
     AMapLoader.load({
       key: "82ea7ca3d47546f079185e7ccdade9ba",
       version: "2.0",

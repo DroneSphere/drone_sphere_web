@@ -8,9 +8,9 @@ export default function MapContainer() {
   const mapRef = useRef<AMap.Map | null>(null);
 
   useEffect(() => {
-    window._AMapSecurityConfig = {
-      securityJsCode: "4ef657a379f13efbbf096baf8b08b3ed",
-    };
+    // window._AMapSecurityConfig = {
+    //   securityJsCode: "4ef657a379f13efbbf096baf8b08b3ed",
+    // };
 
     AMapLoader.load({
       key: "82ea7ca3d47546f079185e7ccdade9ba", // 申请好的Web端开发者Key，首次调用 load 时必填

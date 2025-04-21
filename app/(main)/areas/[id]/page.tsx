@@ -375,9 +375,9 @@ export default function AreaDetailPage() {
 
   // 挂载地图
   useEffect(() => {
-    window._AMapSecurityConfig = {
-      securityJsCode: "4ef657a379f13efbbf096baf8b08b3ed",
-    };
+    // window._AMapSecurityConfig = {
+    //   securityJsCode: "4ef657a379f13efbbf096baf8b08b3ed",
+    // };
 
     AMapLoader.load({
       key: "82ea7ca3d47546f079185e7ccdade9ba",
