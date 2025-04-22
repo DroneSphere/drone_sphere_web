@@ -1,6 +1,12 @@
 "use client";
 
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Separator } from "@/components/ui/separator";
 import { Compass, Image as ImageIcon } from "lucide-react";
 import Image from "next/image";
 import { useState } from "react";
@@ -11,9 +17,15 @@ interface SearchResultListProps {
   onResultClick?: (result: SearchResultItem) => void;
 }
 
-const SearchResultList = ({ searchResults, onResultClick }: SearchResultListProps) => {
+const SearchResultList = ({
+  searchResults,
+  onResultClick,
+}: SearchResultListProps) => {
   // 添加详情对话框状态管理
-  const [detailDialog, setDetailDialog] = useState<{ open: boolean; result: SearchResultItem | null }>({
+  const [detailDialog, setDetailDialog] = useState<{
+    open: boolean;
+    result: SearchResultItem | null;
+  }>({
     open: false,
     result: null,
   });
@@ -37,34 +49,46 @@ const SearchResultList = ({ searchResults, onResultClick }: SearchResultListProp
   return (
     <>
       <div className="text-sm font-medium mb-3">搜索结果</div>
-      {searchResults.map((result) => (
-        <div
-          key={result.id}
-          className="flex items-center justify-between p-2 hover:bg-gray-50 rounded-md cursor-pointer group"
-        >
-          {/* 左侧：标签和坐标信息 */}
-          <div 
-            className="flex-grow overflow-hidden pr-2"
-            onClick={() => onResultClick?.(result)}
-          >
-            <div className="font-medium text-xs truncate mb-0.5">
-              {result.target_label}
+      {searchResults.map((result, index) => (
+        <div key={result.id}>
+          {/* 列表项 */}
+          <div className="flex items-center justify-between py-2 hover:bg-gray-50 rounded-md cursor-pointer group">
+            <div
+              className="flex justify-between items-center w-full pr-2"
+              onClick={() => onResultClick?.(result)}
+            >
+              {/* 左侧区域：目标标签和置信度 */}
+              <div className="flex flex-col items-start">
+                {/* 目标标签 */}
+                <div className="font-medium text-xs">{result.target_label}</div>
+
+                {/* 置信度显示 - 直接文字 */}
+                <div className="text-[10px] text-muted-foreground">
+                  置信度: 90%
+                </div>
+              </div>
+
+              {/* 右侧区域：坐标信息 */}
+              <div className="text-[10px] text-muted-foreground flex items-center gap-1 justify-end">
+                <Compass className="h-3 w-3" />
+                <span className="truncate">
+                  {Number(result.lng).toFixed(4)},{" "}
+                  {Number(result.lat).toFixed(4)}
+                </span>
+              </div>
             </div>
-            <div className="text-[10px] text-muted-foreground flex items-center gap-1">
-              <Compass className="h-3 w-3" />
-              <span className="truncate">
-                {Number(result.lng).toFixed(4)}, {Number(result.lat).toFixed(4)}
-              </span>
-            </div>
+
+            {/* 图片预览按钮 */}
+            <button
+              onClick={() => openDetailDialog(result)}
+              className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity mx-2"
+            >
+              <ImageIcon className="h-4 w-4 text-gray-500 hover:text-gray-700" />
+            </button>
           </div>
 
-          {/* 右侧：图片预览按钮 */}
-          <button
-            onClick={() => openDetailDialog(result)}
-            className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
-          >
-            <ImageIcon className="h-4 w-4 text-gray-500 hover:text-gray-700" />
-          </button>
+          {/* 分隔线，最后一个项目不添加 */}
+          {index < searchResults.length - 1 && <Separator />}
         </div>
       ))}
 
@@ -73,7 +97,7 @@ const SearchResultList = ({ searchResults, onResultClick }: SearchResultListProp
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>检测结果详情</DialogTitle>
-            <div >{detailDialog.result?.image_url}</div>
+            <div>{detailDialog.result?.image_url}</div>
           </DialogHeader>
 
           <div className="space-y-4">
@@ -83,12 +107,14 @@ const SearchResultList = ({ searchResults, onResultClick }: SearchResultListProp
                 <Image
                   src={detailDialog.result.image_url}
                   alt={detailDialog.result.target_label}
-                  // sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                  // style={{ objectFit: "contain" }}
-                  width={300}
-                  height={200}
+                  fill={true}
+                  sizes="100vw"
+                  style={{ objectFit: "contain" }}
                   onError={(e) => {
-                    console.log("图片加载失败:", detailDialog.result?.image_url);
+                    console.log(
+                      "图片加载失败:",
+                      detailDialog.result?.image_url
+                    );
                     const imgElement = e.target as HTMLImageElement;
                     imgElement.src = "/placeholder-image.jpg";
                   }}

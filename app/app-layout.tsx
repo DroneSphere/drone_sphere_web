@@ -16,6 +16,7 @@ import { useNavigation } from "@/contexts/navigation-context";
 import { useUserContext } from "@/contexts/user-context";
 import { LogOut } from "lucide-react";
 import Link from "next/link";
+import { useEffect } from "react";
 
 export default function AppLayout({
   children,
@@ -25,10 +26,14 @@ export default function AppLayout({
   const { getBreadcrumbs } = useNavigation();
   const { isLoading, user } = useUserContext();
 
-  window._AMapSecurityConfig = {
-    securityJsCode: "4ef657a379f13efbbf096baf8b3ed",
-  };
-  
+  useEffect(() => {
+    if (window) {
+      window._AMapSecurityConfig = {
+        securityJsCode: "4ef657a379f13efbbf096baf8b3ed",
+      };
+    }
+  }, []);
+
   return (
     <div className="flex flex-col h-screen overflow-hidden">
       <div className="flex items-center justify-between w-full px-8 h-16 bg-sidebar shrink-0">

@@ -1,10 +1,16 @@
 "use client";
 
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Video } from "lucide-react";
 import { useState } from "react";
 import { DroneState } from "../../drones/types";
 import { DroneData } from "./types";
+import Image from "next/image";
 
 interface DroneCardListProps {
   drones?: DroneData[];
@@ -12,10 +18,17 @@ interface DroneCardListProps {
   droneConnections: Record<string, boolean>;
 }
 
-const DroneCardList = ({ drones, droneStates, droneConnections }: DroneCardListProps) => {
-  const [videoDialog, setVideoDialog] = useState<{ open: boolean; drone: DroneData | null }>({ 
-    open: false, 
-    drone: null 
+const DroneCardList = ({
+  drones,
+  droneStates,
+  droneConnections,
+}: DroneCardListProps) => {
+  const [videoDialog, setVideoDialog] = useState<{
+    open: boolean;
+    drone: DroneData | null;
+  }>({
+    open: false,
+    drone: null,
   });
 
   const openVideoDialog = (drone: DroneData) => {
@@ -44,8 +57,16 @@ const DroneCardList = ({ drones, droneStates, droneConnections }: DroneCardListP
           >
             {/* 顶部标题栏 */}
             <div className="p-2 flex items-center justify-between">
-              <div className="font-medium text-sm">{drone.callsign || "未命名无人机"}</div>
-              <div className={`text-xs ${droneConnections[drone.sn || ""] ? "text-green-600" : "text-gray-400"}`}>
+              <div className="font-medium text-sm">
+                {drone.callsign || "未命名无人机"}
+              </div>
+              <div
+                className={`text-xs ${
+                  droneConnections[drone.sn || ""]
+                    ? "text-green-600"
+                    : "text-gray-400"
+                }`}
+              >
                 {drone.sn && droneConnections[drone.sn] ? "已连接" : "未连接"}
               </div>
             </div>
@@ -57,12 +78,17 @@ const DroneCardList = ({ drones, droneStates, droneConnections }: DroneCardListP
                 className="w-20 h-20 bg-gray-100 relative cursor-pointer flex-shrink-0 rounded-md overflow-hidden"
                 onClick={() => openVideoDialog(drone)}
               >
-                <img
-                  src="http://47.245.40.222:9001/buckets/image/WX20250421-150551%402x.png"
+                <Image
+                  src="http://47.245.40.222:9000/image/WX20250421-150551%402x.png"
                   alt="无人机视角"
-                  className="w-full h-full object-cover"
+                  className="object-cover"
+                  fill={true}
+                  sizes="80px"
+                  // 添加占位符效果
+                  placeholder="blur"
+                  blurDataURL="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAiIGhlaWdodD0iODAiIHZlcnNpb249IjEuMSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iODAiIGhlaWdodD0iODAiIGZpbGw9IiNlZWVlZWUiLz48L3N2Zz4="
                 />
-                <div className="absolute bottom-1 right-1 bg-black/50 text-white p-1 rounded-full">
+                <div className="absolute bottom-1 right-1 bg-black/50 text-white p-1 rounded-full z-10">
                   <Video className="h-3 w-3" />
                 </div>
               </div>
@@ -72,27 +98,44 @@ const DroneCardList = ({ drones, droneStates, droneConnections }: DroneCardListP
                 <div className="grid grid-cols-2 text-xs gap-y-1">
                   <div className="flex items-center">
                     <span className="text-gray-500 w-12">经度：</span>
-                    <span>{(drone.sn && droneStates[drone.sn]?.lng?.toFixed(6)) ?? "--"}</span>
+                    <span>
+                      {(drone.sn && droneStates[drone.sn]?.lng?.toFixed(6)) ??
+                        "--"}
+                    </span>
                   </div>
                   <div className="flex items-center">
                     <span className="text-gray-500 w-12">总高：</span>
-                    <span>{(drone.sn && droneStates[drone.sn]?.height?.toFixed(1)) ?? "--"} 米</span>
+                    <span>
+                      {(drone.sn &&
+                        droneStates[drone.sn]?.height?.toFixed(1)) ??
+                        "--"}{" "}
+                      米
+                    </span>
                   </div>
                   <div className="flex items-center">
                     <span className="text-gray-500 w-12">纬度：</span>
-                    <span>{(drone.sn && droneStates[drone.sn]?.lat?.toFixed(6)) ?? "--"}</span>
+                    <span>
+                      {(drone.sn && droneStates[drone.sn]?.lat?.toFixed(6)) ??
+                        "--"}
+                    </span>
                   </div>
                   <div className="flex items-center">
                     <span className="text-gray-500 w-12">速度：</span>
-                    <span>{(drone.sn && droneStates[drone.sn]?.speed) ?? "--"} 米/秒</span>
+                    <span>
+                      {(drone.sn && droneStates[drone.sn]?.speed) ?? "--"} 米/秒
+                    </span>
                   </div>
                   <div className="flex items-center">
                     <span className="text-gray-500 w-12">航向：</span>
-                    <span>{(drone.sn && droneStates[drone.sn]?.heading) ?? "--"}°</span>
+                    <span>
+                      {(drone.sn && droneStates[drone.sn]?.heading) ?? "--"}°
+                    </span>
                   </div>
                   <div className="flex items-center">
                     <span className="text-gray-500 w-12">电量：</span>
-                    <span>{(drone.sn && droneStates[drone.sn]?.battery) ?? "--"} %</span>
+                    <span>
+                      {(drone.sn && droneStates[drone.sn]?.battery) ?? "--"} %
+                    </span>
                   </div>
                 </div>
               </div>
@@ -127,7 +170,7 @@ const DroneCardList = ({ drones, droneStates, droneConnections }: DroneCardListP
           <div className="w-full aspect-video bg-black rounded-md overflow-hidden">
             <div className="w-full h-full flex items-center justify-center text-white">
               <img
-                src="https://telegraph-image-92x.pages.dev/file/32a8d9c690af7f9ffc374-cd506c69962d3a4af0.png"
+                src="http://47.245.40.222:9000/image/WX20250421-150551%402x.png"
                 alt="无人机直播视频"
                 className="w-full h-full object-cover"
               />
