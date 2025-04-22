@@ -97,8 +97,8 @@ export const routeMap = {
       icon: Settings2,
       items: [
         {
-          title: "账户",
-          url: "/settings#account",
+          title: "用户管理",
+          url: "/settings/users",
         },
         {
           title: "通用",
