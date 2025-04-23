@@ -58,7 +58,7 @@ const columns = [
 
 export default function Page() {
   // 使用 React Query 获取数据，禁用自动获取
-  const { data, isLoading, isFetching, isError, refetch } = useQuery({
+  const { data, isLoading, isFetching, isError } = useQuery({
     queryKey: ["users"],
     queryFn: () => getAllUsers(),
   });
