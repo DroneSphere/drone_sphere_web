@@ -3,6 +3,7 @@ export interface ResultItem {
   id: number;
   job_id: number;
   job_name: string;
+  drone_callsign: string;
   target_label: string;
   lng: string;
   lat: string;
@@ -16,6 +17,8 @@ export interface ResultDetail {
   job_name: string;
   wayline_id: number;
   drone_id: number;
+  drone_callsign: string;
+  drone_sn: string;
   object_type: number;
   object_label: string;
   object_confidence: number;

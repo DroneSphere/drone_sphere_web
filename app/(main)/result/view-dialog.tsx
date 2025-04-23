@@ -87,6 +87,14 @@ export default function ViewDialog(
                     </dd>
                   </div>
                   
+                  {/* 无人机呼号 */}
+                  <div className="py-2 grid grid-cols-3 gap-4">
+                    <dt className="text-sm font-medium text-gray-500">检测无人机</dt>
+                    <dd className="text-sm text-gray-900 col-span-2">
+                      {String(query.data.drone_callsign)}
+                    </dd>
+                  </div>
+
                   {/* 目标标签 */}
                   <div className="py-2 grid grid-cols-3 gap-4">
                     <dt className="text-sm font-medium text-gray-500">目标标签</dt>
@@ -153,7 +161,7 @@ export default function ViewDialog(
                   
                   {/* 创建时间 */}
                   <div className="py-2 grid grid-cols-3 gap-4">
-                    <dt className="text-sm font-medium text-gray-500">创建时间</dt>
+                    <dt className="text-sm font-medium text-gray-500">检测时间</dt>
                     <dd className="text-sm text-gray-900 col-span-2">
                       {String(query.data.created_at)}
                     </dd>

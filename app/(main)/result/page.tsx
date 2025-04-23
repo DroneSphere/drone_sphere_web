@@ -42,6 +42,10 @@ const columns = [
     header: "任务名称",
     cell: (info) => <div className="">{info.getValue()}</div>,
   }),
+  columnHelper.accessor("drone_callsign", {
+    header: "检测无人机",
+    cell: (info) => <div className="">{info.getValue()}</div>,
+  }),
   columnHelper.accessor("target_label", {
     header: "检测目标类型",
     cell: (info) => <div className="">{info.getValue()}</div>,
@@ -180,7 +184,7 @@ export default function ResultPage() {
         </Button>
         <div className="flex-1" />
         {/* 添加结果按钮 */}
-        <AddDialog onSuccess={() => refetch()} />
+        {/* <AddDialog onSuccess={() => refetch()} /> */}
       </div>
 
       {(isLoading || isFetching) && (
