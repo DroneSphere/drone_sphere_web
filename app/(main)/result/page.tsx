@@ -30,7 +30,6 @@ import { ResultItem, ResultQuery, ObjectTypeOption } from "./types";
 import ViewDialog from "./view-dialog";
 import DeleteDialog from "./delete-dialog";
 import { Search } from "lucide-react";
-import AddDialog from "./add-dialog"; // 导入添加对话框组件
 
 // 定义表格列
 const columnHelper = createColumnHelper<ResultItem>();

@@ -193,7 +193,7 @@ export default function AreaDetailPage() {
             step="0.00001" // 修改步长，控制增减粒度为小数点后6位
             defaultValue={value} // 使用 defaultValue 避免每次渲染重置光标
             onBlur={(e) => handlePointUpdate(rowIndex, "lng", e.target.value)} // 失去焦点时更新，传递 rowIndex
-            className="h-8 p-1 text-center border-none focus-visible:ring-1 focus-visible:ring-offset-0" // 简化样式
+            className="h-4 pl-3 pr-1 text-center border-none focus-visible:ring-1 focus-visible:ring-offset-0" // 简化样式
             // 可以添加 onKeyDown 处理 Enter 键提交等
           />
         );
@@ -211,7 +211,7 @@ export default function AreaDetailPage() {
             step="0.00001" // 修改步长，控制增减粒度为小数点后6位
             defaultValue={value}
             onBlur={(e) => handlePointUpdate(rowIndex, "lat", e.target.value)} // 失去焦点时更新，传递 rowIndex
-            className="h-8 p-1 text-center border-none focus-visible:ring-1 focus-visible:ring-offset-0"
+            className="h-4 pl-3 pr-1 text-center border-none focus-visible:ring-1 focus-visible:ring-offset-0"
           />
         );
       },
@@ -635,7 +635,7 @@ export default function AreaDetailPage() {
               className="h-[calc(100vh-132px)] w-full border rounded-md shadow-sm"
             ></div>
             {/* 修改右侧面板容器结构 */}
-            <div className="flex flex-col w-[400px] h-[calc(100vh-132px)]">
+            <div className="flex flex-col w-[420px] h-[calc(100vh-132px)]">
               {/* 主容器，设置高度 */}
               {/* 内部滚动容器 */}
               <div className="flex-1 overflow-y-auto pr-2 space-y-4 mb-4">
