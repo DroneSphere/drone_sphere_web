@@ -65,7 +65,7 @@ export default function AddUserDialog() {
       // 重置表单
       form.reset();
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       // 显示详细错误信息
       toast({
         title: "添加用户失败",
