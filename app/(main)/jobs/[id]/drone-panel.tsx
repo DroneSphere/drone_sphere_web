@@ -17,6 +17,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
 import { Plus, Trash, Trash2 } from "lucide-react";
@@ -102,6 +109,13 @@ export default function DronePanel({
   const [selectedDroneKey, setSelectedDroneKey] = useState<string | undefined>(
     undefined
   );
+  // 添加一个状态控制绑定对话框的显示
+  const [bindDialogOpen, setBindDialogOpen] = useState(false);
+  // 最近添加的无人机键，用于绑定对话框中识别当前操作的无人机
+  const [lastAddedDroneKey, setLastAddedDroneKey] = useState<string>("");
+  // 在对话框中选择的物理无人机ID
+  const [selectedPhysicalDroneId, setSelectedPhysicalDroneId] =
+    useState<string>("");
 
   // 获取可用的物理无人机列表
   const physicalQuery = useQuery({
@@ -199,6 +213,12 @@ export default function DronePanel({
         },
       ];
     });
+
+    // 记录最近添加的无人机键，用于在对话框中识别
+    setLastAddedDroneKey(newDroneKey);
+
+    // 开启物理无人机绑定对话框
+    setBindDialogOpen(true);
   };
 
   // 删除无人机
@@ -215,56 +235,33 @@ export default function DronePanel({
     // });
   };
 
-  // 为无人机绑定物理机
-  const handleDroneSelection = (
+  // 为无人机绑定物理机的公共函数
+  const bindPhysicalDrone = (
     droneModelKey: string,
-    physicalDroneId: string
+    physicalDroneId: number | string
   ) => {
+    const numericPhysicalDroneId =
+      typeof physicalDroneId === "string"
+        ? Number(physicalDroneId)
+        : physicalDroneId;
+
     const droneModel = selectedDrones.find((d) => d.key === droneModelKey);
     const physicalDrone = physicalQuery.data?.find(
-      (d) => d.id === Number(physicalDroneId)
+      (d) => d.id === numericPhysicalDroneId
     );
+
     if (!droneModel || !physicalDrone) {
       toast({
         title: "选择错误",
         description: "无法找到所选无人机",
         variant: "destructive",
       });
-      return;
+      return false;
     }
-    console.log("handleDroneSelection", droneModel, physicalDrone);
-
-    // if (!droneModel || !physicalDrone) {
-    //   toast({
-    //     title: "选择错误",
-    //     description: "无法找到所选无人机",
-    //     variant: "destructive",
-    //   });
-    //   return;
-    // }
-
-    // // 检查该物理无人机是否已被其他型号的无人机映射
-    // const existingIndex = droneMappings.findIndex(
-    //   (m) =>
-    //     m.physical_drone_id === physicalDrone.id &&
-    //     m.selected_drone_key !== droneModelKey
-    // );
-
-    // if (existingIndex >= 0) {
-    //   toast({
-    //     title: "禁止操作",
-    //     description: `物理无人机${physicalDrone.sn}已被映射到其他机型`,
-    //     variant: "destructive",
-    //   });
-    //   return;
-    // }
+    console.log("绑定物理无人机", droneModel, physicalDrone);
 
     // 更新映射关系
     setDroneMappings((prev) => {
-      // 更新已有映射
-      console.log("Updating existing mapping", droneModelKey);
-      console.log("Current mapping", prev);
-
       // 重新创建所有映射
       const res = prev.map((mapping) => {
         if (mapping.selected_drone_key === droneModelKey) {
@@ -275,17 +272,13 @@ export default function DronePanel({
         }
         return mapping;
       });
-      console.log("New mapping", res);
       return res;
     });
-
-    // 注意：不要在这里打印droneMappings，因为状态更新是异步的，此时打印的仍然是旧值
 
     // 同时更新selectedDrones中相应无人机的physicalDrone信息
     setSelectedDrones((prev) => {
       return prev.map((drone) => {
         if (drone.key === droneModelKey) {
-          console.log("Updating drone with key:", droneModelKey);
           return {
             ...drone,
             physicalDrone: physicalDrone,
@@ -295,7 +288,16 @@ export default function DronePanel({
       });
     });
 
-    console.log("Updated selectedDrones", selectedDrones);
+    // 成功绑定后返回true
+    return true;
+  };
+
+  // 为无人机绑定物理机 - 用于普通选择器
+  const handleDroneSelection = (
+    droneModelKey: string,
+    physicalDroneId: string
+  ) => {
+    bindPhysicalDrone(droneModelKey, physicalDroneId);
   };
 
   // 根据无人机型号ID过滤可用的物理无人机
@@ -603,6 +605,129 @@ export default function DronePanel({
           </div>
         );
       })}
+
+      {/* 物理无人机绑定对话框 */}
+      <Dialog open={bindDialogOpen} onOpenChange={setBindDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>完善信息</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="text-sm">
+              为了确保系统正常运行，请为刚添加的无人机绑定物理设备
+            </div>
+            {lastAddedDroneKey && (
+              <div className="space-y-2">
+                <div className="flex items-center space-x-2">
+                  <div className="text-xs text-gray-500 whitespace-nowrap">
+                    绑定无人机
+                  </div>
+                  <FormItem className="flex-1 m-0">
+                    <Select
+                      value={selectedPhysicalDroneId}
+                      onValueChange={(value) => {
+                        setSelectedPhysicalDroneId(value);
+                      }}
+                    >
+                      <SelectTrigger className="w-full h-8 text-xs">
+                        <SelectValue placeholder="选择物理无人机" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectGroup>
+                          {(() => {
+                            // 根据最近添加的无人机键获取无人机对象
+                            const droneKey = lastAddedDroneKey.split("-");
+                            if (droneKey.length >= 2) {
+                              const droneId = parseInt(droneKey[1]);
+                              return availablePhysicalDronesByModelId(
+                                droneId
+                              ).map((physicalDrone) => (
+                                <SelectItem
+                                  key={physicalDrone.id}
+                                  value={String(physicalDrone.id)}
+                                  disabled={droneMappings.some(
+                                    (m) =>
+                                      m.physical_drone_id ===
+                                        physicalDrone.id &&
+                                      m.selected_drone_key !== lastAddedDroneKey
+                                  )}
+                                >
+                                  {physicalDrone.callsign} - {physicalDrone.sn}
+                                </SelectItem>
+                              ));
+                            }
+                            return (
+                              <SelectItem disabled value="0">
+                                无可用物理无人机
+                              </SelectItem>
+                            );
+                          })()}
+                          {(() => {
+                            // 根据最近添加的无人机键获取无人机对象
+                            const droneKey = lastAddedDroneKey.split("-");
+                            if (droneKey.length >= 2) {
+                              const droneId = parseInt(droneKey[1]);
+                              return availablePhysicalDronesByModelId(droneId)
+                                .length === 0 ? (
+                                <SelectItem disabled value="0">
+                                  无可用物理无人机
+                                </SelectItem>
+                              ) : null;
+                            }
+                            return null;
+                          })()}
+                        </SelectGroup>
+                      </SelectContent>
+                    </Select>
+                  </FormItem>
+                </div>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                // 关闭对话框但不绑定物理无人机
+                setBindDialogOpen(false);
+                setSelectedPhysicalDroneId("");
+              }}
+            >
+              稍后绑定
+            </Button>
+            <Button
+              type="button"
+              disabled={!selectedPhysicalDroneId}
+              onClick={() => {
+                if (selectedPhysicalDroneId && lastAddedDroneKey) {
+                  const success = bindPhysicalDrone(
+                    lastAddedDroneKey,
+                    selectedPhysicalDroneId
+                  );
+                  if (success) {
+                    // 绑定成功后关闭对话框
+                    setBindDialogOpen(false);
+                    setSelectedPhysicalDroneId("");
+                    toast({
+                      title: "绑定成功",
+                      description: "无人机已成功绑定到物理设备",
+                    });
+                  }
+                } else {
+                  toast({
+                    title: "未选择物理无人机",
+                    description: "请先选择要绑定的物理无人机",
+                    variant: "destructive",
+                  });
+                }
+              }}
+            >
+              确认绑定
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
