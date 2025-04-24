@@ -95,11 +95,17 @@ export default function DetailDialog(
   // 当获取到详细数据后更新表单默认值
   if (query.isSuccess && query.data) {
     form.setValue("gimbal_model_name", query.data.gimbal_model_name || "");
-    form.setValue("gimbal_model_description", query.data.gimbal_model_description || "");
+    form.setValue(
+      "gimbal_model_description",
+      query.data.gimbal_model_description || ""
+    );
     form.setValue("gimbal_model_domain", query.data.gimbal_model_domain);
     form.setValue("gimbal_model_type", query.data.gimbal_model_type);
     form.setValue("gimbal_model_sub_type", query.data.gimbal_model_sub_type);
-    form.setValue("gimbal_model_product", query.data.gimbal_model_product || "");
+    form.setValue(
+      "gimbal_model_product",
+      query.data.gimbal_model_product || ""
+    );
   }
 
   function onSubmit(data: z.infer<typeof formSchema>) {
@@ -140,7 +146,9 @@ export default function DetailDialog(
         {query.isSuccess && query.data && (
           <>
             <DialogHeader>
-              <DialogTitle>云台型号详细信息 - {query.data.gimbal_model_name}</DialogTitle>
+              <DialogTitle>
+                云台型号详细信息 - {query.data.gimbal_model_name}
+              </DialogTitle>
             </DialogHeader>
 
             <Form {...form}>
@@ -216,81 +224,33 @@ export default function DetailDialog(
                     </dd>
                   </div>
 
-                  {/* 可编辑字段 - 领域 */}
-                  <div className="py-2 sm:grid sm:grid-cols-3 sm:gap-4 items-center">
+                  {/* 不可编辑字段 - 领域 */}
+                  <div className="py-2 sm:grid sm:grid-cols-3 sm:gap-4">
                     <dt className="text-sm font-medium text-gray-500">
                       {keyMappings["gimbal_model_domain"] || "领域"}
                     </dt>
                     <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
-                      <FormField
-                        control={form.control}
-                        name="gimbal_model_domain"
-                        render={({ field }) => (
-                          <FormItem className="space-y-1">
-                            <FormControl>
-                              <Input 
-                                type="number" 
-                                placeholder="请输入领域" 
-                                {...field}
-                                onChange={(e) => field.onChange(parseInt(e.target.value) || 0)} 
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
+                      {query.data.gimbal_model_domain}
                     </dd>
                   </div>
 
-                  {/* 可编辑字段 - 主型号 */}
-                  <div className="py-2 sm:grid sm:grid-cols-3 sm:gap-4 items-center">
+                  {/* 不可编辑字段 - 主型号 */}
+                  <div className="py-2 sm:grid sm:grid-cols-3 sm:gap-4">
                     <dt className="text-sm font-medium text-gray-500">
                       {keyMappings["gimbal_model_type"] || "主型号"}
                     </dt>
                     <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
-                      <FormField
-                        control={form.control}
-                        name="gimbal_model_type"
-                        render={({ field }) => (
-                          <FormItem className="space-y-1">
-                            <FormControl>
-                              <Input 
-                                type="number" 
-                                placeholder="请输入主型号" 
-                                {...field}
-                                onChange={(e) => field.onChange(parseInt(e.target.value) || 0)} 
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
+                      {query.data.gimbal_model_type}
                     </dd>
                   </div>
 
-                  {/* 可编辑字段 - 子型号 */}
-                  <div className="py-2 sm:grid sm:grid-cols-3 sm:gap-4 items-center">
+                  {/* 不可编辑字段 - 子型号 */}
+                  <div className="py-2 sm:grid sm:grid-cols-3 sm:gap-4">
                     <dt className="text-sm font-medium text-gray-500">
                       {keyMappings["gimbal_model_sub_type"] || "子型号"}
                     </dt>
                     <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
-                      <FormField
-                        control={form.control}
-                        name="gimbal_model_sub_type"
-                        render={({ field }) => (
-                          <FormItem className="space-y-1">
-                            <FormControl>
-                              <Input 
-                                type="number" 
-                                placeholder="请输入子型号" 
-                                {...field}
-                                onChange={(e) => field.onChange(parseInt(e.target.value) || 0)} 
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
+                      {query.data.gimbal_model_sub_type}
                     </dd>
                   </div>
 
