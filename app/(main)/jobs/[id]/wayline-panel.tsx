@@ -175,7 +175,7 @@ export default function WaylinePanel({
                 />
               </div>
               <div>
-                <label className="text-xs text-gray-500">重叠率(%)</label>
+                <label className="text-xs text-gray-500">旁向重叠率(%)</label>
                 <input
                   type="number"
                   className="w-full border rounded px-2 py-1 text-sm"

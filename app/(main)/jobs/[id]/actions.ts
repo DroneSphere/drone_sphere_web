@@ -160,7 +160,26 @@ export function generateWaypoints(
   const maxLat = bbox[3];
 
   // 计算航线间距（考虑覆盖宽度和重叠率）
-  const effectiveWidth = droneParams.coverageWidth * (1 - droneParams.overlapRate);
+  // 计算地面覆盖宽度（基于飞行高度、俯仰角和放大倍数）
+  // 假设标准视场角FOV为35度，受到俯仰角和变焦的影响
+  const standardFOV = 35; // 标准视场角（度）
+  const effectiveFOV = standardFOV / droneParams.gimbalZoom; // 考虑变焦后的视场角
+  
+  // 计算俯仰角的影响（垂直向下时覆盖最窄，水平时无限宽）
+  // 从-90度（垂直向下）到0度（水平）映射到1到无穷大的因子
+  const pitchRadians = Math.abs(droneParams.gimbalPitch) * (Math.PI / 180);
+  const pitchFactor = 1 / Math.sin(pitchRadians);
+  
+  // 计算地面覆盖宽度
+  const fovRadians = effectiveFOV * (Math.PI / 180);
+  const coverageWidth = 2 * droneParams.flyingHeight * Math.tan(fovRadians / 2) * pitchFactor;
+  
+  // 使用计算得到的覆盖宽度或参数中提供的值（以较小者为准，确保安全覆盖）
+  const actualCoverageWidth = Math.min(coverageWidth, droneParams.coverageWidth);
+  console.log("理论覆盖宽度", actualCoverageWidth);
+  
+  // 考虑重叠率计算有效宽度
+  const effectiveWidth = actualCoverageWidth * (1 - droneParams.overlapRate);
 
   // 使用经纬度转换为米的简单计算（这只是一个近似值）
   // 在不同纬度，经度1度代表的距离不同
