@@ -31,12 +31,22 @@ const DroneCardList = ({
     drone: null,
   });
 
+  // 添加全局操作的状态
+  const [globalCommand, setGlobalCommand] = useState<string>("hover");
+
   const openVideoDialog = (drone: DroneData) => {
     setVideoDialog({ open: true, drone });
   };
 
   const closeVideoDialog = () => {
     setVideoDialog({ open: false, drone: null });
+  };
+
+  // 处理全局命令发送
+  const handleGlobalCommand = () => {
+    // 这里实现对所有无人机发送命令的逻辑
+    console.log(`向所有无人机发送命令: ${globalCommand}`);
+    // TODO: 实现实际的命令发送逻辑
   };
 
   if (!drones) {
@@ -49,6 +59,48 @@ const DroneCardList = ({
 
   return (
     <>
+      {/* 添加总标题和全局控制组件 */}
+      <div className="mb-4">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-md font-medium">无人机列表</h2>
+          <div className="text-xs text-gray-500">
+            共 {drones.length} 台无人机
+          </div>
+        </div>
+
+        {/* 全局控制面板 */}
+        <div className="bg-white rounded-sm overflow-hidden border border-gray-100 shadow-md">
+          <div className="p-2 flex items-center justify-between bg-blue-50">
+            <div className="font-medium text-sm">全局控制</div>
+            <div className="text-xs text-blue-600">
+              操作将应用于所有已连接的无人机
+            </div>
+          </div>
+
+          <div className="flex items-center py-3 px-3">
+            <div className="flex items-center gap-2">
+              <select
+                className="text-xs border rounded px-2 py-1 bg-white"
+                value={globalCommand}
+                onChange={(e) => setGlobalCommand(e.target.value)}
+              >
+                <option value="hover">悬停</option>
+                <option value="takeoff">起飞</option>
+                <option value="return">返航</option>
+                <option value="land">降落</option>
+                <option value="emergency_land">紧急降落</option>
+              </select>
+              <button
+                className="bg-blue-600 text-white text-xs px-3 py-1 rounded"
+                onClick={handleGlobalCommand}
+              >
+                发送给所有无人机
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div className="space-y-4 h-full overflow-y-auto">
         {drones.map((drone, index) => (
           <div
