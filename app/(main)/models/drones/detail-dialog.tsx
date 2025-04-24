@@ -227,108 +227,43 @@ export default function DetailDialog(
                     </dd>
                   </div>
 
-                  {/* 可编辑字段 - 领域 */}
-                  <div className="py-2 sm:grid sm:grid-cols-3 sm:gap-4 items-center">
+                  {/* 不可编辑字段 - 领域 */}
+                  <div className="py-2 sm:grid sm:grid-cols-3 sm:gap-4">
                     <dt className="text-sm font-medium text-gray-500">
                       {keyMappings["domain"] || "领域"}
                     </dt>
                     <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
-                      <FormField
-                        control={form.control}
-                        name="domain"
-                        render={({ field }) => (
-                          <FormItem className="space-y-1">
-                            <FormControl>
-                              <Input
-                                type="number"
-                                placeholder="请输入领域"
-                                {...field}
-                                onChange={(e) =>
-                                  field.onChange(parseInt(e.target.value) || 0)
-                                }
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
+                      {modelData.domain}
                     </dd>
                   </div>
 
-                  {/* 可编辑字段 - 主型号 */}
-                  <div className="py-2 sm:grid sm:grid-cols-3 sm:gap-4 items-center">
+                  {/* 不可编辑字段 - 主型号 */}
+                  <div className="py-2 sm:grid sm:grid-cols-3 sm:gap-4">
                     <dt className="text-sm font-medium text-gray-500">
                       {keyMappings["type"] || "主型号"}
                     </dt>
                     <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
-                      <FormField
-                        control={form.control}
-                        name="type"
-                        render={({ field }) => (
-                          <FormItem className="space-y-1">
-                            <FormControl>
-                              <Input
-                                type="number"
-                                placeholder="请输入主型号"
-                                {...field}
-                                onChange={(e) =>
-                                  field.onChange(parseInt(e.target.value) || 0)
-                                }
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
+                      {modelData.type}
                     </dd>
                   </div>
 
-                  {/* 可编辑字段 - 子型号 */}
-                  <div className="py-2 sm:grid sm:grid-cols-3 sm:gap-4 items-center">
+                  {/* 不可编辑字段 - 子型号 */}
+                  <div className="py-2 sm:grid sm:grid-cols-3 sm:gap-4">
                     <dt className="text-sm font-medium text-gray-500">
                       {keyMappings["sub_type"] || "子型号"}
                     </dt>
                     <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
-                      <FormField
-                        control={form.control}
-                        name="sub_type"
-                        render={({ field }) => (
-                          <FormItem className="space-y-1">
-                            <FormControl>
-                              <Input
-                                type="number"
-                                placeholder="请输入子型号"
-                                {...field}
-                                onChange={(e) =>
-                                  field.onChange(parseInt(e.target.value) || 0)
-                                }
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
+                      {modelData.sub_type}
                     </dd>
                   </div>
 
-                  {/* 可编辑字段 - 网关设备 */}
-                  <div className="py-2 sm:grid sm:grid-cols-3 sm:gap-4 items-center">
+                  {/* 不可编辑字段 - 网关设备 */}
+                  <div className="py-2 sm:grid sm:grid-cols-3 sm:gap-4">
                     <dt className="text-sm font-medium text-gray-500">
                       {keyMappings["gateway_name"] || "网关设备"}
                     </dt>
                     <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
-                      <FormField
-                        control={form.control}
-                        name="gateway_name"
-                        render={({ field }) => (
-                          <FormItem className="space-y-1">
-                            <FormControl>
-                              <Input placeholder="请输入网关设备" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
+                      {modelData.gateway_name}
                     </dd>
                   </div>
 
