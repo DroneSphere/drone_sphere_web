@@ -130,7 +130,21 @@ export default function DetailDialog(
               >
                 {/* 表单内容部分 */}
                 <div className="my-4 divide-y divide-gray-200">
-                  {/* 可编辑字段 - 呼号 */}
+                  {/* 1. 无人机ID（不可编辑） */}
+                  <div className="py-2 sm:grid sm:grid-cols-3 sm:gap-4">
+                    <dt className="text-sm font-medium text-gray-500">
+                      {keyMappings["sn"] || "无人机ID"}
+                    </dt>
+                    <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
+                      <span className="text-gray-500">
+                        {query.data.sn || (
+                          <span className="text-gray-400">无</span>
+                        )}
+                      </span>
+                    </dd>
+                  </div>
+
+                  {/* 2. 呼号（可编辑） */}
                   <div className="py-2 sm:grid sm:grid-cols-3 sm:gap-4 items-center">
                     <dt className="text-sm font-medium text-gray-500">
                       {keyMappings["callsign"] || "呼号"}
@@ -154,7 +168,7 @@ export default function DetailDialog(
                     </dd>
                   </div>
 
-                  {/* 可编辑字段 - 描述 */}
+                  {/* 3. 描述（可编辑） */}
                   <div className="py-2 sm:grid sm:grid-cols-3 sm:gap-4 items-center">
                     <dt className="text-sm font-medium text-gray-500">
                       {keyMappings["description"] || "描述"}
@@ -175,62 +189,128 @@ export default function DetailDialog(
                     </dd>
                   </div>
 
-                  {/* 非可编辑字段 */}
-                  {Object.entries(query.data).map(([key, value]) => {
-                    // 跳过可编辑字段，因为已经在上面单独处理了
-                    if (
-                      key === "callsign" ||
-                      key === "description" ||
-                      key === "sn"
-                    ) {
-                      return null;
-                    }
+                  {/* 4. 产品型号（不可编辑） */}
+                  <div className="py-2 sm:grid sm:grid-cols-3 sm:gap-4">
+                    <dt className="text-sm font-medium text-gray-500">
+                      {keyMappings["modelName"] || "产品型号"}
+                    </dt>
+                    <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
+                      <span className="text-gray-500">
+                        {query.data.product_model === null ||
+                        query.data.product_model === undefined ||
+                        query.data.product_model === "" ? (
+                          <span className="text-gray-400">无</span>
+                        ) : (
+                          query.data.product_model
+                        )}
+                      </span>
+                    </dd>
+                  </div>
 
-                    return (
-                      <div
-                        key={key}
-                        className="py-2 sm:grid sm:grid-cols-3 sm:gap-4"
-                      >
-                        <dt className="text-sm font-medium text-gray-500">
-                          {keyMappings[key] || key}
-                        </dt>
+                  {/* 5. 产品型号标识符（不可编辑） */}
+                  <div className="py-2 sm:grid sm:grid-cols-3 sm:gap-4">
+                    <dt className="text-sm font-medium text-gray-500">
+                      {keyMappings["modelIdentifier"] || "产品型号标识符"}
+                    </dt>
+                    <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
+                      <span className="text-gray-500">
+                        {query.data.product_model_key === null ||
+                        query.data.product_model_key === undefined ||
+                        query.data.product_model_key === "" ? (
+                          <span className="text-gray-400">无</span>
+                        ) : (
+                          query.data.product_model_key
+                        )}
+                      </span>
+                    </dd>
+                  </div>
 
-                        <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
-                          {!key.includes("is") && !key.includes("has") ? (
-                            // 当值为空时显示灰色的"无"
-                            <span className="text-gray-500">
-                              {value === null ||
-                              value === undefined ||
-                              value === "" ? (
-                                <span className="text-gray-400">无</span>
-                              ) : (
-                                value
-                              )}
-                            </span>
-                          ) : (
-                            <div className="flex items-center">
-                              <div
-                                className={`w-3 h-3 rounded-full ${
-                                  value === null || value === undefined
-                                    ? "bg-gray-300"
-                                    : value
-                                    ? "bg-green-500"
-                                    : "bg-red-500"
-                                }`}
-                              />
-                              <span className="ml-2 text-gray-500">
-                                {value === null || value === undefined
-                                  ? "未知"
-                                  : value
-                                  ? "是"
-                                  : "否"}
-                              </span>
-                            </div>
-                          )}
-                        </dd>
+                  {/* 6. 在线状态（不可编辑） */}
+                  <div className="py-2 sm:grid sm:grid-cols-3 sm:gap-4">
+                    <dt className="text-sm font-medium text-gray-500">
+                      {keyMappings["isOnline"] || "在线状态"}
+                    </dt>
+                    <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
+                      <div className="flex items-center">
+                        <div
+                          className={`w-3 h-3 rounded-full ${
+                            query.data.status === null ||
+                            query.data.status === undefined
+                              ? "bg-gray-300"
+                              : query.data.status
+                              ? "bg-green-500"
+                              : "bg-red-500"
+                          }`}
+                        />
+                        <span className="ml-2 text-gray-500">
+                          {query.data.status === null ||
+                          query.data.status === undefined
+                            ? "未知"
+                            : query.data.status
+                            ? "是"
+                            : "否"}
+                        </span>
                       </div>
-                    );
-                  })}
+                    </dd>
+                  </div>
+
+                  {/* 7. 是否支持RTK（不可编辑） */}
+                  <div className="py-2 sm:grid sm:grid-cols-3 sm:gap-4">
+                    <dt className="text-sm font-medium text-gray-500">
+                      {keyMappings["hasRTK"] || "是否支持RTK"}
+                    </dt>
+                    <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
+                      <div className="flex items-center">
+                        <div
+                          className={`w-3 h-3 rounded-full ${
+                            query.data.is_rtk_available === null ||
+                            query.data.is_rtk_available === undefined
+                              ? "bg-gray-300"
+                              : query.data.is_rtk_available
+                              ? "bg-green-500"
+                              : "bg-red-500"
+                          }`}
+                        />
+                        <span className="ml-2 text-gray-500">
+                          {query.data.is_rtk_available === null ||
+                          query.data.is_rtk_available === undefined
+                            ? "未知"
+                            : query.data.is_rtk_available
+                            ? "是"
+                            : "否"}
+                        </span>
+                      </div>
+                    </dd>
+                  </div>
+
+                  {/* 8. 是否支持热成像（不可编辑） */}
+                  <div className="py-2 sm:grid sm:grid-cols-3 sm:gap-4">
+                    <dt className="text-sm font-medium text-gray-500">
+                      {keyMappings["hasThermal"] || "是否支持热成像"}
+                    </dt>
+                    <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
+                      <div className="flex items-center">
+                        <div
+                          className={`w-3 h-3 rounded-full ${
+                            query.data.is_thermal_available === null ||
+                            query.data.is_thermal_available === undefined
+                              ? "bg-gray-300"
+                              : query.data.is_thermal_available
+                              ? "bg-green-500"
+                              : "bg-red-500"
+                          }`}
+                        />
+                        <span className="ml-2 text-gray-500">
+                          {query.data.is_thermal_available === null ||
+                          query.data.is_thermal_available === undefined
+                            ? "未知"
+                            : query.data.is_thermal_available
+                            ? "是"
+                            : "否"}
+                        </span>
+                      </div>
+                    </dd>
+                  </div>
                 </div>
 
                 {/* 底部按钮 */}
