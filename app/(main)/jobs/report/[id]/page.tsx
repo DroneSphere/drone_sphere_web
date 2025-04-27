@@ -28,6 +28,8 @@ export default function Page() {
 
   // 区域面积状态
   const [areaSize, setAreaSize] = useState<number>(0);
+  // 区域周长状态
+  const [areaLength, setAreaLength] = useState<number>(0);
 
   // 计算工作状态
   const { idPart } = useIsCreateMode();
@@ -203,7 +205,18 @@ export default function Page() {
         AMapRef.current!.GeometryUtil.ringArea(areaPath);
       console.log("Area size: ", areaSizeInSqMeters);
 
+      // 计算区域周长 - 需要复制路径并闭合
+      const pathForLength = [...areaPath];
+      // 将第一个点添加到末尾以闭合多边形
+      pathForLength.push(areaPath[0]);
+      // 使用高德地图API计算路径长度（周长）
+      const areaLengthInMeters =
+        AMapRef.current!.GeometryUtil.distanceOfLine(pathForLength);
+      console.log("Area length: ", areaLengthInMeters);
+
+      // 更新状态
       setAreaSize(areaSizeInSqMeters);
+      setAreaLength(areaLengthInMeters);
     }
   }, [dataQuery.isSuccess, dataQuery.data, isMapLoaded, AMapRef]);
 
@@ -284,7 +297,7 @@ export default function Page() {
       });
       activeEditorRef.current = -1;
     };
-  }, [isMapLoaded, AMapRef, mapRef]);
+  }, [isMapLoaded, AMapRef, mapRef, path]); // 添加 path 到依赖数组中
 
   // 在地图上绘制搜索结果标记点
   useEffect(() => {
@@ -478,6 +491,18 @@ export default function Page() {
                             ? areaSize.toFixed(2)
                             : (areaSize / 10000).toFixed(2)
                         } ${areaSize < 10000 ? "平方米" : "公顷"}`
+                      : "-"}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500">搜索区域周长:</span>
+                  <span className="font-medium">
+                    {areaLength > 0
+                      ? `${
+                          areaLength < 1000
+                            ? areaLength.toFixed(2)
+                            : (areaLength / 1000).toFixed(2)
+                        } ${areaLength < 1000 ? "米" : "公里"}`
                       : "-"}
                   </span>
                 </div>
