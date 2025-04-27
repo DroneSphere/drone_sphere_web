@@ -46,11 +46,12 @@ export default function WaylinePanel({
   const { toast } = useToast();
   console.log("waylineAreas", waylineAreas);
 
-  // 添加无人机飞行参数状态，增加云台相关参数
+  // 添加无人机飞行参数状态，增加云台相关参数和航线层高间隔
   const [droneParams, setDroneParams] = useState({
     flyingHeight: 30, // 默认飞行高度30米
     coverageWidth: 20, // 默认每次覆盖20米宽
     overlapRate: 0.2, // 默认20%的重叠率
+    heightInterval: 5, // 默认航线层高间隔5米，用于避免不同航线的高度冲突
     gimbalPitch: -90, // 默认云台俯仰角-90度（垂直向下）
     gimbalZoom: 1, // 默认放大倍数1x
   });
@@ -141,7 +142,7 @@ export default function WaylinePanel({
           {/* 航线参数卡片 */}
           <div className="mt-2 border p-2 rounded-md">
             <p className="text-sm font-medium mb-1">航线参数</p>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 gap-2">
               <div>
                 <label className="text-xs text-gray-500">飞行高度(米)</label>
                 <input
@@ -189,6 +190,24 @@ export default function WaylinePanel({
                   min="0"
                   max="50"
                 />
+              </div>
+              <div>
+                <label className="text-xs text-gray-500">航线层高间隔(米)</label>
+                <input
+                  type="number"
+                  className="w-full border rounded px-2 py-1 text-sm"
+                  value={droneParams.heightInterval}
+                  onChange={(e) =>
+                    setDroneParams({
+                      ...droneParams,
+                      heightInterval: Number(e.target.value),
+                    })
+                  }
+                  min="1"
+                  max="20"
+                  step="1"
+                />
+                <div className="text-xs text-gray-400 p-1">(相邻航线高度差)</div>
               </div>
             </div>
           </div>
