@@ -30,6 +30,13 @@ import { Plus, Trash, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { getJobPhysicalDrones } from "../report/[id]/request";
 
+// 镜头参数类型的枚举常量及对应的显示标签
+const LENS_TYPES = {
+  visible: "可见光",
+  thermal: "热成像",
+  fusion: "双光融合",
+} as const;
+
 /**
  * 表示系统中的无人机与其物理实体之间的映射关系
  * @interface DroneMapping
@@ -39,10 +46,12 @@ import { getJobPhysicalDrones } from "../report/[id]/request";
  * @property {number} physicalDroneId - 与物理无人机关联的ID
  * @property {string} physicalDroneSN - 物理无人机的序列号
  * @property {string} color - 在UI中表示此无人机的颜色
+ * @property {string} lensType - 无人机使用的镜头类型
  */
 export interface DroneMapping {
   selected_drone_key: string;
   physical_drone_id: number;
+  lens_type: keyof typeof LENS_TYPES; // 镜头参数：可见光(visible)、热成像(thermal)、双光融合(fusion)
 }
 
 interface DronePanelProps {
@@ -116,6 +125,9 @@ export default function DronePanel({
   // 在对话框中选择的物理无人机ID
   const [selectedPhysicalDroneId, setSelectedPhysicalDroneId] =
     useState<string>("");
+  // 在对话框中选择的镜头参数
+  const [selectedLensType, setSelectedLensType] =
+    useState<keyof typeof LENS_TYPES>("visible");
 
   // 获取可用的物理无人机列表
   const physicalQuery = useQuery({
@@ -210,12 +222,16 @@ export default function DronePanel({
         {
           selected_drone_key: newDroneKey,
           physical_drone_id: -1, // 初始时没有绑定物理无人机
+          lens_type: "visible", // 默认设置为可见光
         },
       ];
     });
 
     // 记录最近添加的无人机键，用于在对话框中识别
     setLastAddedDroneKey(newDroneKey);
+
+    // 重置镜头参数选择为默认值
+    setSelectedLensType("visible");
 
     // 开启物理无人机绑定对话框
     setBindDialogOpen(true);
@@ -298,6 +314,45 @@ export default function DronePanel({
     physicalDroneId: string
   ) => {
     bindPhysicalDrone(droneModelKey, physicalDroneId);
+  };
+
+  // 为无人机设置镜头参数
+  const setDroneLensType = (
+    droneModelKey: string,
+    lensType: keyof typeof LENS_TYPES
+  ) => {
+    // 更新映射关系
+    setDroneMappings((prev) => {
+      return prev.map((mapping) => {
+        if (mapping.selected_drone_key === droneModelKey) {
+          return {
+            ...mapping,
+            lens_type: lensType,
+          };
+        }
+        return mapping;
+      });
+    });
+
+    // 同时更新selectedDrones中相应无人机的lensType信息
+    setSelectedDrones((prev) => {
+      return prev.map((drone) => {
+        if (drone.key === droneModelKey) {
+          return {
+            ...drone,
+            lensType: lensType,
+          };
+        }
+        return drone;
+      });
+    });
+
+    toast({
+      title: "镜头参数已更新",
+      description: `已将无人机镜头参数设置为${LENS_TYPES[lensType]}`,
+    });
+
+    return true;
   };
 
   // 根据无人机型号ID过滤可用的物理无人机
@@ -515,6 +570,56 @@ export default function DronePanel({
                 )}
               </div>
             </div>
+
+            {/* 镜头参数选择器 */}
+            <div className="mt-2">
+              <div className="flex items-center space-x-2">
+                <div className="text-xs text-gray-500 whitespace-nowrap">
+                  镜头参数
+                </div>
+
+                {isEditMode ? (
+                  <FormItem className="flex-1 m-0">
+                    <Select
+                      value={mapping?.lens_type || "visible"}
+                      onValueChange={(value) =>
+                        setDroneLensType(
+                          drone.key,
+                          value as keyof typeof LENS_TYPES
+                        )
+                      }
+                    >
+                      <SelectTrigger className="w-full h-8 text-xs">
+                        <SelectValue placeholder="选择镜头参数">
+                          {mapping?.lens_type
+                            ? LENS_TYPES[mapping.lens_type]
+                            : LENS_TYPES.visible}
+                        </SelectValue>
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectGroup>
+                          <SelectItem value="visible">
+                            {LENS_TYPES.visible}
+                          </SelectItem>
+                          <SelectItem value="thermal">
+                            {LENS_TYPES.thermal}
+                          </SelectItem>
+                          <SelectItem value="fusion">
+                            {LENS_TYPES.fusion}
+                          </SelectItem>
+                        </SelectGroup>
+                      </SelectContent>
+                    </Select>
+                  </FormItem>
+                ) : (
+                  <div className="text-sm text-gray-600">
+                    {mapping?.lens_type
+                      ? LENS_TYPES[mapping.lens_type]
+                      : LENS_TYPES.visible}
+                  </div>
+                )}
+              </div>
+            </div>
             {/* 无人机功能状态 */}
             <div className="text-xs text-gray-500 flex items-center">
               <div
@@ -614,10 +719,11 @@ export default function DronePanel({
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="text-sm">
-              为了确保系统正常运行，请为刚添加的无人机绑定物理设备
+              为了确保系统正常运行，请为刚添加的无人机绑定物理设备和设置镜头参数
             </div>
             {lastAddedDroneKey && (
-              <div className="space-y-2">
+              <div className="space-y-4">
+                {/* 物理无人机绑定选择器 */}
                 <div className="flex items-center space-x-2">
                   <div className="text-xs text-gray-500 whitespace-nowrap">
                     绑定无人机
@@ -681,6 +787,40 @@ export default function DronePanel({
                     </Select>
                   </FormItem>
                 </div>
+
+                {/* 镜头参数选择器 */}
+                <div className="flex items-center space-x-2">
+                  <div className="text-xs text-gray-500 whitespace-nowrap">
+                    镜头参数
+                  </div>
+                  <FormItem className="flex-1 m-0">
+                    <Select
+                      value={selectedLensType}
+                      onValueChange={(value) => {
+                        setSelectedLensType(value as keyof typeof LENS_TYPES);
+                      }}
+                    >
+                      <SelectTrigger className="w-full h-8 text-xs">
+                        <SelectValue placeholder="选择镜头参数">
+                          {LENS_TYPES[selectedLensType]}
+                        </SelectValue>
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectGroup>
+                          <SelectItem value="visible">
+                            {LENS_TYPES.visible}
+                          </SelectItem>
+                          <SelectItem value="thermal">
+                            {LENS_TYPES.thermal}
+                          </SelectItem>
+                          <SelectItem value="fusion">
+                            {LENS_TYPES.fusion}
+                          </SelectItem>
+                        </SelectGroup>
+                      </SelectContent>
+                    </Select>
+                  </FormItem>
+                </div>
               </div>
             )}
           </div>
@@ -700,30 +840,42 @@ export default function DronePanel({
               type="button"
               disabled={!selectedPhysicalDroneId}
               onClick={() => {
-                if (selectedPhysicalDroneId && lastAddedDroneKey) {
-                  const success = bindPhysicalDrone(
-                    lastAddedDroneKey,
-                    selectedPhysicalDroneId
-                  );
+                if (lastAddedDroneKey) {
+                  let success = true;
+
+                  // 绑定物理无人机（如果已选择）
+                  if (selectedPhysicalDroneId) {
+                    success = bindPhysicalDrone(
+                      lastAddedDroneKey,
+                      selectedPhysicalDroneId
+                    );
+                  }
+
+                  // 设置镜头参数
+                  if (success && selectedLensType) {
+                    setDroneLensType(lastAddedDroneKey, selectedLensType);
+                  }
+
                   if (success) {
-                    // 绑定成功后关闭对话框
+                    // 操作成功后关闭对话框
                     setBindDialogOpen(false);
                     setSelectedPhysicalDroneId("");
+                    setSelectedLensType("visible"); // 重置为默认值
                     toast({
-                      title: "绑定成功",
-                      description: "无人机已成功绑定到物理设备",
+                      title: "设置成功",
+                      description: "无人机配置已成功设置",
                     });
                   }
                 } else {
                   toast({
-                    title: "未选择物理无人机",
-                    description: "请先选择要绑定的物理无人机",
+                    title: "操作失败",
+                    description: "无法识别当前操作的无人机",
                     variant: "destructive",
                   });
                 }
               }}
             >
-              确认绑定
+              确认设置
             </Button>
           </DialogFooter>
         </DialogContent>
