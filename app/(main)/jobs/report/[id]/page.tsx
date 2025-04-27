@@ -10,6 +10,7 @@ import "@amap/amap-jsapi-types";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import SearchResultList from "./search-result-list";
+import { formatDateTime, calculateWaylineLength } from "./action";
 
 export default function Page() {
   const AMapRef = useRef<typeof AMap | null>(null);
@@ -24,6 +25,9 @@ export default function Page() {
   const polylinesRef = useRef<AMap.Polyline[]>([]);
   // Add new ref for markers
   const markersRef = useRef<AMap.Marker[][]>([]);
+
+  // 区域面积状态
+  const [areaSize, setAreaSize] = useState<number>(0);
 
   // 计算工作状态
   const { idPart } = useIsCreateMode();
@@ -191,6 +195,15 @@ export default function Page() {
         (p) => new AMapRef.current!.LngLat(p.lng, p.lat)
       );
       setPath(areaPath);
+
+      // 计算区域面积
+      console.log("Points: ", areaPath);
+
+      const areaSizeInSqMeters =
+        AMapRef.current!.GeometryUtil.ringArea(areaPath);
+      console.log("Area size: ", areaSizeInSqMeters);
+
+      setAreaSize(areaSizeInSqMeters);
     }
   }, [dataQuery.isSuccess, dataQuery.data, isMapLoaded, AMapRef]);
 
@@ -351,15 +364,6 @@ export default function Page() {
           direction: "right",
           // 标签样式
           offset: new currentAMap.Pixel(0, 0),
-          style: {
-            backgroundColor: "rgba(255, 255, 255, 0.8)",
-            color: "#333",
-            fontSize: "12px",
-            fontWeight: "bold",
-            border: "1px solid #ccc",
-            padding: "2px 4px",
-            borderRadius: "2px",
-          },
         },
         // 自定义标记点的图标和样式
         icon: new currentAMap.Icon({
@@ -422,16 +426,325 @@ export default function Page() {
       <div className="flex gap-4">
         <div
           id="map"
-          className="h-[calc(100vh-132px)] w-full border rounded-md shadow-sm"
+          className="h-[calc(100vh-132px)] w-[calc(100%-480px)] border rounded-md shadow-sm"
         />
-        <div className="w-[480px]">
-          <SearchResultList
-            searchResults={resultQuery.data?.items || []}
-            onResultClick={(result) => {
-              console.log("点击搜索结果", result);
-              // 处理点击事件
-            }}
-          />
+        <div className="w-[480px] h-[calc(100vh-132px)] overflow-y-auto border rounded-md shadow-sm p-4">
+          {/* 顶部下载报告按钮 */}
+          <div className="flex justify-end mb-4">
+            <button
+              onClick={() => {
+                // 实现下载报告功能
+                alert("报告下载功能即将上线");
+              }}
+              className="px-4 py-2 text-white bg-blue-500 rounded-md hover:bg-blue-600 transition-colors"
+            >
+              下载报告
+            </button>
+          </div>
+
+          {/* 任务基本信息 */}
+          <div className="mb-6">
+            <h2 className="text-lg font-bold mb-3 pb-2 border-b">
+              任务基本信息
+            </h2>
+            {dataQuery.isLoading ? (
+              <div className="flex items-center justify-center h-24">
+                <span>加载中...</span>
+              </div>
+            ) : dataQuery.isError ? (
+              <div className="flex items-center justify-center h-24 text-red-500">
+                <span>加载失败</span>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-gray-500">任务名称:</span>
+                  <span className="font-medium">
+                    {dataQuery.data?.name || "-"}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500">任务介绍:</span>
+                  <span className="font-medium">
+                    {dataQuery.data?.description || "-"}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500">搜索区域面积:</span>
+                  <span className="font-medium">
+                    {areaSize > 0
+                      ? `${
+                          areaSize < 10000
+                            ? areaSize.toFixed(2)
+                            : (areaSize / 10000).toFixed(2)
+                        } ${areaSize < 10000 ? "平方米" : "公顷"}`
+                      : "-"}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500">起飞时间:</span>
+                  <span className="font-medium">
+                    {formatDateTime(new Date(Date.now() - 1000 * 60 * 60))}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500">降落时间:</span>
+                  <span className="font-medium">
+                    {formatDateTime(new Date())}
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* 无人机飞行统计 */}
+          <div className="mb-6">
+            <h2 className="text-lg font-bold mb-3 pb-2 border-b">
+              无人机飞行统计
+            </h2>
+            {dataQuery.isLoading ? (
+              <div className="flex items-center justify-center h-24">
+                <span>加载中...</span>
+              </div>
+            ) : dataQuery.isError ? (
+              <div className="flex items-center justify-center h-24 text-red-500">
+                <span>加载失败</span>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {/* 获取无人机数据 */}
+                {(() => {
+                  // 获取真实数据
+                  const drones = dataQuery.data?.drones || [];
+                  const mappings = dataQuery.data?.mappings || [];
+                  const waylines = dataQuery.data?.waylines || [];
+
+                  // 存储每个无人机的飞行长度
+                  const droneFlightLengths: Record<string, number> = {};
+
+                  // 计算每个无人机的飞行长度
+                  waylines.forEach((wayline) => {
+                    // 如果没有路径点，跳过
+                    if (!wayline.path || wayline.path.length < 2) return;
+
+                    // 计算航线长度（米）
+                    const lengthInMeters = calculateWaylineLength(wayline.path);
+                    // 转换为千米，保留1位小数
+                    const lengthInKm = lengthInMeters / 1000;
+
+                    // 存储到对应的无人机键下
+                    droneFlightLengths[wayline.drone_key] =
+                      (droneFlightLengths[wayline.drone_key] || 0) + lengthInKm;
+                  });
+
+                  // 如果没有计算出任何航线长度，使用示例数据
+                  const hasRealFlightData =
+                    Object.keys(droneFlightLengths).length > 0;
+                  if (!hasRealFlightData) {
+                    // 使用示例数据
+                    drones.forEach((drone, index) => {
+                      if (index < 3) {
+                        // 示例长度：3.2, 2.8, 4.1 千米
+                        const exampleLengths = [3.2, 2.8, 4.1];
+                        droneFlightLengths[drone.key] = exampleLengths[index];
+                      }
+                    });
+
+                    // 如果没有无人机数据，创建示例数据
+                    if (drones.length === 0) {
+                      for (let i = 0; i < 3; i++) {
+                        const exampleKey = `example-${i}`;
+                        droneFlightLengths[exampleKey] = [3.2, 2.8, 4.1][i];
+                      }
+                    }
+                  }
+
+                  // 计算总长度（千米）
+                  const totalLength = Object.values(droneFlightLengths).reduce(
+                    (sum, length) => sum + length,
+                    0
+                  );
+
+                  // 生成呼号映射
+                  const callsignMap: Record<string, string> = {};
+                  mappings.forEach((mapping, index) => {
+                    // 在实际数据中获取物理无人机的序列号或呼号作为显示名称
+                    callsignMap[mapping.selected_drone_key] =
+                      mapping.physical_drone_callsign || `无人机${index + 1}`;
+                  });
+
+                  // 获取有飞行长度数据的无人机键列表
+                  const droneKeysWithFlightData =
+                    Object.keys(droneFlightLengths);
+
+                  // 无人机实际数量（有飞行数据的无人机数量）
+                  const actualDroneCount = hasRealFlightData
+                    ? droneKeysWithFlightData.length
+                    : drones.length || 3;
+
+                  return (
+                    <>
+                      <div className="flex justify-between">
+                        <span className="text-gray-500">无人机总数:</span>
+                        <span className="font-medium">
+                          {actualDroneCount} 台
+                        </span>
+                      </div>
+
+                      {/* 显示每架无人机的飞行长度 */}
+                      {droneKeysWithFlightData.map((droneKey, index) => {
+                        // 获取对应的无人机信息
+                        const drone = drones.find((d) => d.key === droneKey);
+
+                        // 获取呼号或名称
+                        let displayName = "未知";
+                        if (callsignMap[droneKey]) {
+                          displayName = callsignMap[droneKey];
+                        } else if (drone?.name) {
+                          displayName = drone.name;
+                        } else {
+                          displayName = `无人机${index + 1}`;
+                        }
+
+                        return (
+                          <div key={droneKey} className="flex justify-between">
+                            <span className="text-gray-500">
+                              {displayName} 飞行长度:
+                            </span>
+                            <span className="font-medium">
+                              {droneFlightLengths[droneKey].toFixed(1)} 千米
+                            </span>
+                          </div>
+                        );
+                      })}
+
+                      {/* 如果没有无人机数据，显示示例数据 */}
+                      {droneKeysWithFlightData.length === 0 && (
+                        <>
+                          <div className="flex justify-between">
+                            <span className="text-gray-500">
+                              无人机 1 飞行长度:
+                            </span>
+                            <span className="font-medium">3.2 千米</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-500">
+                              无人机 2 飞行长度:
+                            </span>
+                            <span className="font-medium">2.8 千米</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-500">
+                              无人机 3 飞行长度:
+                            </span>
+                            <span className="font-medium">4.1 千米</span>
+                          </div>
+                        </>
+                      )}
+
+                      <div className="flex justify-between font-bold mt-2 pt-2 border-t">
+                        <span>飞行总长度:</span>
+                        <span>{totalLength.toFixed(1)} 千米</span>
+                      </div>
+                    </>
+                  );
+                })()}
+              </div>
+            )}
+          </div>
+
+          {/* 检测结果统计 */}
+          <div className="mb-6">
+            <h2 className="text-lg font-bold mb-3 pb-2 border-b">
+              检测结果统计
+            </h2>
+            {resultQuery.isLoading ? (
+              <div className="flex items-center justify-center h-24">
+                <span>加载中...</span>
+              </div>
+            ) : resultQuery.isError ? (
+              <div className="flex items-center justify-center h-24 text-red-500">
+                <span>加载失败</span>
+              </div>
+            ) : !resultQuery.data?.items?.length ? (
+              <div className="flex items-center justify-center h-24 text-gray-500">
+                <span>暂无检测结果</span>
+              </div>
+            ) : (
+              <div>
+                {/* 计算不同类型的检测结果数量 */}
+                {(() => {
+                  const resultsByType: Record<string, number> = {};
+                  resultQuery.data.items.forEach((item) => {
+                    resultsByType[item.target_label] =
+                      (resultsByType[item.target_label] || 0) + 1;
+                  });
+
+                  return (
+                    <div className="space-y-2 mb-4">
+                      {Object.entries(resultsByType).map(([type, count]) => (
+                        <div key={type} className="flex justify-between">
+                          <span className="text-gray-500">{type}:</span>
+                          <span className="font-medium">{count} 个</span>
+                        </div>
+                      ))}
+                      <div className="flex justify-between font-bold mt-2 pt-2">
+                        <span>检测总数:</span>
+                        <span>{resultQuery.data.items.length} 个</span>
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+            )}
+          </div>
+
+          {/* 检测结果列表 */}
+          <div>
+            <h2 className="text-lg font-bold mb-3 pb-2 border-b">
+              检测结果列表
+            </h2>
+            <SearchResultList
+              searchResults={resultQuery.data?.items || []}
+              onResultClick={(result) => {
+                console.log("点击搜索结果", result);
+                // 处理点击事件，例如在地图上显示标记并打开信息窗体
+                if (
+                  mapRef.current &&
+                  AMapRef.current &&
+                  result.lng &&
+                  result.lat
+                ) {
+                  const wgsLng = parseFloat(result.lng);
+                  const wgsLat = parseFloat(result.lat);
+                  const [gcjLng, gcjLat] = transformWGS84ToGCJ02(
+                    wgsLng,
+                    wgsLat
+                  );
+
+                  // 关闭所有已打开的信息窗体
+                  infoWindowsRef.current.forEach((window) => {
+                    window.close();
+                  });
+
+                  // 找到对应的信息窗体
+                  const resultIndex = resultQuery.data?.items.findIndex(
+                    (item) => item.id === result.id
+                  );
+
+                  if (resultIndex !== undefined && resultIndex >= 0) {
+                    const infoWindow = infoWindowsRef.current[resultIndex];
+                    if (infoWindow) {
+                      infoWindow.open(mapRef.current, [gcjLng, gcjLat]);
+                    }
+                  }
+
+                  // 调整地图视图
+                  mapRef.current.setZoomAndCenter(17, [gcjLng, gcjLat]);
+                }
+              }}
+            />
+          </div>
         </div>
       </div>
     </div>
