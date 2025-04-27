@@ -99,6 +99,7 @@ export default function Page() {
         .map((drone) => ({
           selected_drone_key: drone.key,
           physical_drone_id: 0, // 新增无人机初始无映射
+          lens_type: "visible" as const, // 默认使用可见光镜头类型，使用as const确保类型正确
         }));
 
       // 移除不再存在的无人机的映射
@@ -340,6 +341,7 @@ export default function Page() {
       // color:
       //   mappingDrones.find((dr) => dr.key === mapping.selected_drone_key)
       //     ?.color || "",
+      lens_type: "visible" as const, // 添加 lens_type 字段，默认为可见光类型
     }));
   }, [dataQuery.data?.mappings, dataQuery.data?.drones]); // 只依赖于 dataQuery 数据
 
