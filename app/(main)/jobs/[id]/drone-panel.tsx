@@ -4,7 +4,7 @@ import {
   JobCreationResult,
   JobDetailResult,
   PhysicalDrone,
-} from "@/app/(main)/jobs/[id]/types";
+} from "@/app/(main)/jobs/report/[id]/types";
 import { Button } from "@/components/ui/button";
 import { FormControl, FormItem } from "@/components/ui/form";
 import {
@@ -28,7 +28,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
 import { Plus, Trash, Trash2 } from "lucide-react";
 import { useState } from "react";
-import { getJobPhysicalDrones } from "./request";
+import { getJobPhysicalDrones } from "../report/[id]/request";
 
 /**
  * 表示系统中的无人机与其物理实体之间的映射关系

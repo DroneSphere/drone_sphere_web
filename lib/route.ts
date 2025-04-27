@@ -142,4 +142,5 @@ export const routeMap = {
 export const specialRouteMap: Record<string, string> = {
   creation: "创建",
   new: "创建",
+  report: "任务报告",
 };

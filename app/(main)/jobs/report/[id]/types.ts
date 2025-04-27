@@ -298,3 +298,24 @@ export interface JobEditRequest extends JobCreationRequest {
   /** 要编辑的任务ID */
   id: number;
 }
+
+/**
+ * 搜索结果响应接口
+ */
+export interface SearchResult {
+  items: SearchResultItem[];
+  total: number;
+}
+
+/**
+ * 搜索结果单项接口
+ */
+export interface SearchResultItem {
+  id: number;
+  job_name: string;
+  target_label: string;
+  lng: string;
+  lat: string;
+  created_at: string;
+  image_url: string;
+}

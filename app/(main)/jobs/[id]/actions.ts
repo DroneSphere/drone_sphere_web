@@ -1,6 +1,6 @@
 import * as turf from "@turf/turf";
 import { MutableRefObject } from "react";
-import { JobDetailResult } from "./types";
+import { JobDetailResult } from "../report/[id]/types";
 
 
 export function dividePolygonAmongDrones(

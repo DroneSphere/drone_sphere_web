@@ -3,7 +3,7 @@
 import {
   JobCreationResult,
   JobDetailResult,
-} from "@/app/(main)/jobs/[id]/types";
+} from "@/app/(main)/jobs/report/[id]/types";
 import { Button } from "@/components/ui/button";
 import { FormControl, FormItem } from "@/components/ui/form";
 import {

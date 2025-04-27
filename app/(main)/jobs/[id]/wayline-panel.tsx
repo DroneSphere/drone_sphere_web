@@ -1,4 +1,4 @@
-import { JobDetailResult } from "@/app/(main)/jobs/[id]/types";
+import { JobDetailResult } from "@/app/(main)/jobs/report/[id]/types";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { MutableRefObject, useState } from "react";

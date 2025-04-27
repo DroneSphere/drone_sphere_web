@@ -2,7 +2,7 @@
 
 import { DroneState } from "@/app/(main)/drones/types";
 import { baseURL } from "@/api/http_client";
-import { getJobDetailById } from "@/app/(main)/jobs/[id]/request";
+import { getJobDetailById } from "@/app/(main)/jobs/report/[id]/request";
 import AMapLoader from "@amap/amap-jsapi-loader";
 import "@amap/amap-jsapi-types";
 import { useQuery } from "@tanstack/react-query";

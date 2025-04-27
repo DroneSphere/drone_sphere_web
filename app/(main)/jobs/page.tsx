@@ -1,6 +1,6 @@
 "use client";
 
-import { deleteJob } from "@/app/(main)/jobs/[id]/request";
+import { deleteJob } from "@/app/(main)/jobs/report/[id]/request";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import {
@@ -32,14 +32,23 @@ import {
 } from "@tanstack/react-table";
 import { format } from "date-fns";
 import { zhCN } from "date-fns/locale";
-import { CalendarIcon, Edit, PlusCircle, Search, Trash } from "lucide-react";
+import {
+  CalendarIcon,
+  Edit,
+  PlusCircle,
+  Search,
+  Trash,
+  View,
+} from "lucide-react";
 import { useMemo, useState } from "react";
 import { JobItemResult, JobSearchParams } from "./types";
 import { fetchAllJobs } from "./requests";
+import { useRouter } from "next/navigation";
 
 const columnHelper = createColumnHelper<JobItemResult>();
 
 export default function JobListPage() {
+  const router = useRouter();
   // 使用一个状态来存储搜索参数
   const [searchParams, setSearchParams] = useState<JobSearchParams | null>(
     null
@@ -121,16 +130,6 @@ export default function JobListPage() {
       header: () => <div className="text-center">操作</div>,
       cell: (row) => (
         <div className="flex justify-center space-x-2">
-          {/* <Button
-            variant="secondary"
-            className="h-8 px-2 bg-blue-400 text-gray-100 hover:bg-blue-500 flex items-center"
-            onClick={() => {
-              window.location.href = `/jobs/${row.row.original.id}`;
-            }}
-          >
-            <View className="h-4 w-4 mr-1" />
-            查看
-          </Button> */}
           <Button
             variant="secondary"
             className="h-8 px-2 bg-blue-400 text-gray-100 hover:bg-blue-500 flex items-center"
@@ -141,6 +140,16 @@ export default function JobListPage() {
             <Edit className="h-4 w-4 mr-1" />
             编辑
           </Button>
+          <Button
+            variant="secondary"
+            className="h-8 px-2 bg-blue-400 text-gray-100 hover:bg-blue-500 flex items-center"
+            onClick={() => {
+              router.push(`/jobs/report/${row.row.original.id}`);
+            }}
+          >
+            <View className="h-4 w-4 mr-1" />
+            任务报告
+          </Button>{" "}
           <Button
             variant="destructive"
             className="h-8 px-2 flex items-center"

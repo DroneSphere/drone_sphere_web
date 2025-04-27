@@ -6,6 +6,7 @@ import {
   JobDetailResult,
   PhysicalDrone,
   JobEditRequest,
+  SearchResult,
 } from "./types";
 
 // API路径前缀
@@ -39,9 +40,7 @@ export async function getJobPhysicalDrones(): Promise<PhysicalDrone[]> {
  * @param data 创建任务的请求数据
  * @returns 创建的任务详情
  */
-export async function createJob(
-  data: JobCreationRequest
-): Promise<number> {
+export async function createJob(data: JobCreationRequest): Promise<number> {
   const res = await httpClient.instance.post<Response<number>>(
     `${prefix}`,
     data
@@ -84,3 +83,26 @@ export async function updateJob(
   );
   return res.data.data;
 }
+/**
+ * 获取搜索结果
+ * @param jobId 任务ID
+ * @returns 搜索结果
+ */
+export const getSearchResults = async (
+  jobId: number
+): Promise<SearchResult> => {
+  const response = await httpClient.instance.get<Response<SearchResult>>(
+    `results`,
+    {
+      params: {
+        job_id: jobId,
+      },
+    }
+  );
+  // 检查响应状态
+  if (response.status !== 200) {
+    throw new Error("Failed to fetch search results");
+  }
+  // 返回搜索结果数据
+  return response.data.data;
+};

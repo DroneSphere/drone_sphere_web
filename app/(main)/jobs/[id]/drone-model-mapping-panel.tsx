@@ -1,6 +1,6 @@
 "use client";
 
-import { JobDetailResult, PhysicalDrone } from "@/app/(main)/jobs/[id]/types";
+import { JobDetailResult, PhysicalDrone } from "@/app/(main)/jobs/report/[id]/types";
 import { FormItem } from "@/components/ui/form";
 import {
   Select,
@@ -13,7 +13,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
-import { getJobPhysicalDrones } from "./request";
+import { getJobPhysicalDrones } from "../report/[id]/request";
 
 interface DroneModelMappingProps {
   selectedDrones: JobDetailResult["drones"];
