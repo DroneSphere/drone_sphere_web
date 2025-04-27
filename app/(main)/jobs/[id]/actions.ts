@@ -2,11 +2,11 @@ import * as turf from "@turf/turf";
 import { MutableRefObject } from "react";
 import { JobDetailResult } from "../report/[id]/types";
 
-
 export function dividePolygonAmongDrones(
   path: AMap.LngLat[],
   selectedDrones: JobDetailResult["drones"],
-  AMapRef: MutableRefObject<typeof AMap | null>) {
+  AMapRef: MutableRefObject<typeof AMap | null>
+) {
   const droneCount = selectedDrones.length;
   if (droneCount === 0) {
     return;
@@ -18,8 +18,10 @@ export function dividePolygonAmongDrones(
     const firstCoordinate = coordinates[0];
     const lastCoordinate = coordinates[coordinates.length - 1];
     // 检查第一个和最后一个坐标是否相同
-    if (firstCoordinate[0] !== lastCoordinate[0] ||
-      firstCoordinate[1] !== lastCoordinate[1]) {
+    if (
+      firstCoordinate[0] !== lastCoordinate[0] ||
+      firstCoordinate[1] !== lastCoordinate[1]
+    ) {
       coordinates.push(firstCoordinate); // 将第一个坐标添加到末尾
     }
   }
@@ -74,9 +76,10 @@ export function dividePolygonAmongDrones(
       }
     }
 
-    const cutLng = bestCutLng !== -1
-      ? bestCutLng
-      : currentMinLng + ((maxLng - minLng) / droneCount) * (i + 1);
+    const cutLng =
+      bestCutLng !== -1
+        ? bestCutLng
+        : currentMinLng + ((maxLng - minLng) / droneCount) * (i + 1);
     const cutRectangle = turf.polygon([
       [
         [currentMinLng, minLat],
@@ -92,7 +95,8 @@ export function dividePolygonAmongDrones(
     if (intersection && intersection.geometry.coordinates.length > 0) {
       droneSubRegions.push(
         intersection.geometry.coordinates[0].map(
-          (coord) => new AMapRef.current!.LngLat(Number(coord[0]), Number(coord[1]))
+          (coord) =>
+            new AMapRef.current!.LngLat(Number(coord[0]), Number(coord[1]))
         )
       );
     }
@@ -114,7 +118,8 @@ export function dividePolygonAmongDrones(
   if (lastIntersection && lastIntersection.geometry.coordinates.length > 0) {
     droneSubRegions.push(
       lastIntersection.geometry.coordinates[0].map(
-        (coord) => new AMapRef.current!.LngLat(Number(coord[0]), Number(coord[1]))
+        (coord) =>
+          new AMapRef.current!.LngLat(Number(coord[0]), Number(coord[1]))
       )
     );
   }
@@ -138,7 +143,8 @@ export function generateWaypoints(
     gimbalPitch: number; // 云台俯仰角度（-90为垂直向下，0为水平）
     gimbalZoom: number; // 云台放大倍数
   },
-  AMapRef: MutableRefObject<typeof AMap | null>): AMap.LngLat[] {
+  AMapRef: MutableRefObject<typeof AMap | null>
+): AMap.LngLat[] {
   if (path.length < 3 || !AMapRef.current) return [];
 
   // 转换为turf多边形
@@ -164,20 +170,24 @@ export function generateWaypoints(
   // 假设标准视场角FOV为35度，受到俯仰角和变焦的影响
   const standardFOV = 35; // 标准视场角（度）
   const effectiveFOV = standardFOV / droneParams.gimbalZoom; // 考虑变焦后的视场角
-  
+
   // 计算俯仰角的影响（垂直向下时覆盖最窄，水平时无限宽）
   // 从-90度（垂直向下）到0度（水平）映射到1到无穷大的因子
   const pitchRadians = Math.abs(droneParams.gimbalPitch) * (Math.PI / 180);
   const pitchFactor = 1 / Math.sin(pitchRadians);
-  
+
   // 计算地面覆盖宽度
   const fovRadians = effectiveFOV * (Math.PI / 180);
-  const coverageWidth = 2 * droneParams.flyingHeight * Math.tan(fovRadians / 2) * pitchFactor;
-  
+  const coverageWidth =
+    2 * droneParams.flyingHeight * Math.tan(fovRadians / 2) * pitchFactor;
+
   // 使用计算得到的覆盖宽度或参数中提供的值（以较小者为准，确保安全覆盖）
-  const actualCoverageWidth = Math.min(coverageWidth, droneParams.coverageWidth);
+  const actualCoverageWidth = Math.min(
+    coverageWidth,
+    droneParams.coverageWidth
+  );
   console.log("理论覆盖宽度", actualCoverageWidth);
-  
+
   // 考虑重叠率计算有效宽度
   const effectiveWidth = actualCoverageWidth * (1 - droneParams.overlapRate);
 
@@ -196,41 +206,68 @@ export function generateWaypoints(
   const waypoints: AMap.LngLat[] = [];
   let scanDirection = true; // true为从南到北，false为从北到南
 
+  // 重新实现割草机模式航线生成算法
+  // 1. 沿经度方向（西到东）等间距生成扫描线
+  // 2. 每条扫描线与多边形求交点，交点两两配对，依次连接，形成锯齿状航线
+  // 3. 每条扫描线的航点顺序交替，保证飞行路径连续
 
-  // 从西向东，在整个区域创建平行线
-  for (let lng = minLng; lng <= maxLng; lng += lngSpacing) {
-    // 创建当前经线
+  // 记录上一条扫描线的航点，用于连接锯齿
+  let lastLinePoints: [number, number][] | null = null;
+
+  // 计算第一条航线的经度，位于第一个扫描带的中间
+  let currentWaypointLng = minLng + lngSpacing / 2;
+
+  // 循环生成位于扫描带中间的航线
+  for (; currentWaypointLng <= maxLng; currentWaypointLng += lngSpacing) {
+    // 创建当前航线（位于扫描带中间）
     const line = turf.lineString([
-      [lng, scanDirection ? minLat : maxLat],
-      [lng, scanDirection ? maxLat : minLat],
+      [currentWaypointLng, minLat - 1], // 向外延伸，确保能与多边形相交
+      [currentWaypointLng, maxLat + 1],
     ]);
 
     // 计算当前线与多边形的交点
     const intersection = turf.lineIntersect(polygon, line);
+    // 提取交点坐标
+    const points = intersection.features.map(
+      (f) => f.geometry.coordinates as [number, number]
+    );
+    // 按纬度升序排序（从南到北）
+    points.sort((a, b) => a[1] - b[1]);
 
-    // 排序交点（从南到北或从北到南）
-    const points = intersection.features.map((f) => f.geometry.coordinates);
-    points.sort((a, b) => {
-      return scanDirection
-        ? a[1] - b[1] // 从南到北
-        : b[1] - a[1]; // 从北到南
-    });
+    // 只处理偶数个交点（理论上多边形每条扫描线应有偶数个交点）
+    if (points.length % 2 !== 0 || points.length === 0) continue; // 如果没有交点或交点数为奇数，则跳过
 
-    // 如果有交点，添加到航点
-    if (points.length >= 2) {
-      // 每对交点创建一条路径段
-      for (let i = 0; i < points.length; i += 2) {
-        if (i + 1 < points.length) {
-          waypoints.push(
-            new AMapRef.current.LngLat(points[i][0], points[i][1])
-          );
-          waypoints.push(
-            new AMapRef.current.LngLat(points[i + 1][0], points[i + 1][1])
-          );
-        }
+    // 当前扫描线的航点
+    const lineWaypoints: [number, number][] = [];
+    for (let i = 0; i < points.length; i += 2) {
+      // 每对交点作为一段航线的起止点
+      // 按照 scanDirection 决定顺序
+      if (scanDirection) {
+        lineWaypoints.push(points[i], points[i + 1]);
+      } else {
+        lineWaypoints.push(points[i + 1], points[i]);
       }
     }
 
+    // 如果不是第一条扫描线，连接上一条扫描线的终点和当前扫描线的起点，形成锯齿
+    if (lastLinePoints && lineWaypoints.length > 0) {
+      // 连接上一条的最后一个点和当前的第一个点
+      waypoints.push(
+        new AMapRef.current.LngLat(
+          lastLinePoints[lastLinePoints.length - 1][0],
+          lastLinePoints[lastLinePoints.length - 1][1]
+        )
+      );
+      waypoints.push(
+        new AMapRef.current.LngLat(lineWaypoints[0][0], lineWaypoints[0][1])
+      );
+    }
+    // 添加当前扫描线的所有航点
+    for (const pt of lineWaypoints) {
+      waypoints.push(new AMapRef.current.LngLat(pt[0], pt[1]));
+    }
+    // 记录本次扫描线的航点
+    lastLinePoints = lineWaypoints;
     // 切换扫描方向
     scanDirection = !scanDirection;
   }
