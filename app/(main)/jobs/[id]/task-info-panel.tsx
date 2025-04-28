@@ -237,8 +237,8 @@ export default function TaskInfoPanel({
                     <FormLabel>计划执行时间</FormLabel>
 
                     {/* 时间显示文本框 - 只读模式 */}
-                    <FormControl>
-                      <Input
+                    {/* <FormControl> */}
+                      {/* <Input
                         placeholder="选择器选择的时间将在此处显示"
                         value={
                           form.getValues("schedule_time")
@@ -255,8 +255,8 @@ export default function TaskInfoPanel({
                         }
                         readOnly={true}
                         className="mb-2 bg-gray-50"
-                      />
-                    </FormControl>
+                      /> */}
+                    {/* </FormControl> */}
 
                     {/* 时间选择器 */}
                     <div className="flex gap-1 w-full">
