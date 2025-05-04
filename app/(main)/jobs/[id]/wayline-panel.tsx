@@ -7,10 +7,10 @@ import { JobAction, JobState } from "./job-state";
 interface WaylinePanelProps {
   // 使用统一的state对象替代多个独立状态
   state: JobState;
-  
+
   // 添加dispatch函数用于状态更新
   dispatch: React.Dispatch<JobAction>; // 理想情况下应该使用更具体的Action类型
-  
+
   // 保留非状态相关的属性
   AMapRef: MutableRefObject<typeof AMap | null>;
   mapRef: MutableRefObject<AMap.Map | null>;
@@ -64,6 +64,12 @@ export default function WaylinePanel({
                 return;
               }
 
+              // 首先清除已有的航线
+              dispatch({
+                type: "SET_WAYLINE_AREAS",
+                payload: [],
+              });
+
               const subPaths = dividePolygonAmongDrones(
                 state.path,
                 state.selectedDrones,
@@ -78,40 +84,37 @@ export default function WaylinePanel({
               }
 
               // 生成新的航线区域，包含云台参数
-              const newWaylineAreas = state.selectedDrones.map((drone, index) => {
-                // 获取对应的子区域路径，如果index超出了subPaths的长度，则使用最后一个
-                const subPath =
-                  index < subPaths.length
-                    ? subPaths[index]
-                    : subPaths[subPaths.length - 1];
+              const newWaylineAreas = state.selectedDrones.map(
+                (drone, index) => {
+                  // 获取对应的子区域路径，如果index超出了subPaths的长度，则使用最后一个
+                  const subPath =
+                    index < subPaths.length
+                      ? subPaths[index]
+                      : subPaths[subPaths.length - 1];
 
-                // 使用当前设置的参数生成航点
-                const waypoints = generateWaypoints(
-                  subPath,
-                  droneParams,
-                  AMapRef
-                );
+                  // 使用当前设置的参数生成航点
+                  const waypoints = generateWaypoints(
+                    subPath,
+                    droneParams,
+                    AMapRef
+                  );
 
-                return {
-                  droneKey: drone.key,
-                  color: drone.color,
-                  path: subPath,
-                  points: waypoints,
-                  visible: true,
-                  gimbalPitch: droneParams.gimbalPitch,
-                  gimbalZoom: droneParams.gimbalZoom,
-                };
-              });
+                  return {
+                    droneKey: drone.key,
+                    color: drone.color,
+                    path: subPath,
+                    points: waypoints,
+                    visible: true,
+                    gimbalPitch: droneParams.gimbalPitch,
+                    gimbalZoom: droneParams.gimbalZoom,
+                  };
+                }
+              );
 
               // 使用dispatch更新航线区域
               dispatch({
                 type: "SET_WAYLINE_AREAS",
-                payload: newWaylineAreas
-              });
-              
-              toast({
-                title: "航线生成成功",
-                description: `已为${state.selectedDrones.length}架无人机分配区域并生成航点`,
+                payload: newWaylineAreas,
               });
             }}
           >
@@ -176,7 +179,9 @@ export default function WaylinePanel({
                 />
               </div>
               <div>
-                <label className="text-xs text-gray-500">航线层高间隔(米)</label>
+                <label className="text-xs text-gray-500">
+                  航线层高间隔(米)
+                </label>
                 <input
                   type="number"
                   className="w-full border rounded px-2 py-1 text-sm"
@@ -191,7 +196,9 @@ export default function WaylinePanel({
                   max="20"
                   step="1"
                 />
-                <div className="text-xs text-gray-400 p-1">(相邻航线高度差)</div>
+                <div className="text-xs text-gray-400 p-1">
+                  (相邻航线高度差)
+                </div>
               </div>
             </div>
           </div>
