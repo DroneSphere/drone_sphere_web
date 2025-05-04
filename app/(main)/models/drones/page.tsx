@@ -60,23 +60,23 @@ export default function Page() {
     columnHelper.accessor("sub_type", {
       header: "子型号",
     }),
-    columnHelper.accessor("gateway_name", {
-      header: "网关设备",
-      cell: (info) => (
-        <HoverCard>
-          <HoverCardTrigger>
-            <div className="text-center overflow-hidden text-ellipsis whitespace-nowrap max-w-72 hover:underline hover:cursor-pointer">
-              {info.getValue() || <span className="text-gray-400">无</span>}
-            </div>
-          </HoverCardTrigger>
-          <HoverCardContent>
-            <div className="text-left max-w-196">
-              {info.getValue() || <span className="text-gray-400">无</span>}
-            </div>
-          </HoverCardContent>
-        </HoverCard>
-      ),
-    }),
+    // columnHelper.accessor("gateway_name", {
+    //   header: "网关设备",
+    //   cell: (info) => (
+    //     <HoverCard>
+    //       <HoverCardTrigger>
+    //         <div className="text-center overflow-hidden text-ellipsis whitespace-nowrap max-w-72 hover:underline hover:cursor-pointer">
+    //           {info.getValue() || <span className="text-gray-400">无</span>}
+    //         </div>
+    //       </HoverCardTrigger>
+    //       <HoverCardContent>
+    //         <div className="text-left max-w-196">
+    //           {info.getValue() || <span className="text-gray-400">无</span>}
+    //         </div>
+    //       </HoverCardContent>
+    //     </HoverCard>
+    //   ),
+    // }),
     columnHelper.accessor("gimbals", {
       header: "可搭载云台",
       cell: (info) => {
