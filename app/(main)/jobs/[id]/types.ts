@@ -275,6 +275,10 @@ export interface JobDetailResult {
       lat: number;
       /** 经度 */
       lng: number;
+      /** 云台俯仰 */
+      gimbal_pitch?: number;
+      /** 云台变焦 */
+      gimbal_zoom?: number;
     }[];
   }[];
   /** 映射关系列表 */

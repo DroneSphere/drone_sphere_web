@@ -1,50 +1,30 @@
-import { JobDetailResult } from "@/app/(main)/jobs/report/[id]/types";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { MutableRefObject, useState } from "react";
 import { dividePolygonAmongDrones, generateWaypoints } from "./actions";
+import { JobAction, JobState } from "./job-state";
 
 interface WaylinePanelProps {
-  selectedDrones: JobDetailResult["drones"];
-  waylineAreas: {
-    droneKey: string;
-    color: string;
-    path: AMap.LngLat[];
-    points?: AMap.LngLat[];
-    visible?: boolean;
-    gimbalPitch?: number;
-    gimbalZoom?: number;
-  }[];
-  setWaylineAreas: React.Dispatch<
-    React.SetStateAction<
-      {
-        droneKey: string;
-        color: string;
-        path: AMap.LngLat[];
-        points?: AMap.LngLat[];
-        visible?: boolean;
-        gimbalPitch?: number;
-        gimbalZoom?: number;
-      }[]
-    >
-  >;
-  path: AMap.LngLat[];
+  // 使用统一的state对象替代多个独立状态
+  state: JobState;
+  
+  // 添加dispatch函数用于状态更新
+  dispatch: React.Dispatch<JobAction>; // 理想情况下应该使用更具体的Action类型
+  
+  // 保留非状态相关的属性
   AMapRef: MutableRefObject<typeof AMap | null>;
   mapRef: MutableRefObject<AMap.Map | null>;
   isEditMode: boolean;
 }
 
 export default function WaylinePanel({
-  selectedDrones,
-  waylineAreas,
-  setWaylineAreas,
-  path,
+  state,
+  dispatch,
   AMapRef,
   mapRef,
   isEditMode,
 }: WaylinePanelProps) {
   const { toast } = useToast();
-  console.log("waylineAreas", waylineAreas);
 
   // 添加无人机飞行参数状态，增加云台相关参数和航线层高间隔
   const [droneParams, setDroneParams] = useState({
@@ -64,7 +44,7 @@ export default function WaylinePanel({
 
       {/* 移除折叠状态判断，内容始终显示 */}
       <div className="text-sm text-gray-500 flex items-center justify-between">
-        <div>已选择{selectedDrones.length}架无人机</div>
+        <div>已选择{state.selectedDrones.length}架无人机</div>
         {isEditMode && (
           <Button
             size="sm"
@@ -72,10 +52,10 @@ export default function WaylinePanel({
             type="button"
             onClick={() => {
               if (
-                path.length <= 0 ||
+                state.path.length <= 0 ||
                 !AMapRef.current ||
                 !mapRef.current ||
-                selectedDrones.length === 0
+                state.selectedDrones.length === 0
               ) {
                 toast({
                   title: "无法生成航线",
@@ -85,8 +65,8 @@ export default function WaylinePanel({
               }
 
               const subPaths = dividePolygonAmongDrones(
-                path,
-                selectedDrones,
+                state.path,
+                state.selectedDrones,
                 AMapRef
               );
               if (!subPaths) {
@@ -98,7 +78,7 @@ export default function WaylinePanel({
               }
 
               // 生成新的航线区域，包含云台参数
-              const newWaylineAreas = selectedDrones.map((drone, index) => {
+              const newWaylineAreas = state.selectedDrones.map((drone, index) => {
                 // 获取对应的子区域路径，如果index超出了subPaths的长度，则使用最后一个
                 const subPath =
                   index < subPaths.length
@@ -123,11 +103,15 @@ export default function WaylinePanel({
                 };
               });
 
-              // 更新航线区域
-              setWaylineAreas(newWaylineAreas);
+              // 使用dispatch更新航线区域
+              dispatch({
+                type: "SET_WAYLINE_AREAS",
+                payload: newWaylineAreas
+              });
+              
               toast({
                 title: "航线生成成功",
-                description: `已为${selectedDrones.length}架无人机分配区域并生成航点`,
+                description: `已为${state.selectedDrones.length}架无人机分配区域并生成航点`,
               });
             }}
           >

@@ -2,7 +2,6 @@
 
 import {
   JobCreationResult,
-  JobDetailResult,
   PhysicalDrone,
 } from "@/app/(main)/jobs/report/[id]/types";
 import { Button } from "@/components/ui/button";
@@ -29,6 +28,12 @@ import { useQuery } from "@tanstack/react-query";
 import { Plus, Trash, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { getJobPhysicalDrones } from "../report/[id]/request";
+import {
+  DroneMappingState,
+  DroneState,
+  JobAction,
+  JobState,
+} from "./job-state";
 
 // 镜头参数类型的枚举常量及对应的显示标签
 const LENS_TYPES = {
@@ -37,58 +42,13 @@ const LENS_TYPES = {
   fusion: "双光融合",
 } as const;
 
-/**
- * 表示系统中的无人机与其物理实体之间的映射关系
- * @interface DroneMapping
- * @property {number} selectedDroneIndex - 在UI列表中选定无人机的索引
- * @property {string} selectedDroneKey - 选定无人机的唯一标识键
- * @property {number} seletedDroneId - 系统中选定无人机的ID
- * @property {number} physicalDroneId - 与物理无人机关联的ID
- * @property {string} physicalDroneSN - 物理无人机的序列号
- * @property {string} color - 在UI中表示此无人机的颜色
- * @property {string} lensType - 无人机使用的镜头类型
- */
-export interface DroneMapping {
-  selected_drone_key: string;
-  physical_drone_id: number;
-  lens_type: keyof typeof LENS_TYPES; // 镜头参数：可见光(visible)、热成像(thermal)、双光融合(fusion)
-}
-
 interface DronePanelProps {
-  selectedDrones: JobDetailResult["drones"];
-  setSelectedDrones: React.Dispatch<
-    React.SetStateAction<JobDetailResult["drones"]>
-  >;
-  droneMappings: DroneMapping[];
-  setDroneMappings: React.Dispatch<React.SetStateAction<DroneMapping[]>>;
   isEditMode: boolean; // 是否处于编辑模式
   availableDrones: JobCreationResult["drones"]; // 可选的无人机列表
-
-  // 仅用于显示与无人机关联的航线信息
-  waylineAreas: {
-    droneKey: string;
-    color: string;
-    path: AMap.LngLat[];
-    points?: AMap.LngLat[];
-    visible?: boolean;
-    gimbalPitch?: number;
-    gimbalZoom?: number;
-  }[];
-
-  // 添加用于控制航线可见性
-  setWaylineAreas?: React.Dispatch<
-    React.SetStateAction<
-      {
-        droneKey: string;
-        color: string;
-        path: AMap.LngLat[];
-        points?: AMap.LngLat[];
-        visible?: boolean;
-        gimbalPitch?: number;
-        gimbalZoom?: number;
-      }[]
-    >
-  >;
+  // 添加整个状态对象，用于访问所有状态
+  state: JobState; // 统一的状态对象，包含所有相关状态
+  // 添加dispatch函数，用于更新状态
+  dispatch: React.Dispatch<JobAction>; // 理想情况下应该使用更具体的Action类型
 }
 
 /**
@@ -96,22 +56,17 @@ interface DronePanelProps {
  * 整合了执飞机型选择和物理无人机绑定的功能
  */
 export default function DronePanel({
-  selectedDrones,
-  setSelectedDrones,
-  droneMappings,
-  setDroneMappings,
   isEditMode,
   availableDrones,
-  waylineAreas,
-  setWaylineAreas,
+  state,
+  dispatch,
 }: DronePanelProps) {
   console.log("DronePanel", {
-    selectedDrones,
-    droneMappings,
+    selectedDrones: state.selectedDrones,
+    droneMappings: state.droneMappings,
     isEditMode,
     availableDrones,
-    waylineAreas,
-    setWaylineAreas,
+    waylineAreas: state.waylineAreas,
   });
 
   const { toast } = useToast();
@@ -137,8 +92,9 @@ export default function DronePanel({
 
   // 清空所有已选择的无人机
   const handleClearDrones = () => {
-    setSelectedDrones([]);
-    setDroneMappings([]);
+    // 使用dispatch清空选中的无人机和映射关系
+    dispatch({ type: "SET_SELECTED_DRONES", payload: [] });
+    dispatch({ type: "SET_DRONE_MAPPINGS", payload: [] });
   };
 
   // 添加无人机
@@ -190,41 +146,41 @@ export default function DronePanel({
     const color = colors[Math.floor(Math.random() * colors.length)];
 
     // 计算新的索引
-    const selectedDronesCount = selectedDrones.length;
+    const selectedDronesCount = state.selectedDrones.length;
     const index = selectedDronesCount
       ? Math.max(
-          ...selectedDrones.map((d) => d.index || 0),
+          ...state.selectedDrones.map((d: DroneState) => d.index || 0),
           selectedDronesCount
         ) + 1
       : 1;
 
-    // 创建新的无人机记录，添加 physicalDrone 字段
+    // 创建新的无人机记录
     const newDroneKey = `${index}-${droneId}-${variantionIndex}`;
-    setSelectedDrones((prev) => {
-      return [
-        ...prev,
-        {
-          ...drone,
-          index: index,
-          id: droneId,
-          key: newDroneKey,
-          variantion: variantion,
-          color: color,
-          physicalDrone: null, // 初始时没有绑定物理无人机
-        },
-      ];
+
+    // 使用dispatch更新selectedDrones
+    const newDrone = {
+      ...drone,
+      index: index,
+      id: droneId,
+      key: newDroneKey,
+      variantion: variantion,
+      color: color,
+      physicalDrone: null, // 初始时没有绑定物理无人机
+    };
+    dispatch({
+      type: "SET_SELECTED_DRONES",
+      payload: [...state.selectedDrones, newDrone],
     });
 
     // 创建一个对应的空映射记录
-    setDroneMappings((prev) => {
-      return [
-        ...prev,
-        {
-          selected_drone_key: newDroneKey,
-          physical_drone_id: -1, // 初始时没有绑定物理无人机
-          lens_type: "visible", // 默认设置为可见光
-        },
-      ];
+    const newMapping: DroneMappingState = {
+      selected_drone_key: newDroneKey,
+      physical_drone_id: -1, // 初始时没有绑定物理无人机
+      lens_type: "visible", // 默认设置为可见光
+    };
+    dispatch({
+      type: "SET_DRONE_MAPPINGS",
+      payload: [...state.droneMappings, newMapping],
     });
 
     // 记录最近添加的无人机键，用于在对话框中识别
@@ -239,10 +195,23 @@ export default function DronePanel({
 
   // 删除无人机
   const handleRemoveDrone = (droneKey: string) => {
-    setSelectedDrones((prev) => prev.filter((d) => d.key !== droneKey));
-    setDroneMappings((prev) =>
-      prev.filter((m) => m.selected_drone_key !== droneKey)
-    );
+    // 使用dispatch移除选中的无人机
+    dispatch({
+      type: "SET_SELECTED_DRONES",
+      payload: state.selectedDrones.filter(
+        (d: DroneState) => d.key !== droneKey
+      ),
+    });
+
+    // 使用dispatch移除对应的映射关系
+    dispatch({
+      type: "SET_DRONE_MAPPINGS",
+      payload: state.droneMappings.filter(
+        (m: DroneMappingState) => m.selected_drone_key !== droneKey
+      ),
+    });
+
+    // 重置选中的无人机键
     setSelectedDroneKey(undefined);
 
     // toast({
@@ -261,9 +230,12 @@ export default function DronePanel({
         ? Number(physicalDroneId)
         : physicalDroneId;
 
-    const droneModel = selectedDrones.find((d) => d.key === droneModelKey);
+    // 从state中查找无人机模型和物理无人机
+    const droneModel = state.selectedDrones.find(
+      (d: DroneState) => d.key === droneModelKey
+    );
     const physicalDrone = physicalQuery.data?.find(
-      (d) => d.id === numericPhysicalDroneId
+      (d: PhysicalDrone) => d.id === numericPhysicalDroneId
     );
 
     if (!droneModel || !physicalDrone) {
@@ -276,10 +248,9 @@ export default function DronePanel({
     }
     console.log("绑定物理无人机", droneModel, physicalDrone);
 
-    // 更新映射关系
-    setDroneMappings((prev) => {
-      // 重新创建所有映射
-      const res = prev.map((mapping) => {
+    // 使用dispatch更新映射关系
+    const updatedMappings = state.droneMappings.map(
+      (mapping: DroneMappingState) => {
         if (mapping.selected_drone_key === droneModelKey) {
           return {
             ...mapping,
@@ -287,21 +258,30 @@ export default function DronePanel({
           };
         }
         return mapping;
-      });
-      return res;
+      }
+    );
+
+    // 使用dispatch更新状态
+    dispatch({
+      type: "SET_DRONE_MAPPINGS",
+      payload: updatedMappings,
     });
 
     // 同时更新selectedDrones中相应无人机的physicalDrone信息
-    setSelectedDrones((prev) => {
-      return prev.map((drone) => {
-        if (drone.key === droneModelKey) {
-          return {
-            ...drone,
-            physicalDrone: physicalDrone,
-          };
-        }
-        return drone;
-      });
+    const updatedDrones = state.selectedDrones.map((drone: DroneState) => {
+      if (drone.key === droneModelKey) {
+        return {
+          ...drone,
+          physicalDrone: physicalDrone,
+        };
+      }
+      return drone;
+    });
+
+    // 使用dispatch更新无人机状态
+    dispatch({
+      type: "SET_SELECTED_DRONES",
+      payload: updatedDrones,
     });
 
     // 成功绑定后返回true
@@ -322,8 +302,8 @@ export default function DronePanel({
     lensType: keyof typeof LENS_TYPES
   ) => {
     // 更新映射关系
-    setDroneMappings((prev) => {
-      return prev.map((mapping) => {
+    const updatedMappings = state.droneMappings.map(
+      (mapping: DroneMappingState) => {
         if (mapping.selected_drone_key === droneModelKey) {
           return {
             ...mapping,
@@ -331,20 +311,30 @@ export default function DronePanel({
           };
         }
         return mapping;
-      });
-    });
+      }
+    );
+
+    // 使用dispatch更新映射关系
+    dispatch({
+      type: "SET_DRONE_MAPPINGS",
+      payload: updatedMappings,
+    } as JobAction);
 
     // 同时更新selectedDrones中相应无人机的lensType信息
-    setSelectedDrones((prev) => {
-      return prev.map((drone) => {
-        if (drone.key === droneModelKey) {
-          return {
-            ...drone,
-            lensType: lensType,
-          };
-        }
-        return drone;
-      });
+    const updatedDrones = state.selectedDrones.map((drone: DroneState) => {
+      if (drone.key === droneModelKey) {
+        return {
+          ...drone,
+          lensType: lensType,
+        };
+      }
+      return drone;
+    });
+
+    // 使用dispatch更新无人机状态
+    dispatch({
+      type: "SET_SELECTED_DRONES",
+      payload: updatedDrones,
     });
 
     toast({
@@ -426,7 +416,7 @@ export default function DronePanel({
             size="icon"
             className="mr-2 h-8 w-8"
             onClick={handleClearDrones}
-            disabled={!selectedDrones?.length}
+            disabled={!state.selectedDrones?.length}
             title="清空所有已选无人机"
           >
             <Trash2 className="h-4 w-4" />
@@ -446,15 +436,15 @@ export default function DronePanel({
       )}
 
       {/* 已选择的无人机列表 */}
-      {selectedDrones?.length === 0 && (
+      {state.selectedDrones?.length === 0 && (
         <div className="text-sm text-gray-500 mt-2 text-center">
           {isEditMode ? "请添加无人机机型" : "当前没有选择任何无人机机型"}
         </div>
       )}
 
-      {selectedDrones?.map((drone, idx) => {
-        const mapping = droneMappings.find(
-          (m) => m.selected_drone_key === drone.key
+      {state.selectedDrones?.map((drone: DroneState, idx: number) => {
+        const mapping = state.droneMappings.find(
+          (m: DroneMappingState) => m.selected_drone_key === drone.key
         );
 
         return (
@@ -537,8 +527,8 @@ export default function DronePanel({
                               <SelectItem
                                 key={physicalDrone.id}
                                 value={String(physicalDrone.id)}
-                                disabled={droneMappings.some(
-                                  (m) =>
+                                disabled={state.droneMappings.some(
+                                  (m: DroneMappingState) =>
                                     m.physical_drone_id === physicalDrone.id &&
                                     m.selected_drone_key !== drone.key
                                 )}
@@ -592,7 +582,9 @@ export default function DronePanel({
                       <SelectTrigger className="w-full h-8 text-xs">
                         <SelectValue placeholder="选择镜头参数">
                           {mapping?.lens_type
-                            ? LENS_TYPES[mapping.lens_type]
+                            ? LENS_TYPES[
+                                mapping.lens_type as keyof typeof LENS_TYPES
+                              ] || LENS_TYPES.visible
                             : LENS_TYPES.visible}
                         </SelectValue>
                       </SelectTrigger>
@@ -614,7 +606,7 @@ export default function DronePanel({
                 ) : (
                   <div className="text-sm text-gray-600">
                     {mapping?.lens_type
-                      ? LENS_TYPES[mapping.lens_type]
+                      ? LENS_TYPES[mapping.lens_type as keyof typeof LENS_TYPES]
                       : LENS_TYPES.visible}
                   </div>
                 )}
@@ -751,8 +743,8 @@ export default function DronePanel({
                                 <SelectItem
                                   key={physicalDrone.id}
                                   value={String(physicalDrone.id)}
-                                  disabled={droneMappings.some(
-                                    (m) =>
+                                  disabled={state.droneMappings.some(
+                                    (m: DroneMappingState) =>
                                       m.physical_drone_id ===
                                         physicalDrone.id &&
                                       m.selected_drone_key !== lastAddedDroneKey

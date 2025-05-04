@@ -23,6 +23,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Calendar1 } from "lucide-react";
+import { DroneMappingState, DroneState, JobAction, WaylineAreaState } from "./job-state";
 // import { CalendarIcon } from "@radix-ui/react-icons";
 // import { cn } from "@/lib/utils";
 // import { format } from "date-fns";
@@ -56,7 +57,14 @@ interface TaskInfoPanelProps {
       };
     };
   };
-  setPath: (path: AMap.LngLat[]) => void;
+  // 替换setPath为state和dispatch
+  state: {
+    path: AMap.LngLat[];
+    selectedDrones: DroneState[];
+    waylineAreas: WaylineAreaState[];
+    droneMappings: DroneMappingState[];
+  };
+  dispatch: React.Dispatch<JobAction>; // 使用更具体的Action类型会更好
   AMapRef: React.MutableRefObject<typeof AMap | null>;
 }
 
@@ -66,10 +74,21 @@ export default function TaskInfoPanel({
   form,
   optionsQuery,
   dataQuery,
-  setPath,
+  state,
+  dispatch,
   AMapRef,
 }: TaskInfoPanelProps) {
-  // 移除折叠状态，内容始终可见
+  console.log("TaskInfoPanel props", {
+    isEditing,
+    isCreating,
+    form,
+    optionsQuery,
+    dataQuery,
+    state,
+    dispatch,
+    AMapRef,
+  });
+  
 
   // 处理时间选择的逻辑
   const handleTimeChange = (
@@ -238,7 +257,7 @@ export default function TaskInfoPanel({
 
                     {/* 时间显示文本框 - 只读模式 */}
                     {/* <FormControl> */}
-                      {/* <Input
+                    {/* <Input
                         placeholder="选择器选择的时间将在此处显示"
                         value={
                           form.getValues("schedule_time")
@@ -360,8 +379,8 @@ export default function TaskInfoPanel({
                       <Select
                         onValueChange={(value) => {
                           field.onChange(parseInt(value));
-                          // 设置当前区域路径
-                          setPath(
+                          // 设置当前区域路径，使用dispatch替代setPath
+                          const path =
                             optionsQuery.data?.areas
                               .find((e) => e.id === parseInt(value))
                               ?.points.map((p) => {
@@ -369,8 +388,10 @@ export default function TaskInfoPanel({
                                   p.lng,
                                   p.lat
                                 );
-                              }) || []
-                          );
+                              }) || [];
+
+                          // 使用dispatch来更新path状态
+                          dispatch({ type: "SET_PATH", payload: path });
                         }}
                       >
                         <SelectTrigger>
