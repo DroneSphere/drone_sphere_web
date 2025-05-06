@@ -301,7 +301,6 @@ export default function Page() {
                   dispatch={dispatch}
                   AMapRef={AMapRef}
                   mapRef={mapRef}
-                  isEditMode={true}
                 />
               </div>
 

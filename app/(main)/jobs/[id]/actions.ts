@@ -1,13 +1,13 @@
 import * as turf from "@turf/turf";
 import { MutableRefObject } from "react";
-import { JobDetailResult } from "../report/[id]/types";
+import { DroneStateV2 } from "./job-state";
 
 export function dividePolygonAmongDrones(
   path: AMap.LngLat[],
-  selectedDrones: JobDetailResult["drones"],
+  drones: DroneStateV2[],
   AMapRef: MutableRefObject<typeof AMap | null>
 ) {
-  const droneCount = selectedDrones.length;
+  const droneCount = drones.length;
   if (droneCount === 0) {
     return;
   }
@@ -130,13 +130,13 @@ export function dividePolygonAmongDrones(
  * 为每个区域生成航点路径
  * 实现类似割草机模式的飞行路径
  * @param path 区域边界点
- * @param droneParams 无人机参数
+ * @param waylineParams 无人机参数
  * @param AMapRef AMap引用
  * @returns 航点数组
  */
 export function generateWaypoints(
   path: AMap.LngLat[],
-  droneParams: {
+  waylineParams: {
     flyingHeight: number; // 飞行高度（米）
     coverageWidth: number; // 在指定高度下的地面覆盖宽度（米）
     overlapRate: number; // 旁向重叠率（0-1之间）
@@ -169,27 +169,27 @@ export function generateWaypoints(
   // 计算地面覆盖宽度（基于飞行高度、俯仰角和放大倍数）
   // 假设标准视场角FOV为35度，受到俯仰角和变焦的影响
   const standardFOV = 35; // 标准视场角（度）
-  const effectiveFOV = standardFOV / droneParams.gimbalZoom; // 考虑变焦后的视场角
+  const effectiveFOV = standardFOV / waylineParams.gimbalZoom; // 考虑变焦后的视场角
 
   // 计算俯仰角的影响（垂直向下时覆盖最窄，水平时无限宽）
   // 从-90度（垂直向下）到0度（水平）映射到1到无穷大的因子
-  const pitchRadians = Math.abs(droneParams.gimbalPitch) * (Math.PI / 180);
+  const pitchRadians = Math.abs(waylineParams.gimbalPitch) * (Math.PI / 180);
   const pitchFactor = 1 / Math.sin(pitchRadians);
 
   // 计算地面覆盖宽度
   const fovRadians = effectiveFOV * (Math.PI / 180);
   const coverageWidth =
-    2 * droneParams.flyingHeight * Math.tan(fovRadians / 2) * pitchFactor;
+    2 * waylineParams.flyingHeight * Math.tan(fovRadians / 2) * pitchFactor;
 
   // 使用计算得到的覆盖宽度或参数中提供的值（以较小者为准，确保安全覆盖）
   const actualCoverageWidth = Math.min(
     coverageWidth,
-    droneParams.coverageWidth
+    waylineParams.coverageWidth
   );
   console.log("理论覆盖宽度", actualCoverageWidth);
 
   // 考虑重叠率计算有效宽度
-  const effectiveWidth = actualCoverageWidth * (1 - droneParams.overlapRate);
+  const effectiveWidth = actualCoverageWidth * (1 - waylineParams.overlapRate);
 
   // 使用经纬度转换为米的简单计算（这只是一个近似值）
   // 在不同纬度，经度1度代表的距离不同
