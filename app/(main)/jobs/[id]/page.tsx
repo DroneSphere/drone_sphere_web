@@ -13,7 +13,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 
 import {
   createJob,
-  getJobCreateOpytions,
+  getJobCreateOptions,
   getJobDetailById,
   updateJob,
 } from "./requests";
@@ -66,7 +66,7 @@ export default function Page() {
   // 编辑和创建需要的参数
   const optionsQuery = useQuery({
     queryKey: ["job-creation-options"],
-    queryFn: () => getJobCreateOpytions(),
+    queryFn: () => getJobCreateOptions(),
   });
 
   // 编辑或浏览时查询已有的数据
