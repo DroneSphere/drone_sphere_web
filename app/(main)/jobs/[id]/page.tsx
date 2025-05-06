@@ -19,7 +19,6 @@ import {
 } from "./requests";
 import { Form } from "@/components/ui/form";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
 import { toast } from "@/hooks/use-toast";
 import { useIsCreateMode } from "@/lib/misc";
 
@@ -289,13 +288,11 @@ export default function Page() {
                   dispatch={dispatch}
                   AMapRef={AMapRef}
                 />
-                <Separator className="my-2" />
                 <DronePanel
                   availableDrones={optionsQuery.data?.drones || []}
                   state={state}
                   dispatch={dispatch}
                 />
-                <Separator className="my-2" />
                 <WaylinePanel
                   state={state}
                   dispatch={dispatch}
