@@ -205,165 +205,164 @@ export default function CommandDronePanel({
   };
 
   return (
-    <Card>
-      <CardHeader className="py-3">
-        <CardTitle className="text-md font-bold">指挥机设置</CardTitle>
-      </CardHeader>
-      <CardContent className="py-2">
-        {/* 选择无人机作为指挥机 */}
-        <div className="flex items-center gap-2 mb-4">
-          <Select
-            value={selectedDroneKey}
-            onValueChange={(value) => setSelectedDroneKey(value)}
-            disabled={isMapPickingMode}
-          >
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="选择无人机" />
-            </SelectTrigger>
-            <SelectContent>
-              {availableDrones.length === 0 ? (
-                <SelectItem value="none" disabled>
-                  没有可用的无人机
+    <div>
+      <div className="py-3">
+        <div className="text-md font-bold">指挥机设置</div>
+      </div>
+      {/* <CardContent className="py-2"> */}
+      {/* 选择无人机作为指挥机 */}
+      <div className="flex items-center gap-2 mb-4">
+        <Select
+          value={selectedDroneKey}
+          onValueChange={(value) => setSelectedDroneKey(value)}
+          disabled={isMapPickingMode}
+        >
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder="选择无人机" />
+          </SelectTrigger>
+          <SelectContent>
+            {availableDrones.length === 0 ? (
+              <SelectItem value="none" disabled>
+                没有可用的无人机
+              </SelectItem>
+            ) : (
+              availableDrones.map((drone) => (
+                <SelectItem key={drone.key} value={drone.key}>
+                  {drone.name || `无人机 ${drone.index || 0}`}
                 </SelectItem>
-              ) : (
-                availableDrones.map((drone) => (
-                  <SelectItem key={drone.key} value={drone.key}>
-                    {drone.name || `无人机 ${drone.index || 0}`}
-                  </SelectItem>
-                ))
-              )}
-            </SelectContent>
-          </Select>
+              ))
+            )}
+          </SelectContent>
+        </Select>
+        <Button
+          type="button"
+          disabled={!selectedDroneKey || isMapPickingMode}
+          onClick={addCommandDrone}
+          className="whitespace-nowrap"
+        >
+          {isMapPickingMode ? "点击地图选择位置" : "添加指挥机"}
+        </Button>
+      </div>
+
+      {isMapPickingMode && (
+        <div className="mb-4 p-2 bg-amber-50 border border-amber-200 rounded text-amber-700 text-sm">
+          请在地图上点击选择指挥机位置，或者
           <Button
             type="button"
-            disabled={!selectedDroneKey || isMapPickingMode}
-            onClick={addCommandDrone}
-            className="whitespace-nowrap"
+            variant="link"
+            className="p-0 h-auto text-amber-700 underline"
+            onClick={() => setIsMapPickingMode(false)}
           >
-            {isMapPickingMode ? "点击地图选择位置" : "添加指挥机"}
+            取消选择
           </Button>
         </div>
+      )}
 
-        {isMapPickingMode && (
-          <div className="mb-4 p-2 bg-amber-50 border border-amber-200 rounded text-amber-700 text-sm">
-            请在地图上点击选择指挥机位置，或者
-            <Button
-              type="button"
-              variant="link"
-              className="p-0 h-auto text-amber-700 underline"
-              onClick={() => setIsMapPickingMode(false)}
-            >
-              取消选择
-            </Button>
+      {/* 指挥机列表 */}
+      <div className="space-y-3">
+        {state.commandDrones.map((commandDrone) => (
+          <div
+            key={commandDrone.drone_key}
+            className="border rounded-md p-3 bg-slate-50"
+          >
+            <div className="flex justify-between items-center mb-2">
+              <div className="font-medium flex items-center gap-2">
+                <div
+                  className="w-3 h-3 rounded-full"
+                  style={{ backgroundColor: commandDrone.color }}
+                ></div>
+                {getDroneName(commandDrone.drone_key)}
+              </div>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="h-8 w-8 p-0"
+                onClick={() => removeCommandDrone(commandDrone.drone_key)}
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </div>
+
+            {/* 位置信息 */}
+            <div className="grid grid-cols-3 gap-2">
+              <div className="space-y-1">
+                <Label
+                  htmlFor={`lat-${commandDrone.drone_key}`}
+                  className="text-xs"
+                >
+                  纬度
+                </Label>
+                <Input
+                  id={`lat-${commandDrone.drone_key}`}
+                  type="number"
+                  step="0.000001"
+                  value={commandDrone.position.lat}
+                  onChange={(e) =>
+                    updatePosition(
+                      commandDrone.drone_key,
+                      "lat",
+                      parseFloat(e.target.value)
+                    )
+                  }
+                  className="h-8"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label
+                  htmlFor={`lng-${commandDrone.drone_key}`}
+                  className="text-xs"
+                >
+                  经度
+                </Label>
+                <Input
+                  id={`lng-${commandDrone.drone_key}`}
+                  type="number"
+                  step="0.000001"
+                  value={commandDrone.position.lng}
+                  onChange={(e) =>
+                    updatePosition(
+                      commandDrone.drone_key,
+                      "lng",
+                      parseFloat(e.target.value)
+                    )
+                  }
+                  className="h-8"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label
+                  htmlFor={`alt-${commandDrone.drone_key}`}
+                  className="text-xs"
+                >
+                  高度(米)
+                </Label>
+                <Input
+                  id={`alt-${commandDrone.drone_key}`}
+                  type="number"
+                  min="0"
+                  step="1"
+                  value={commandDrone.position.altitude}
+                  onChange={(e) =>
+                    updatePosition(
+                      commandDrone.drone_key,
+                      "altitude",
+                      parseInt(e.target.value)
+                    )
+                  }
+                  className="h-8"
+                />
+              </div>
+            </div>
+          </div>
+        ))}
+
+        {state.commandDrones.length === 0 && (
+          <div className="text-center text-gray-500 py-4">
+            暂无指挥机，请添加指挥机
           </div>
         )}
-
-        {/* 指挥机列表 */}
-        <div className="space-y-3">
-          {state.commandDrones.map((commandDrone) => (
-            <div
-              key={commandDrone.drone_key}
-              className="border rounded-md p-3 bg-slate-50"
-            >
-              <div className="flex justify-between items-center mb-2">
-                <div className="font-medium flex items-center gap-2">
-                  <div
-                    className="w-3 h-3 rounded-full"
-                    style={{ backgroundColor: commandDrone.color }}
-                  ></div>
-                  {getDroneName(commandDrone.drone_key)}
-                </div>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 w-8 p-0"
-                  onClick={() => removeCommandDrone(commandDrone.drone_key)}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
-
-              {/* 位置信息 */}
-              <div className="grid grid-cols-3 gap-2">
-                <div className="space-y-1">
-                  <Label
-                    htmlFor={`lat-${commandDrone.drone_key}`}
-                    className="text-xs"
-                  >
-                    纬度
-                  </Label>
-                  <Input
-                    id={`lat-${commandDrone.drone_key}`}
-                    type="number"
-                    step="0.000001"
-                    value={commandDrone.position.lat}
-                    onChange={(e) =>
-                      updatePosition(
-                        commandDrone.drone_key,
-                        "lat",
-                        parseFloat(e.target.value)
-                      )
-                    }
-                    className="h-8"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label
-                    htmlFor={`lng-${commandDrone.drone_key}`}
-                    className="text-xs"
-                  >
-                    经度
-                  </Label>
-                  <Input
-                    id={`lng-${commandDrone.drone_key}`}
-                    type="number"
-                    step="0.000001"
-                    value={commandDrone.position.lng}
-                    onChange={(e) =>
-                      updatePosition(
-                        commandDrone.drone_key,
-                        "lng",
-                        parseFloat(e.target.value)
-                      )
-                    }
-                    className="h-8"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label
-                    htmlFor={`alt-${commandDrone.drone_key}`}
-                    className="text-xs"
-                  >
-                    高度(米)
-                  </Label>
-                  <Input
-                    id={`alt-${commandDrone.drone_key}`}
-                    type="number"
-                    min="0"
-                    step="1"
-                    value={commandDrone.position.altitude}
-                    onChange={(e) =>
-                      updatePosition(
-                        commandDrone.drone_key,
-                        "altitude",
-                        parseInt(e.target.value)
-                      )
-                    }
-                    className="h-8"
-                  />
-                </div>
-              </div>
-            </div>
-          ))}
-
-          {state.commandDrones.length === 0 && (
-            <div className="text-center text-gray-500 py-4">
-              暂无指挥机，请添加指挥机
-            </div>
-          )}
-        </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
