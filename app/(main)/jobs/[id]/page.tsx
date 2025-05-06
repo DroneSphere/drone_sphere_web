@@ -60,23 +60,19 @@ export default function Page() {
 
   // 使用reducer管理复杂状态
   const [state, dispatch] = useReducer(jobReducer, initialJobState);
-  // 不再解构state，直接使用state.xxx的方式访问
-  
+
   // 计算工作状态
   const { isCreateMode: isCreating, idPart } = useIsCreateMode();
-  // 默认设置为编辑模式
-  const isEditing = true;
 
   // 编辑和创建需要的参数
   const optionsQuery = useQuery({
     queryKey: ["job-creation-options"],
     queryFn: () => getJobCreateOpytions(),
-    enabled: isCreating || isEditing,
   });
 
   // 编辑或浏览时查询已有的数据
   const dataQuery = useQuery({
-    queryKey: ["job-edition-data", parseInt(idPart)],
+    queryKey: ["jobs", parseInt(idPart)],
     queryFn: () => getJobDetailById(parseInt(idPart)),
     enabled: !isCreating,
   });
@@ -165,7 +161,7 @@ export default function Page() {
 
     if (isCreating) {
       createMutation.mutate(submitData);
-    } else if (isEditing) {
+    } else {
       // 编辑模式下添加id字段
       editionMutation.mutate({
         ...submitData,
@@ -254,16 +250,16 @@ export default function Page() {
       // 传入回调函数用于处理多边形编辑
       drawWaylines(
         state.waylineAreas,
-        state.selectedDrones,
-        isEditing || isCreating,
+        state.drones,
+        isCreating,
         handlePolygonEdit
       );
     }
   }, [
     isMapLoaded,
     state.waylineAreas,
+    state.drones,
     state.selectedDrones,
-    isEditing,
     isCreating,
     drawWaylines,
     handlePolygonEdit,
@@ -284,7 +280,7 @@ export default function Page() {
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
               <div className="max-h-[calc(100vh-180px)] overflow-y-auto pl-2 pr-4 space-y-4">
                 <TaskInfoPanel
-                  isEditing={isEditing}
+                  isEditing={true}
                   isCreating={isCreating}
                   form={form}
                   optionsQuery={optionsQuery}
@@ -295,7 +291,6 @@ export default function Page() {
                 />
                 <Separator className="my-2" />
                 <DronePanel
-                  isEditMode={isEditing || isCreating}
                   availableDrones={optionsQuery.data?.drones || []}
                   state={state}
                   dispatch={dispatch}
@@ -306,7 +301,7 @@ export default function Page() {
                   dispatch={dispatch}
                   AMapRef={AMapRef}
                   mapRef={mapRef}
-                  isEditMode={isEditing || isCreating}
+                  isEditMode={true}
                 />
               </div>
 
