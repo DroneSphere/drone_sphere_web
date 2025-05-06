@@ -29,6 +29,11 @@ export default function WaylinePanel({
     gimbalZoom: 1, // 默认放大倍数1x
   });
 
+  // 过滤掉被指定为指挥机的无人机，只使用普通无人机参与航线飞行
+  const availableDrones = state.drones.filter(
+    (drone) => !state.commandDrones.some((cmd) => cmd.drone_key === drone.key)
+  );
+
   return (
     <div className="mt-4 space-y-2">
       <div className="flex items-center justify-between">
@@ -37,22 +42,31 @@ export default function WaylinePanel({
 
       {/* 移除折叠状态判断，内容始终显示 */}
       <div className="text-sm text-gray-500 flex items-center justify-between">
-        <div>已选择{state.drones.length}架无人机</div>
+        <div>
+          已选择{availableDrones.length}架可用无人机
+          {availableDrones.length < state.drones.length &&
+            `(${state.drones.length - availableDrones.length}架用作指挥机)`}
+        </div>
 
         <Button
           size="sm"
           variant="outline"
           type="button"
           onClick={() => {
-            if (
-              state.path.length <= 0 ||
-              !AMapRef.current ||
-              !mapRef.current ||
-              state.drones.length === 0
-            ) {
+            if (state.path.length <= 0 || !AMapRef.current || !mapRef.current) {
               toast({
                 title: "无法生成航线",
-                description: "请确保已选择区域和无人机",
+                description: "请确保已选择区域",
+              });
+              return;
+            }
+
+            if (availableDrones.length === 0) {
+              toast({
+                title: "无法生成航线",
+                description:
+                  "没有可用于航线的无人机，所有无人机都被设置为指挥机",
+                variant: "destructive",
               });
               return;
             }
@@ -65,7 +79,7 @@ export default function WaylinePanel({
 
             const subPaths = dividePolygonAmongDrones(
               state.path,
-              state.drones,
+              availableDrones, // 使用过滤后的可用无人机列表
               AMapRef
             );
             if (!subPaths) {
@@ -77,30 +91,32 @@ export default function WaylinePanel({
             }
 
             // 生成新的航线区域，包含云台参数
-            const newWaylineAreas: WaylineAreaState[] = state.drones.map((drone, index) => {
-              // 获取对应的子区域路径，如果index超出了subPaths的长度，则使用最后一个
-              const subPath =
-                index < subPaths.length
-                  ? subPaths[index]
-                  : subPaths[subPaths.length - 1];
+            const newWaylineAreas: WaylineAreaState[] = availableDrones.map(
+              (drone, index) => {
+                // 获取对应的子区域路径，如果index超出了subPaths的长度，则使用最后一个
+                const subPath =
+                  index < subPaths.length
+                    ? subPaths[index]
+                    : subPaths[subPaths.length - 1];
 
-              // 使用当前设置的参数生成航点
-              const waypoints = generateWaypoints(
-                subPath,
-                waylineParams,
-                AMapRef
-              );
+                // 使用当前设置的参数生成航点
+                const waypoints = generateWaypoints(
+                  subPath,
+                  waylineParams,
+                  AMapRef
+                );
 
-              return {
-                droneKey: drone.key,
-                color: drone.color,
-                path: subPath,
-                points: waypoints,
-                visible: true,
-                gimbalPitch: waylineParams.gimbalPitch,
-                gimbalZoom: waylineParams.gimbalZoom,
-              };
-            });
+                return {
+                  droneKey: drone.key,
+                  color: drone.color,
+                  path: subPath,
+                  points: waypoints,
+                  visible: true,
+                  gimbalPitch: waylineParams.gimbalPitch,
+                  gimbalZoom: waylineParams.gimbalZoom,
+                };
+              }
+            );
 
             // 使用dispatch更新航线区域
             dispatch({
