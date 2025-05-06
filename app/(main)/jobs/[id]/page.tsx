@@ -4,7 +4,7 @@
  */
 "use client";
 
-import { useEffect, useCallback, useReducer } from "react";
+import { useEffect, useCallback, useReducer, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -25,6 +25,7 @@ import { useIsCreateMode } from "@/lib/misc";
 import TaskInfoPanel from "./task-info-panel";
 import WaylinePanel from "./wayline-panel";
 import DronePanel from "./drone-panel";
+import CommandDronePanel from "./command-drone-panel"; // 添加指挥机面板组件
 import { jobReducer, initialJobState } from "./job-state";
 import { useMap } from "./use-map";
 import {
@@ -54,8 +55,17 @@ export default function Page() {
   const router = useRouter();
 
   // 使用map自定义hook
-  const { AMapRef, mapRef, isMapLoaded, drawAreaPolygon, drawWaylines } =
-    useMap();
+  const {
+    AMapRef,
+    mapRef,
+    isMapLoaded,
+    drawAreaPolygon,
+    drawWaylines,
+    drawCommandDrones, // 添加绘制指挥机函数
+    setupCommandDronePickingMode, // 添加指挥机位置选择模式
+    isPickingCommandDronePosition, // 添加指挥机位置选择状态
+    setIsPickingCommandDronePosition, // 添加指挥机位置选择状态设置函数
+  } = useMap();
 
   // 使用reducer管理复杂状态
   const [state, dispatch] = useReducer(jobReducer, initialJobState);
@@ -138,7 +148,8 @@ export default function Page() {
     const validation = validateJobData(
       state.selectedDrones,
       state.waylineAreas,
-      state.droneMappings
+      state.droneMappings,
+      state.commandDrones // 添加指挥机数据进行验证
     );
     if (!validation.isValid) {
       toast({
@@ -154,6 +165,7 @@ export default function Page() {
       selectedDrones: state.selectedDrones,
       waylineAreas: state.waylineAreas,
       droneMappings: state.droneMappings,
+      commandDrones: state.commandDrones, // 添加指挥机数据
     });
 
     console.log("提交数据", submitData);
@@ -229,6 +241,48 @@ export default function Page() {
     []
   );
 
+  // 存储当前选中的无人机键值（用于指挥机添加）
+  const [selectedCommandDroneKey, setSelectedCommandDroneKey] =
+    useState<string>("");
+
+  // 处理指挥机位置选择
+  const handleCommandDronePositionPick = useCallback(
+    (position: { lat: number; lng: number }) => {
+      console.log("选中的指挥机位置", position);
+      
+      // 触发自定义事件，供CommandDronePanel组件接收
+      const positionEvent = new CustomEvent('map-position-picked', {
+        detail: position
+      });
+      window.dispatchEvent(positionEvent);
+      
+      if (!selectedCommandDroneKey) return;
+
+      // 获取选中的无人机信息 - 使用drones替代selectedDrones
+      const drone = state.drones.find(
+        (d) => d.key === selectedCommandDroneKey
+      );
+      if (!drone) return;
+
+      // 创建新的指挥机对象
+      dispatch({
+        type: "ADD_COMMAND_DRONE",
+        payload: {
+          drone_key: selectedCommandDroneKey,
+          position: {
+            ...position,
+            altitude: 100, // 默认高度100米
+          },
+          color: drone.color || "#3366FF",
+        },
+      });
+
+      // 重置选中的无人机键值
+      setSelectedCommandDroneKey("");
+    },
+    [selectedCommandDroneKey, state.selectedDrones, dispatch]
+  );
+
   // 只在数据加载完成后更新状态
   useEffect(() => {
     if (dataQuery.isSuccess && dataQuery.data && isMapLoaded) {
@@ -262,6 +316,63 @@ export default function Page() {
     isCreating,
     drawWaylines,
     handlePolygonEdit,
+  ]);
+
+  // 监听指挥机变化，更新地图标记
+  useEffect(() => {
+    if (isMapLoaded && state.commandDrones.length > 0) {
+      // 绘制指挥机标记，在编辑模式下允许拖拽
+      drawCommandDrones(state.commandDrones, isCreating);
+    }
+  }, [isMapLoaded, state.commandDrones, isCreating, drawCommandDrones]);
+
+  // 添加指挥机位置变更事件监听
+  useEffect(() => {
+    // 处理指挥机位置变更事件
+    const handleCommandDronePositionChange = (e: CustomEvent) => {
+      const { drone_key, position } = e.detail;
+
+      dispatch({
+        type: "UPDATE_COMMAND_DRONE_POSITION",
+        payload: {
+          drone_key,
+          position,
+        },
+      });
+    };
+
+    // 添加事件监听器
+    window.addEventListener(
+      "commandDronePositionChanged",
+      handleCommandDronePositionChange as EventListener
+    );
+
+    // 清理函数
+    return () => {
+      window.removeEventListener(
+        "commandDronePositionChanged",
+        handleCommandDronePositionChange as EventListener
+      );
+    };
+  }, [dispatch]);
+
+  // 设置指挥机选择模式
+  useEffect(() => {
+    if (isPickingCommandDronePosition && isMapLoaded) {
+      // 设置指挥机位置选择模式
+      const cancelPicking = setupCommandDronePickingMode(
+        handleCommandDronePositionPick
+      );
+
+      return () => {
+        if (cancelPicking) cancelPicking();
+      };
+    }
+  }, [
+    isPickingCommandDronePosition,
+    isMapLoaded,
+    setupCommandDronePickingMode,
+    handleCommandDronePositionPick,
   ]);
 
   // 删除各种setXXX方法，子组件将直接使用dispatch
@@ -298,6 +409,16 @@ export default function Page() {
                   dispatch={dispatch}
                   AMapRef={AMapRef}
                   mapRef={mapRef}
+                />
+                {/* 添加指挥机面板 */}
+                <CommandDronePanel
+                  state={state}
+                  dispatch={dispatch}
+                  AMapRef={AMapRef}
+                  mapRef={mapRef}
+                  isMapPickingMode={isPickingCommandDronePosition}
+                  setIsMapPickingMode={setIsPickingCommandDronePosition}
+                  onPositionPick={handleCommandDronePositionPick}
                 />
               </div>
 

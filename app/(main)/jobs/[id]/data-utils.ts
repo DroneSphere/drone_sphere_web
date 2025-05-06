@@ -1,5 +1,5 @@
 import { JobDetailResult } from "./types";
-import { DroneState, WaylineAreaState, DroneMappingState } from "./job-state";
+import { DroneState, WaylineAreaState, DroneMappingState, CommandDroneState } from "./job-state";
 
 // 将API返回的无人机数据转换为前端状态格式
 export function formatDronesData(
@@ -59,11 +59,13 @@ export function prepareSubmitData(
     selectedDrones: DroneState[];
     waylineAreas: WaylineAreaState[];
     droneMappings: DroneMappingState[];
+    commandDrones?: CommandDroneState[]; // 添加指挥机数据（可选）
   }
 ) {
-  const { selectedDrones, waylineAreas, droneMappings } = state;
+  const { selectedDrones, waylineAreas, droneMappings, commandDrones = [] } = state;
 
-  return {
+  // 基础提交数据
+  const submitData = {
     name: formData.name || "",
     description: formData.description,
     area_id: formData.area_id || 0,
@@ -97,13 +99,32 @@ export function prepareSubmitData(
       physical_drone_id: mapping.physical_drone_id,
     })),
   };
+
+  // 如果存在指挥机数据，添加到提交数据中
+  if (commandDrones.length > 0) {
+    return {
+      ...submitData,
+      // 添加指挥机数据
+      command_drones: commandDrones.map((commandDrone) => ({
+        drone_key: commandDrone.drone_key,
+        position: {
+          lat: commandDrone.position.lat,
+          lng: commandDrone.position.lng,
+          altitude: commandDrone.position.altitude,
+        }
+      })),
+    };
+  }
+
+  return submitData;
 }
 
 // 验证提交数据
 export function validateJobData(
   selectedDrones: DroneState[],
   waylineAreas: WaylineAreaState[],
-  droneMappings: DroneMappingState[]
+  droneMappings: DroneMappingState[],
+  commandDrones: CommandDroneState[] = [] // 添加可选的指挥机参数
 ): { isValid: boolean; errorMessage?: string } {
   // 检查是否有选择无人机
   if (!selectedDrones || selectedDrones.length <= 0) {
@@ -129,6 +150,40 @@ export function validateJobData(
       isValid: false,
       errorMessage: "存在未绑定物理无人机的机型，请完成所有无人机的绑定",
     };
+  }
+
+  // 验证指挥机数据
+  if (commandDrones.length > 0) {
+    // 获取无人机键值
+    const droneKeys = selectedDrones.map(drone => drone.key);
+    
+    // 检查所有指挥机是否都有对应的无人机
+    const invalidCommandDrones = commandDrones.filter(
+      cd => !droneKeys.includes(cd.drone_key)
+    );
+    
+    if (invalidCommandDrones.length > 0) {
+      return {
+        isValid: false,
+        errorMessage: "存在无效的指挥机配置，请检查指挥机与无人机的关联",
+      };
+    }
+    
+    // 确保同一架无人机不能既是指挥机又分配了航线任务
+    const waylineDroneKeys = waylineAreas.map(wa => wa.droneKey);
+    const commandDroneKeys = commandDrones.map(cd => cd.drone_key);
+    
+    // 查找同时存在于两个数组中的键值
+    const duplicateDrones = commandDroneKeys.filter(key => 
+      waylineDroneKeys.includes(key)
+    );
+    
+    if (duplicateDrones.length > 0) {
+      return {
+        isValid: false,
+        errorMessage: "同一架无人机不能同时被分配为航线任务和指挥机，请重新分配",
+      };
+    }
   }
 
   return { isValid: true };

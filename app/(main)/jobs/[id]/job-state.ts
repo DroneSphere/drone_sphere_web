@@ -36,6 +36,23 @@ export type DroneMappingState = {
   lens_type: "visible" | "thermal" | "zoom"; // 镜头类型
 };
 
+// 指挥机状态定义
+export type CommandDroneState = {
+  /** 关联到selectedDrones中的无人机唯一键 */
+  drone_key: string;
+  /** 指挥机目标位置 */
+  position: {
+    /** 纬度 */
+    lat: number;
+    /** 经度 */
+    lng: number;
+    /** 高度(米) */
+    altitude: number;
+  };
+  /** 指挥机的显示颜色（从关联的无人机获取） */
+  color: string;
+};
+
 // 统一的任务状态类型
 export interface JobState {
   drones: DroneStateV2[];
@@ -43,6 +60,7 @@ export interface JobState {
   waylineAreas: WaylineAreaState[];
   droneMappings: DroneMappingState[];
   path: AMap.LngLat[]; // 区域路径
+  commandDrones: CommandDroneState[]; // 指挥机列表
 }
 
 // 定义所有可能的动作
@@ -65,6 +83,16 @@ export type JobAction =
   | { type: "ADD_DRONE"; payload: DroneState }
   | { type: "REMOVE_DRONE"; payload: { key: string } }
   | { type: "SET_PATH"; payload: AMap.LngLat[] }
+  | { type: "SET_COMMAND_DRONES"; payload: CommandDroneState[] }
+  | { type: "ADD_COMMAND_DRONE"; payload: CommandDroneState }
+  | { type: "REMOVE_COMMAND_DRONE"; payload: { drone_key: string } }
+  | {
+      type: "UPDATE_COMMAND_DRONE_POSITION";
+      payload: {
+        drone_key: string;
+        position: { lat: number; lng: number; altitude: number };
+      };
+    }
   | { type: "RESET_STATE"; payload: Partial<JobState> };
 
 // 创建初始状态
@@ -74,6 +102,7 @@ export const initialJobState: JobState = {
   waylineAreas: [],
   droneMappings: [],
   path: [],
+  commandDrones: [], // 添加空的指挥机数组
 };
 
 // 创建reducer函数
@@ -174,6 +203,40 @@ export function jobReducer(state: JobState, action: JobAction): JobState {
       return {
         ...state,
         path: action.payload,
+      };
+    case "SET_COMMAND_DRONES":
+      return {
+        ...state,
+        commandDrones: action.payload,
+      };
+    case "ADD_COMMAND_DRONE":
+      // 确保同一个无人机不会被添加为多个指挥机
+      if (
+        state.commandDrones.some(
+          (c) => c.drone_key === action.payload.drone_key
+        )
+      ) {
+        return state;
+      }
+      return {
+        ...state,
+        commandDrones: [...state.commandDrones, action.payload],
+      };
+    case "REMOVE_COMMAND_DRONE":
+      return {
+        ...state,
+        commandDrones: state.commandDrones.filter(
+          (c) => c.drone_key !== action.payload.drone_key
+        ),
+      };
+    case "UPDATE_COMMAND_DRONE_POSITION":
+      return {
+        ...state,
+        commandDrones: state.commandDrones.map((c) =>
+          c.drone_key === action.payload.drone_key
+            ? { ...c, position: action.payload.position }
+            : c
+        ),
       };
     case "RESET_STATE":
       return {

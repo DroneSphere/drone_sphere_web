@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import AMapLoader from "@amap/amap-jsapi-loader";
-import { WaylineAreaState } from "./job-state";
+import { WaylineAreaState, CommandDroneState } from "./job-state";
 
 export function useMap() {
   // 地图相关状态
@@ -15,6 +15,13 @@ export function useMap() {
   const editorsRef = useRef<AMap.PolygonEditor[]>([]);
   const polylinesRef = useRef<AMap.Polyline[]>([]);
   const markersRef = useRef<AMap.Marker[][]>([]);
+
+  // 指挥机相关引用和状态
+  const commandDroneMarkersRef = useRef<AMap.Marker[]>([]);
+  const [isPickingCommandDronePosition, setIsPickingCommandDronePosition] =
+    useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const clickListenerRef = useRef<any>(null);
 
   // 加载地图
   const initMap = useCallback(async () => {
@@ -73,6 +80,7 @@ export function useMap() {
     polygonsRef.current = [];
     polylinesRef.current = [];
     markersRef.current = [];
+    commandDroneMarkersRef.current = []; // 清除指挥机标记引用
 
     // 关闭所有编辑器
     editorsRef.current.forEach((editor) => {
@@ -80,6 +88,12 @@ export function useMap() {
     });
     editorsRef.current = [];
     activeEditorRef.current = -1;
+
+    // 移除指挥机位置选择的点击事件监听
+    if (clickListenerRef.current && AMapRef.current && mapRef.current) {
+      AMapRef.current.Event.clearListeners(mapRef.current, "click");
+      clickListenerRef.current = null;
+    }
   }, []);
 
   // 绘制区域边界
@@ -373,6 +387,205 @@ export function useMap() {
     };
   }, [initMap]);
 
+  // 绘制指挥机标记
+  const drawCommandDrones = useCallback(
+    (commandDrones: CommandDroneState[], isEditing: boolean = false) => {
+      if (!isMapLoaded || !AMapRef.current || !mapRef.current) return;
+
+      const currentMap = mapRef.current;
+      const currentAMap = AMapRef.current;
+
+      // 清除旧的指挥机标记
+      commandDroneMarkersRef.current.forEach((marker) => {
+        currentMap.remove(marker);
+      });
+
+      const newMarkers: AMap.Marker[] = [];
+
+      commandDrones.forEach((commandDrone) => {
+        // 创建标记
+        const marker = new currentAMap.Marker({
+          position: new currentAMap.LngLat(
+            commandDrone.position.lng,
+            commandDrone.position.lat
+          ),
+          draggable: isEditing,
+          cursor: "move",
+          content: `
+            <div style="position: relative;">
+              <div style="
+                width: 24px; 
+                height: 24px; 
+                background-color: ${commandDrone.color}; 
+                border-radius: 50%; 
+                border: 2px solid white;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+                display: flex;
+                justify-content: center;
+                align-items: center;
+              ">
+                <span style="
+                  font-size: 14px;
+                  font-weight: bold;
+                  color: white;
+                ">C</span>
+              </div>
+              <div style="
+                position: absolute;
+                top: -20px;
+                left: 50%;
+                transform: translateX(-50%);
+                background-color: rgba(0,0,0,0.7);
+                color: white;
+                padding: 2px 6px;
+                border-radius: 3px;
+                font-size: 10px;
+                white-space: nowrap;
+              ">指挥机 ${commandDrone.position.altitude}m</div>
+            </div>
+          `,
+          zIndex: 110,
+        });
+
+        // 为编辑模式添加拖拽事件
+        if (isEditing) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          currentAMap.Event.addListener(marker, "dragend", (e: any) => {
+            const newPos = e.target.getPosition();
+            const dispatchEvent = new CustomEvent(
+              "commandDronePositionChanged",
+              {
+                detail: {
+                  drone_key: commandDrone.drone_key,
+                  position: {
+                    lat: newPos.getLat(),
+                    lng: newPos.getLng(),
+                    altitude: commandDrone.position.altitude,
+                  },
+                },
+              }
+            );
+            window.dispatchEvent(dispatchEvent);
+          });
+
+          // 添加信息窗口
+          const infoWindow = new currentAMap.InfoWindow({
+            content: `
+              <div style="padding: 5px;">
+                <p>指挥机位置</p>
+                <p>经度: ${commandDrone.position.lng.toFixed(6)}</p>
+                <p>纬度: ${commandDrone.position.lat.toFixed(6)}</p>
+                <p>高度: ${commandDrone.position.altitude} 米</p>
+              </div>
+            `,
+            offset: new currentAMap.Pixel(0, -30),
+          });
+
+          currentAMap.Event.addListener(marker, "click", () => {
+            infoWindow.open(currentMap, [
+              commandDrone.position.lng,
+              commandDrone.position.lat,
+            ]);
+          });
+        }
+
+        currentMap.add(marker);
+        newMarkers.push(marker);
+      });
+
+      commandDroneMarkersRef.current = newMarkers;
+    },
+    [isMapLoaded]
+  );
+
+  // 设置指挥机位置选择模式
+  const setupCommandDronePickingMode = useCallback(
+    (onPick: (position: { lat: number; lng: number }) => void) => {
+      if (!isMapLoaded || !AMapRef.current || !mapRef.current) return;
+
+      // 移除任何现有的点击监听器
+      if (clickListenerRef.current) {
+        AMapRef.current.Event.clearListeners(mapRef.current, "click");
+        clickListenerRef.current = null;
+      }
+
+      // 创建新的点击监听器函数 - 用于地图点击事件
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const clickListener = (e: any) => {
+        const position = {
+          lat: e.lnglat.getLat(),
+          lng: e.lnglat.getLng(),
+        };
+
+        // 调用回调函数
+        onPick(position);
+
+        // 移除所有监听器（地图和多边形的）
+        cleanupAllListeners();
+      };
+      
+      // 创建多边形点击监听器函数 - 处理点击多边形的情况
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const polygonClickListener = (e: any) => {
+        console.log("多边形被点击，获取位置信息");
+        // 获取点击位置的经纬度
+        const position = {
+          lat: e.lnglat.getLat(),
+          lng: e.lnglat.getLng(),
+        };
+        
+        // 调用回调函数
+        onPick(position);
+        
+        // 移除所有监听器（地图和多边形的）
+        cleanupAllListeners();
+      };
+      
+      // 清理所有监听器的辅助函数
+      const cleanupAllListeners = () => {
+        // 移除地图点击监听器
+        AMapRef.current!.Event.clearListeners(mapRef.current!, "click");
+        
+        // 移除所有多边形的点击监听器
+        polygonsRef.current.forEach((polygon) => {
+          if (polygon) {
+            AMapRef.current!.Event.clearListeners(polygon, "click");
+          }
+        });
+        
+        // 重置引用和状态
+        clickListenerRef.current = null;
+        setIsPickingCommandDronePosition(false);
+      };
+
+      // 注册地图点击监听器
+      clickListenerRef.current = clickListener;
+      AMapRef.current.Event.addListener(mapRef.current, "click", clickListener);
+      
+      // 为所有多边形添加点击事件监听器
+      polygonsRef.current.forEach((polygon) => {
+        if (polygon) {
+          console.log("为多边形添加点击监听");
+          AMapRef.current!.Event.addListener(polygon, "click", polygonClickListener);
+        }
+      });
+      
+      // 返回清理函数
+      return cleanupAllListeners;
+      setIsPickingCommandDronePosition(true);
+
+      // 返回清理函数
+      return () => {
+        if (clickListenerRef.current && AMapRef.current && mapRef.current) {
+          AMapRef.current.Event.clearListeners(mapRef.current, "click");
+          clickListenerRef.current = null;
+        }
+        setIsPickingCommandDronePosition(false);
+      };
+    },
+    [isMapLoaded]
+  );
+
   return {
     AMapRef,
     mapRef,
@@ -380,5 +593,10 @@ export function useMap() {
     clearMap,
     drawAreaPolygon,
     drawWaylines,
+    // 导出指挥机相关函数和状态
+    drawCommandDrones,
+    setupCommandDronePickingMode,
+    isPickingCommandDronePosition,
+    setIsPickingCommandDronePosition,
   };
 }
