@@ -4,7 +4,6 @@
  */
 import React, { useState, useEffect, useCallback } from "react";
 import { CommandDroneState, JobAction, JobState } from "./job-state";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -141,6 +140,7 @@ export default function CommandDronePanel({
       const handleOneTimeMapClick = (e: MouseEvent) => {
         // 获取地图点击位置的经纬度（由page.tsx中的setupCommandDronePickingMode函数提供）
         // 这里假设点击事件包含了position属性
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const position = (e as any).detail;
         if (
           position &&
