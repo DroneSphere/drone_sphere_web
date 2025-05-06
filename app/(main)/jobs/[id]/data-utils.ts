@@ -53,6 +53,7 @@ export function formatWaylinesData(
 
 // 准备提交数据的格式化函数
 export function prepareSubmitData(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   formData: any, // 表单数据
   state: {
     selectedDrones: DroneState[];
