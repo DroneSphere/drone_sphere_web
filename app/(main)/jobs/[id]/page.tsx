@@ -65,7 +65,14 @@ export default function Page() {
     setupCommandDronePickingMode, // 添加指挥机位置选择模式
     isPickingCommandDronePosition, // 添加指挥机位置选择状态
     setIsPickingCommandDronePosition, // 添加指挥机位置选择状态设置函数
+    drawTakeoffPoints, // 添加绘制起飞点函数
+    setupTakeoffPointPickingMode, // 添加起飞点位置选择模式
+    isPickingTakeoffPoint, // 添加起飞点选择状态
+    setIsPickingTakeoffPoint, // 添加起飞点选择状态设置函数
   } = useMap();
+  
+  // 存储当前选中设置起飞点的无人机键值
+  const [selectedTakeoffPointDroneKey, setSelectedTakeoffPointDroneKey] = useState<string>("");
 
   // 使用reducer管理复杂状态
   const [state, dispatch] = useReducer(jobReducer, initialJobState);
@@ -282,6 +289,43 @@ export default function Page() {
     },
     [selectedCommandDroneKey, state.selectedDrones, dispatch]
   );
+  
+  // 处理起飞点位置选择
+  const handleTakeoffPointPick = useCallback(
+    (position: { lat: number; lng: number }) => {
+      console.log("选中的起飞点位置", position);
+      
+      // 触发自定义事件，供DronePanel组件接收
+      const positionEvent = new CustomEvent('map-position-picked', {
+        detail: position
+      });
+      window.dispatchEvent(positionEvent);
+      
+      if (!selectedTakeoffPointDroneKey) return;
+
+      // 获取选中的无人机信息
+      const drone = state.drones.find(
+        (d) => d.key === selectedTakeoffPointDroneKey
+      );
+      if (!drone) return;
+
+      // 设置无人机起飞点
+      dispatch({
+        type: "SET_DRONE_TAKEOFF_POINT",
+        payload: {
+          drone_key: selectedTakeoffPointDroneKey,
+          takeoffPoint: {
+            ...position,
+            altitude: 30, // 默认起飞高度30米
+          },
+        },
+      });
+
+      // 重置选中的无人机键值
+      setSelectedTakeoffPointDroneKey("");
+    },
+    [selectedTakeoffPointDroneKey, state.drones, dispatch]
+  );
 
   // 只在数据加载完成后更新状态
   useEffect(() => {
@@ -325,6 +369,14 @@ export default function Page() {
       drawCommandDrones(state.commandDrones, isCreating);
     }
   }, [isMapLoaded, state.commandDrones, isCreating, drawCommandDrones]);
+  
+  // 监听无人机起飞点变化，更新地图标记
+  useEffect(() => {
+    if (isMapLoaded && state.drones.length > 0) {
+      // 绘制起飞点标记，在编辑模式下允许拖拽
+      drawTakeoffPoints(state.drones, isCreating);
+    }
+  }, [isMapLoaded, state.drones, isCreating, drawTakeoffPoints]);
 
   // 添加指挥机位置变更事件监听
   useEffect(() => {
@@ -355,6 +407,36 @@ export default function Page() {
       );
     };
   }, [dispatch]);
+  
+  // 添加起飞点位置变更事件监听
+  useEffect(() => {
+    // 处理起飞点位置变更事件
+    const handleTakeoffPointPositionChange = (e: CustomEvent) => {
+      const { drone_key, takeoffPoint } = e.detail;
+
+      dispatch({
+        type: "SET_DRONE_TAKEOFF_POINT",
+        payload: {
+          drone_key,
+          takeoffPoint,
+        },
+      });
+    };
+
+    // 添加事件监听器
+    window.addEventListener(
+      "takeoffPointPositionChanged",
+      handleTakeoffPointPositionChange as EventListener
+    );
+
+    // 清理函数
+    return () => {
+      window.removeEventListener(
+        "takeoffPointPositionChanged",
+        handleTakeoffPointPositionChange as EventListener
+      );
+    };
+  }, [dispatch]);
 
   // 设置指挥机选择模式
   useEffect(() => {
@@ -373,6 +455,25 @@ export default function Page() {
     isMapLoaded,
     setupCommandDronePickingMode,
     handleCommandDronePositionPick,
+  ]);
+  
+  // 设置起飞点选择模式
+  useEffect(() => {
+    if (isPickingTakeoffPoint && isMapLoaded) {
+      // 设置起飞点位置选择模式
+      const cancelPicking = setupTakeoffPointPickingMode(
+        handleTakeoffPointPick
+      );
+
+      return () => {
+        if (cancelPicking) cancelPicking();
+      };
+    }
+  }, [
+    isPickingTakeoffPoint,
+    isMapLoaded,
+    setupTakeoffPointPickingMode,
+    handleTakeoffPointPick,
   ]);
 
   // 删除各种setXXX方法，子组件将直接使用dispatch
@@ -403,6 +504,9 @@ export default function Page() {
                   availableDrones={optionsQuery.data?.drones || []}
                   state={state}
                   dispatch={dispatch}
+                  isMapPickingMode={isPickingTakeoffPoint}
+                  setIsMapPickingMode={setIsPickingTakeoffPoint}
+                  onPositionPick={handleTakeoffPointPick}
                 />
                 <WaylinePanel
                   state={state}

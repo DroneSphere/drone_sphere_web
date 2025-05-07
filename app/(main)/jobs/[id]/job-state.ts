@@ -19,6 +19,15 @@ export type DroneStateV2 = {
   lens_type?: string; // 镜头类型
   /** 无人机变体信息 */
   variation: JobDroneVariation;
+  /** 无人机起飞点位置 */
+  takeoffPoint?: {
+    /** 纬度 */
+    lat: number;
+    /** 经度 */
+    lng: number;
+    /** 高度(米) */
+    altitude: number;
+  };
 };
 export type DroneState = JobDetailResult["drones"][0];
 export type WaylineAreaState = {
@@ -92,6 +101,17 @@ export type JobAction =
         drone_key: string;
         position: { lat: number; lng: number; altitude: number };
       };
+    }
+  | {
+      type: "SET_DRONE_TAKEOFF_POINT";
+      payload: {
+        drone_key: string;
+        takeoffPoint: { lat: number; lng: number; altitude: number };
+      };
+    }
+  | {
+      type: "REMOVE_DRONE_TAKEOFF_POINT";
+      payload: { drone_key: string };
     }
   | { type: "RESET_STATE"; payload: Partial<JobState> };
 
@@ -236,6 +256,24 @@ export function jobReducer(state: JobState, action: JobAction): JobState {
           c.drone_key === action.payload.drone_key
             ? { ...c, position: action.payload.position }
             : c
+        ),
+      };
+    case "SET_DRONE_TAKEOFF_POINT":
+      return {
+        ...state,
+        drones: state.drones.map((drone) =>
+          drone.key === action.payload.drone_key
+            ? { ...drone, takeoffPoint: action.payload.takeoffPoint }
+            : drone
+        ),
+      };
+    case "REMOVE_DRONE_TAKEOFF_POINT":
+      return {
+        ...state,
+        drones: state.drones.map((drone) =>
+          drone.key === action.payload.drone_key
+            ? { ...drone, takeoffPoint: undefined }
+            : drone
         ),
       };
     case "RESET_STATE":

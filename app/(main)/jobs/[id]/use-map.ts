@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import AMapLoader from "@amap/amap-jsapi-loader";
-import { WaylineAreaState, CommandDroneState } from "./job-state";
+import { WaylineAreaState, CommandDroneState, DroneStateV2 } from "./job-state";
 
 export function useMap() {
   // 地图相关状态
@@ -20,6 +20,9 @@ export function useMap() {
   const commandDroneMarkersRef = useRef<AMap.Marker[]>([]);
   const [isPickingCommandDronePosition, setIsPickingCommandDronePosition] =
     useState(false);
+  // 起飞点相关引用和状态
+  const takeoffPointMarkersRef = useRef<AMap.Marker[]>([]);
+  const [isPickingTakeoffPoint, setIsPickingTakeoffPoint] = useState(false);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const clickListenerRef = useRef<any>(null);
 
@@ -81,6 +84,7 @@ export function useMap() {
     polylinesRef.current = [];
     markersRef.current = [];
     commandDroneMarkersRef.current = []; // 清除指挥机标记引用
+    takeoffPointMarkersRef.current = []; // 清除起飞点标记引用
 
     // 关闭所有编辑器
     editorsRef.current.forEach((editor) => {
@@ -586,6 +590,200 @@ export function useMap() {
     [isMapLoaded]
   );
 
+  // 绘制无人机起飞点
+  const drawTakeoffPoints = useCallback(
+    (drones: DroneStateV2[], isEditing: boolean = false) => {
+      if (!isMapLoaded || !AMapRef.current || !mapRef.current) return;
+
+      const currentMap = mapRef.current;
+      const currentAMap = AMapRef.current;
+
+      // 清除旧的起飞点标记
+      takeoffPointMarkersRef.current.forEach((marker) => {
+        currentMap.remove(marker);
+      });
+
+      const newMarkers: AMap.Marker[] = [];
+
+      // 处理所有有起飞点的无人机
+      drones.forEach((drone) => {
+        // 跳过没有起飞点的无人机
+        const takeoffPoint = drone.takeoffPoint;
+        if (!takeoffPoint) return;
+
+        // 创建起飞点标记
+        const marker = new currentAMap.Marker({
+          position: new currentAMap.LngLat(
+            takeoffPoint.lng,
+            takeoffPoint.lat
+          ),
+          draggable: isEditing, // 编辑模式可拖动
+          cursor: "move",
+          content: `
+            <div style="position: relative;">
+              <div style="
+                width: 24px; 
+                height: 24px; 
+                background-color: ${drone.color}; 
+                border-radius: 50%; 
+                border: 2px solid white;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+                display: flex;
+                justify-content: center;
+                align-items: center;
+              ">
+                <span style="
+                  font-size: 14px;
+                  font-weight: bold;
+                  color: white;
+                ">T</span>
+              </div>
+              <div style="
+                position: absolute;
+                top: -20px;
+                left: 50%;
+                transform: translateX(-50%);
+                background-color: rgba(0,0,0,0.7);
+                color: white;
+                padding: 2px 6px;
+                border-radius: 3px;
+                font-size: 10px;
+                white-space: nowrap;
+              ">起飞点 ${takeoffPoint.altitude}m</div>
+            </div>
+          `,
+          zIndex: 110,
+        });
+
+        // 为编辑模式添加拖拽事件
+        if (isEditing) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          currentAMap.Event.addListener(marker, "dragend", (e: any) => {
+            const newPos = e.target.getPosition();
+            const dispatchEvent = new CustomEvent(
+              "takeoffPointPositionChanged",
+              {
+                detail: {
+                  drone_key: drone.key,
+                  takeoffPoint: {
+                    lat: newPos.getLat(),
+                    lng: newPos.getLng(),
+                    altitude: takeoffPoint.altitude,
+                  },
+                },
+              }
+            );
+            window.dispatchEvent(dispatchEvent);
+          });
+
+          // 添加信息窗口
+          const infoWindow = new currentAMap.InfoWindow({
+            content: `
+              <div style="padding: 5px;">
+                <p>起飞点位置 (${drone.name})</p>
+                <p>经度: ${takeoffPoint.lng.toFixed(6)}</p>
+                <p>纬度: ${takeoffPoint.lat.toFixed(6)}</p>
+                <p>高度: ${takeoffPoint.altitude} 米</p>
+              </div>
+            `,
+            offset: new currentAMap.Pixel(0, -30),
+          });
+
+          currentAMap.Event.addListener(marker, "click", () => {
+            infoWindow.open(currentMap, [
+              takeoffPoint.lng,
+              takeoffPoint.lat,
+            ]);
+          });
+        }
+
+        currentMap.add(marker);
+        newMarkers.push(marker);
+      });
+
+      takeoffPointMarkersRef.current = newMarkers;
+    },
+    [isMapLoaded]
+  );
+  
+  // 设置起飞点选择模式
+  const setupTakeoffPointPickingMode = useCallback(
+    (onPick: (position: { lat: number; lng: number }) => void) => {
+      if (!isMapLoaded || !AMapRef.current || !mapRef.current) return;
+
+      // 移除任何现有的点击监听器
+      if (clickListenerRef.current) {
+        AMapRef.current.Event.clearListeners(mapRef.current, "click");
+        clickListenerRef.current = null;
+      }
+
+      // 创建新的点击监听器函数 - 用于地图点击事件
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const clickListener = (e: any) => {
+        const position = {
+          lat: e.lnglat.getLat(),
+          lng: e.lnglat.getLng(),
+        };
+
+        // 调用回调函数
+        onPick(position);
+
+        // 移除所有监听器（地图和多边形的）
+        cleanupAllListeners();
+      };
+      
+      // 创建多边形点击监听器函数 - 处理点击多边形的情况
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const polygonClickListener = (e: any) => {
+        // 获取点击位置的经纬度
+        const position = {
+          lat: e.lnglat.getLat(),
+          lng: e.lnglat.getLng(),
+        };
+        
+        // 调用回调函数
+        onPick(position);
+        
+        // 移除所有监听器（地图和多边形的）
+        cleanupAllListeners();
+      };
+      
+      // 清理所有监听器的辅助函数
+      const cleanupAllListeners = () => {
+        // 移除地图点击监听器
+        AMapRef.current!.Event.clearListeners(mapRef.current!, "click");
+        
+        // 移除所有多边形的点击监听器
+        polygonsRef.current.forEach((polygon) => {
+          if (polygon) {
+            AMapRef.current!.Event.clearListeners(polygon, "click");
+          }
+        });
+        
+        // 重置引用和状态
+        clickListenerRef.current = null;
+        setIsPickingTakeoffPoint(false);
+      };
+
+      // 注册地图点击监听器
+      clickListenerRef.current = clickListener;
+      AMapRef.current.Event.addListener(mapRef.current, "click", clickListener);
+      
+      // 为所有多边形添加点击事件监听器
+      polygonsRef.current.forEach((polygon) => {
+        if (polygon) {
+          AMapRef.current!.Event.addListener(polygon, "click", polygonClickListener);
+        }
+      });
+      
+      setIsPickingTakeoffPoint(true);
+
+      // 返回清理函数
+      return cleanupAllListeners;
+    },
+    [isMapLoaded]
+  );
+
   return {
     AMapRef,
     mapRef,
@@ -598,5 +796,10 @@ export function useMap() {
     setupCommandDronePickingMode,
     isPickingCommandDronePosition,
     setIsPickingCommandDronePosition,
+    // 导出起飞点相关函数和状态
+    drawTakeoffPoints,
+    setupTakeoffPointPickingMode,
+    isPickingTakeoffPoint,
+    setIsPickingTakeoffPoint,
   };
 }

@@ -25,8 +25,8 @@ import {
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
-import { Plus, Trash, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { MapPin, Plus, Trash } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
 import { getJobPhysicalDrones } from "../report/[id]/request";
 import {
   DroneMappingState,
@@ -46,6 +46,9 @@ interface DronePanelProps {
   availableDrones: JobCreationResult["drones"]; // 可选的无人机列表
   state: JobState; // 统一的状态对象，包含所有相关状态
   dispatch: React.Dispatch<JobAction>;
+  isMapPickingMode: boolean; // 地图选点模式状态
+  setIsMapPickingMode: React.Dispatch<React.SetStateAction<boolean>>; // 设置地图选点模式
+  onPositionPick: (position: { lat: number; lng: number }) => void; // 地图点击事件回调
 }
 
 /**
@@ -56,6 +59,9 @@ export default function DronePanel({
   availableDrones,
   state,
   dispatch,
+  isMapPickingMode,
+  setIsMapPickingMode,
+  onPositionPick,
 }: DronePanelProps) {
   console.log("DronePanel", {
     selectedDrones: state.selectedDrones,
@@ -74,6 +80,11 @@ export default function DronePanel({
   const [selectedVariationIndex, setSelectedVariationIndex] = useState<
     number | undefined
   >(undefined);
+  // 起飞点设置模式状态
+  const [isSettingTakeoffPoint, setIsSettingTakeoffPoint] =
+    useState<boolean>(false);
+  // 当前选中的要设置起飞点的无人机key
+  const [takeoffPointDroneKey, setTakeoffPointDroneKey] = useState<string>("");
   // 添加一个状态控制绑定对话框的显示
   const [bindDialogOpen, setBindDialogOpen] = useState(false);
   // 最近添加的无人机键，用于绑定对话框中识别当前操作的无人机
@@ -230,6 +241,114 @@ export default function DronePanel({
     return true;
   };
 
+  // 启动起飞点设置模式
+  const startTakeoffPointSetting = (droneKey: string) => {
+    // 检查无人机是否存在
+    const drone = state.drones.find((d) => d.key === droneKey);
+    if (!drone) {
+      toast({
+        title: "选择错误",
+        description: "无法找到所选无人机",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // 设置当前选中的无人机key
+    setTakeoffPointDroneKey(droneKey);
+
+    // 进入地图选点模式
+    setIsMapPickingMode(true);
+    setIsSettingTakeoffPoint(true);
+
+    // 显示提示信息
+    toast({
+      title: "起飞点选择模式",
+      description: `请在地图上点击为【${drone.name}】选择起飞点位置`,
+    });
+  };
+
+  // 处理地图点击事件，设置起飞点
+  const handleMapClick = useCallback(
+    (position: { lat: number; lng: number }) => {
+      // 检查是否正在设置起飞点且有选中的无人机
+      if (!isSettingTakeoffPoint || !takeoffPointDroneKey) return;
+
+      // 获取选中的无人机信息
+      const drone = state.drones.find((d) => d.key === takeoffPointDroneKey);
+      if (!drone) {
+        toast({
+          title: "错误",
+          description: "无法设置起飞点：无人机信息丢失",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // 设置起飞点（默认高度为30米）
+      dispatch({
+        type: "SET_DRONE_TAKEOFF_POINT",
+        payload: {
+          drone_key: takeoffPointDroneKey,
+          takeoffPoint: {
+            lat: position.lat,
+            lng: position.lng,
+            altitude: 30, // 默认起飞高度为30米
+          },
+        },
+      });
+
+      // 重置状态
+      setTakeoffPointDroneKey("");
+      setIsSettingTakeoffPoint(false);
+      setIsMapPickingMode(false);
+
+      // 显示成功提示
+      toast({
+        title: "设置成功",
+        description: `已成功为【${drone.name}】设置起飞点`,
+      });
+    },
+    [
+      isSettingTakeoffPoint,
+      takeoffPointDroneKey,
+      state.drones,
+      dispatch,
+      setIsMapPickingMode,
+      toast,
+    ]
+  );
+
+  // 监听地图选点模式状态和点击事件
+  useEffect(() => {
+    if (isSettingTakeoffPoint && takeoffPointDroneKey) {
+      // 设置一次性的事件处理器，当地图被点击时（由page.tsx中的函数触发）
+      const handleOneTimeMapClick = (e: Event) => {
+        // 获取地图点击位置的经纬度
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const position = (e as any).detail;
+        if (
+          position &&
+          typeof position.lat === "number" &&
+          typeof position.lng === "number"
+        ) {
+          handleMapClick(position);
+        }
+      };
+
+      // 监听地图点击位置事件，这个事件由父组件中的代码触发
+      window.addEventListener("map-position-picked", handleOneTimeMapClick);
+
+      return () => {
+        // 清理函数，移除事件监听器
+        window.removeEventListener(
+          "map-position-picked",
+          handleOneTimeMapClick
+        );
+      };
+    }
+  }, [isSettingTakeoffPoint, takeoffPointDroneKey, handleMapClick]);
+
   // 根据无人机型号ID过滤可用的物理无人机
   const availablePhysicalDronesByModelId = (
     droneModelId: number
@@ -307,7 +426,7 @@ export default function DronePanel({
           onClick={handleClearDrones}
           title="清空所有已选无人机"
         >
-          <Trash2 className="h-4 w-4" />
+          <Trash className="h-4 w-4" />
         </Button>
         <Button
           variant="default"
@@ -485,6 +604,145 @@ export default function DronePanel({
                   ? "热成像可用"
                   : "热成像不可用"}
               </div>
+            </div>
+
+            {/* 起飞点设置区域 */}
+            <div className="mt-2 border-t pt-2 border-gray-100">
+              <div className="flex items-center justify-between">
+                <div className="text-xs text-gray-500">起飞点位置</div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-7 text-xs px-2 flex items-center"
+                  onClick={() => startTakeoffPointSetting(drone.key)}
+                >
+                  <MapPin className="h-3 w-3 mr-1" />
+                  {drone.takeoffPoint ? "修改起飞点" : "设置起飞点"}
+                </Button>
+              </div>
+
+              {/* 显示起飞点信息 */}
+              {drone.takeoffPoint ? (
+                <div className="mt-1">
+                  <div className="grid grid-cols-3 gap-1 text-xs mb-1">
+                    <div className="flex flex-col">
+                      <span className="text-gray-500 mb-1">经度:</span>
+                      <input
+                        type="number"
+                        className="w-full h-6 px-1 py-0 text-xs border border-gray-200 rounded"
+                        value={drone.takeoffPoint.lng}
+                        step="0.000001"
+                        onChange={(e) => {
+                          // 更新经度值
+                          const value = Number(e.target.value);
+                          if (!isNaN(value)) {
+                            // 确保所有必需属性都被明确设置为非空值，避免类型错误
+                            const updatedTakeoffPoint = {
+                              lng: value,
+                              lat: drone.takeoffPoint!.lat,
+                              altitude: drone.takeoffPoint!.altitude
+                            };
+                            
+                            dispatch({
+                              type: "SET_DRONE_TAKEOFF_POINT",
+                              payload: {
+                                drone_key: drone.key,
+                                takeoffPoint: updatedTakeoffPoint
+                              }
+                            });
+                            
+                            // 添加简洁的成功提示
+                            toast({
+                              title: "起飞点已更新",
+                              description: `经度已修改为 ${value.toFixed(6)}`,
+                              duration: 2000, // 显示2秒
+                            });
+                          }
+                        }}
+                      />
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-gray-500 mb-1">纬度:</span>
+                      <input
+                        type="number"
+                        className="w-full h-6 px-1 py-0 text-xs border border-gray-200 rounded"
+                        value={drone.takeoffPoint.lat}
+                        step="0.000001"
+                        onChange={(e) => {
+                          // 更新纬度值
+                          const value = Number(e.target.value);
+                          if (!isNaN(value) && drone.takeoffPoint) {
+                            // 创建完整的takeoffPoint对象，明确指定所有必需属性
+                            const updatedTakeoffPoint = {
+                              lng: drone.takeoffPoint.lng,
+                              lat: value,
+                              altitude: drone.takeoffPoint.altitude
+                            };
+                            
+                            dispatch({
+                              type: "SET_DRONE_TAKEOFF_POINT",
+                              payload: {
+                                drone_key: drone.key,
+                                takeoffPoint: updatedTakeoffPoint
+                              }
+                            });
+                            
+                            // 添加简洁的成功提示
+                            toast({
+                              title: "起飞点已更新",
+                              description: `纬度已修改为 ${value.toFixed(6)}`,
+                              duration: 2000, // 显示2秒
+                            });
+                          }
+                        }}
+                      />
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-gray-500 mb-1">高度(米):</span>
+                      <input
+                        type="number"
+                        className="w-full h-6 px-1 py-0 text-xs border border-gray-200 rounded"
+                        value={drone.takeoffPoint.altitude}
+                        min="0"
+                        max="500"
+                        step="1"
+                        onChange={(e) => {
+                          // 更新高度值
+                          const value = Number(e.target.value);
+                          if (!isNaN(value) && value >= 0 && drone.takeoffPoint) {
+                            // 创建完整的takeoffPoint对象，明确指定所有必需属性
+                            const updatedTakeoffPoint = {
+                              lng: drone.takeoffPoint.lng,
+                              lat: drone.takeoffPoint.lat,
+                              altitude: value
+                            };
+                            
+                            dispatch({
+                              type: "SET_DRONE_TAKEOFF_POINT",
+                              payload: {
+                                drone_key: drone.key,
+                                takeoffPoint: updatedTakeoffPoint
+                              }
+                            });
+                            
+                            // 添加简洁的成功提示
+                            toast({
+                              title: "起飞点已更新",
+                              description: `起飞高度已修改为 ${value} 米`,
+                              duration: 2000, // 显示2秒
+                            });
+                          }
+                        }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="mt-1 text-xs text-gray-400 italic">
+                  未设置起飞点位置
+                </div>
+              )}
             </div>
           </div>
         );
