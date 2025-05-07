@@ -99,11 +99,12 @@ export default function WaylinePanel({
                     ? subPaths[index]
                     : subPaths[subPaths.length - 1];
 
-                // 使用当前设置的参数生成航点
+                // 使用当前设置的参数生成航点，并传入无人机的起飞点以优化航线
                 const waypoints = generateWaypoints(
                   subPath,
                   waylineParams,
-                  AMapRef
+                  AMapRef,
+                  drone.takeoffPoint // 传入无人机的起飞点以优化航点顺序
                 );
 
                 return {

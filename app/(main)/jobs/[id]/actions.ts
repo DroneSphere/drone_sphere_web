@@ -132,6 +132,7 @@ export function dividePolygonAmongDrones(
  * @param path 区域边界点
  * @param waylineParams 无人机参数
  * @param AMapRef AMap引用
+ * @param takeoffPoint 无人机起飞点，用于优化航点顺序
  * @returns 航点数组
  */
 export function generateWaypoints(
@@ -143,7 +144,8 @@ export function generateWaypoints(
     gimbalPitch: number; // 云台俯仰角度（-90为垂直向下，0为水平）
     gimbalZoom: number; // 云台放大倍数
   },
-  AMapRef: MutableRefObject<typeof AMap | null>
+  AMapRef: MutableRefObject<typeof AMap | null>,
+  takeoffPoint?: { lat: number; lng: number; altitude?: number }
 ): AMap.LngLat[] {
   if (path.length < 3 || !AMapRef.current) return [];
 
@@ -270,6 +272,27 @@ export function generateWaypoints(
     lastLinePoints = lineWaypoints;
     // 切换扫描方向
     scanDirection = !scanDirection;
+  }
+
+  // 如果提供了起飞点坐标，判断是否需要反转航线
+  if (takeoffPoint && waypoints.length > 1) {
+    // 创建起飞点对象
+    const droneStartPoint = new AMapRef.current.LngLat(takeoffPoint.lng, takeoffPoint.lat);
+    
+    // 只比较首尾两个航点与起飞点的距离
+    const firstWaypoint = waypoints[0];
+    const lastWaypoint = waypoints[waypoints.length - 1];
+    
+    // 计算首尾航点到起飞点的距离
+    const distanceToFirst = AMapRef.current.GeometryUtil.distance(droneStartPoint, firstWaypoint);
+    const distanceToLast = AMapRef.current.GeometryUtil.distance(droneStartPoint, lastWaypoint);
+    
+    // 如果尾部航点比首部航点距离起飞点更近，则反转整个航线
+    if (distanceToLast < distanceToFirst) {
+      console.log('航线终点比起点更靠近起飞位置，反转整个航线顺序');
+      // 直接反转整个航线，保持航线形状不变
+      return waypoints.slice().reverse();
+    }
   }
 
   // 注意: 云台参数 (gimbalPitch 和 gimbalZoom) 应该被传递到实际的飞行控制系统
