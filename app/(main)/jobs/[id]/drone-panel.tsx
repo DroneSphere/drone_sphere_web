@@ -15,7 +15,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator";
 import {
   Dialog,
   DialogContent,
@@ -23,9 +22,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
-import { MapPin, Plus, Trash } from "lucide-react";
+import { MapPin, Trash } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { getJobPhysicalDrones } from "../report/[id]/request";
 import {
@@ -34,6 +38,54 @@ import {
   JobAction,
   JobState,
 } from "./job-state";
+
+// 颜色选择器组件
+interface DroneColorPickerProps {
+  color: string;
+  onColorChange: (color: string) => void;
+}
+
+const DRONE_COLORS = [
+  "#FF5733", "#33FF57", "#3357FF", "#F033FF", "#33FFF6", "#FF33A6", 
+  "#FFD700", "#4169E1", "#32CD32", "#8A2BE2", "#FF6347", "#20B2AA",
+  "#FF4500", "#9370DB", "#3CB371", "#DC143C", "#00CED1", "#FF8C00",
+  "#8B008B", "#2E8B57", "#DAA520", "#D2691E", "#6495ED", "#7B68EE"
+];
+
+function DroneColorPicker({ color, onColorChange }: DroneColorPickerProps) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <div
+          className="h-4 w-4 rounded-full mr-2 border border-gray-100 cursor-pointer hover:scale-125 transition-transform"
+          style={{ backgroundColor: color }}
+          title="点击更改无人机颜色"
+        />
+      </PopoverTrigger>
+      <PopoverContent className="w-64 p-2">
+        <div className="text-xs font-medium mb-1.5 text-gray-700">选择颜色</div>
+        <div className="grid grid-cols-6 gap-1">
+          {DRONE_COLORS.map((colorValue) => (
+            <div
+              key={colorValue}
+              className={`h-6 w-6 rounded-full cursor-pointer border hover:scale-110 transition-transform ${
+                color === colorValue ? "border-2 border-gray-800" : "border-gray-200"
+              }`}
+              style={{ backgroundColor: colorValue }}
+              onClick={() => {
+                onColorChange(colorValue);
+                setOpen(false);
+              }}
+              title={colorValue}
+            />
+          ))}
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
 
 // 镜头参数类型的枚举常量及对应的显示标签
 const LENS_TYPES = {
@@ -64,10 +116,11 @@ export default function DronePanel({
   onPositionPick,
 }: DronePanelProps) {
   console.log("DronePanel", {
-    selectedDrones: state.selectedDrones,
-    droneMappings: state.droneMappings,
+    state,
     availableDrones,
-    waylineAreas: state.waylineAreas,
+    isMapPickingMode,
+    setIsMapPickingMode,
+    onPositionPick,
   });
 
   const { toast } = useToast();
@@ -260,12 +313,6 @@ export default function DronePanel({
     // 进入地图选点模式
     setIsMapPickingMode(true);
     setIsSettingTakeoffPoint(true);
-
-    // 显示提示信息
-    toast({
-      title: "起飞点选择模式",
-      description: `请在地图上点击为【${drone.name}】选择起飞点位置`,
-    });
   };
 
   // 处理地图点击事件，设置起飞点
@@ -358,13 +405,13 @@ export default function DronePanel({
 
   return (
     <div className="space-y-2">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between mb-1">
         <div className="text-md font-medium">无人机信息</div>
       </div>
 
       {/* 选择无人机工具栏 */}
       <div className="flex justify-between items-center mt-2">
-        <FormItem className="flex-1 mr-4">
+        <FormItem className="w-full mr-2 mb-0">
           <Select
             value={selectedDroneKey}
             onValueChange={(value) => {
@@ -376,7 +423,7 @@ export default function DronePanel({
             }}
           >
             <FormControl>
-              <SelectTrigger>
+              <SelectTrigger className="h-10 border-gray-300 focus:ring-blue-400 bg-white">
                 <SelectValue placeholder="选择要添加的机型">
                   {selectedDroneKey
                     ? (() => {
@@ -408,6 +455,7 @@ export default function DronePanel({
                     <SelectItem
                       key={"0-" + e.id + "-" + v.id}
                       value={"0-" + e.id + "-" + v.id || ""}
+                      className="text-sm"
                     >
                       {v.name}
                     </SelectItem>
@@ -418,27 +466,29 @@ export default function DronePanel({
           </Select>
         </FormItem>
 
-        <Button
-          type="button"
-          variant="destructive"
-          size="icon"
-          className="mr-2 h-8 w-8"
-          onClick={handleClearDrones}
-          title="清空所有已选无人机"
-        >
-          <Trash className="h-4 w-4" />
-        </Button>
-        <Button
-          variant="default"
-          disabled={!selectedDroneKey}
-          size="icon"
-          type="button"
-          className="h-8 w-8 bg-blue-400 text-gray-100 hover:bg-blue-500"
-          onClick={handleAddDrone}
-          title="添加无人机"
-        >
-          <Plus className="h-4 w-4" />
-        </Button>
+        <div className="flex space-x-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="h-10 border-gray-300 hover:bg-gray-50 transition-colors"
+            onClick={handleClearDrones}
+            title="清空所有已选无人机"
+          >
+            <span className="hidden sm:inline">清空</span>
+          </Button>
+          <Button
+            variant="default"
+            disabled={!selectedDroneKey}
+            size="sm"
+            type="button"
+            className="h-10 bg-blue-500 text-white hover:bg-blue-600 transition-colors"
+            onClick={handleAddDrone}
+            title="添加无人机"
+          >
+            <span className="hidden sm:inline">添加</span>
+          </Button>
+        </div>
       </div>
 
       {/* 已选择的无人机列表 */}
@@ -448,44 +498,98 @@ export default function DronePanel({
         </div>
       )}
 
-      {state.drones?.map((drone: DroneStateV2, idx: number) => {
+      {state.drones?.map((drone: DroneStateV2) => {
         return (
-          <div className="mt-4 px-1 space-y-2" key={drone.key}>
-            {idx > 0 && <Separator className="my-2" />}
-
+          <div
+            className="mt-4 px-3 py-3 space-y-2 border border-gray-200 rounded-md shadow-sm hover:shadow-md transition-shadow bg-white"
+            key={drone.key}
+          >
             {/* 无人机基本信息 */}
             <div className="flex justify-between items-center">
-              <div className="text-sm font-medium overflow-auto flex items-center">
-                <div
-                  className="h-3 w-3 rounded-full mr-2"
-                  style={{ backgroundColor: drone.color }}
-                ></div>
-                {drone.name}
+              <div className="text-sm font-semibold overflow-auto flex items-center">
+                <DroneColorPicker 
+                  color={drone.color}
+                  onColorChange={(newColor) => {
+                    dispatch({
+                      type: "UPDATE_DRONE_COLOR",
+                      payload: { drone_key: drone.key, color: newColor }
+                    });
+                  }}
+                />
+                <span title={drone.description || "无人机型号"}>
+                  {drone.name}
+                </span>
               </div>
 
               <Button
-                variant="destructive"
+                variant="ghost"
                 title="删除无人机"
                 size="icon"
-                className="h-8 w-8"
+                className="h-8 w-8 hover:bg-red-50 hover:text-red-600 transition-colors"
                 onClick={() => handleRemoveDrone(drone.key)}
               >
                 <Trash className="h-4 w-4" />
               </Button>
             </div>
+            <div className="text-xs flex flex-wrap gap-2">
+              <div
+                className={`px-2 py-1 rounded-md flex items-center ${
+                  drone.variation.rtk_available
+                    ? "bg-green-50 text-green-700 border border-green-200"
+                    : "bg-red-50 text-red-600 border border-red-200"
+                }`}
+                title={
+                  drone.variation.rtk_available
+                    ? "RTK功能可用"
+                    : "RTK功能不可用"
+                }
+              >
+                <div
+                  className={`rounded-full h-2 w-2 mr-1 ${
+                    drone.variation.rtk_available
+                      ? "bg-green-500"
+                      : "bg-red-500"
+                  }`}
+                />
+                <span>RTK</span>
+              </div>
 
-            <div className="text-xs text-gray-500">
-              云台: {drone.variation.gimbal?.name ?? "机载云台"}
+              <div
+                className={`px-2 py-1 rounded-md flex items-center ${
+                  drone.variation.thermal_available
+                    ? "bg-green-50 text-green-700 border border-green-200"
+                    : "bg-red-50 text-red-600 border border-red-200"
+                }`}
+                title={
+                  drone.variation.thermal_available
+                    ? "热成像功能可用"
+                    : "热成像功能不可用"
+                }
+              >
+                <div
+                  className={`rounded-full h-2 w-2 mr-1 ${
+                    drone.variation.thermal_available
+                      ? "bg-green-500"
+                      : "bg-red-500"
+                  }`}
+                />
+                <span>热成像</span>
+              </div>
+
+              <div
+                className="px-2 py-1 rounded-md border border-gray-200 flex items-center"
+                title="无人机云台类型"
+              >
+                <span>云台: {drone.variation.gimbal?.name ?? "机载云台"}</span>
+              </div>
             </div>
-
-            {/* 物理无人机绑定选择器 */}
-            <div className="mt-2">
-              <div className="flex items-center space-x-2">
-                <div className="text-xs text-gray-500 whitespace-nowrap">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
+              {/* 物理无人机绑定选择器 */}
+              <div className="space-y-1">
+                <div className="text-xs font-medium text-gray-700">
                   绑定无人机
                 </div>
-
-                <FormItem className="flex-1 m-0">
+                <FormItem className="m-0">
                   <Select
                     value={
                       drone.physical_drone_id
@@ -497,19 +601,24 @@ export default function DronePanel({
                     }
                   >
                     <SelectTrigger className="w-full h-8 text-xs">
-                      <SelectValue placeholder="选择物理无人机">
-                        {drone.physical_drone_id
-                          ? (() => {
-                              // 查找当前绑定的物理无人机
-                              const physicalDrone = physicalQuery.data?.find(
-                                (pd) => pd.id === drone.physical_drone_id
-                              );
-                              // 显示物理无人机的呼号和序列号
-                              return physicalDrone
-                                ? `${physicalDrone.callsign} - ${physicalDrone.sn}`
-                                : "选择物理无人机";
-                            })()
-                          : "选择物理无人机"}
+                      <SelectValue
+                        placeholder="选择物理无人机"
+                        className="overflow-hidden"
+                      >
+                        <div className="whitespace-nowrap overflow-x-hidden w-full">
+                          {drone.physical_drone_id
+                            ? (() => {
+                                // 查找当前绑定的物理无人机
+                                const physicalDrone = physicalQuery.data?.find(
+                                  (pd) => pd.id === drone.physical_drone_id
+                                );
+                                // 显示物理无人机的呼号和序列号
+                                return physicalDrone
+                                  ? `${physicalDrone.callsign} - ${physicalDrone.sn}`
+                                  : "选择物理无人机";
+                              })()
+                            : "选择物理无人机"}
+                        </div>
                       </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
@@ -535,16 +644,13 @@ export default function DronePanel({
                   </Select>
                 </FormItem>
               </div>
-            </div>
 
-            {/* 镜头参数选择器 */}
-            <div className="mt-2">
-              <div className="flex items-center space-x-2">
-                <div className="text-xs text-gray-500 whitespace-nowrap">
+              {/* 镜头参数选择器 */}
+              <div className="space-y-1">
+                <div className="text-xs font-medium text-gray-700">
                   镜头参数
                 </div>
-
-                <FormItem className="flex-1 m-0">
+                <FormItem className="m-0">
                   <Select
                     value={drone?.lens_type || "visible"}
                     onValueChange={(value) =>
@@ -581,40 +687,16 @@ export default function DronePanel({
                 </FormItem>
               </div>
             </div>
-            {/* 无人机功能状态 */}
-            <div className="text-xs text-gray-500 flex items-center">
-              <div
-                className={`rounded-full h-3 w-3 mr-1 ${
-                  drone.variation.rtk_available ? "bg-green-500" : "bg-red-500"
-                }`}
-              />
-              <div className="mr-2">
-                {drone.variation.rtk_available ? "RTK可用" : "RTK不可用"}
-              </div>
-
-              <div
-                className={`rounded-full h-3 w-3 mr-1 ${
-                  drone.variation.thermal_available
-                    ? "bg-green-500"
-                    : "bg-red-500"
-                }`}
-              />
-              <div>
-                {drone.variation.thermal_available
-                  ? "热成像可用"
-                  : "热成像不可用"}
-              </div>
-            </div>
-
-            {/* 起飞点设置区域 */}
-            <div className="mt-2 border-t pt-2 border-gray-100">
-              <div className="flex items-center justify-between">
-                <div className="text-xs text-gray-500">起飞点位置</div>
+            <div className="mt-3 border border-gray-200 rounded-md bg-gray-50 p-2">
+              <div className="flex items-center justify-between mb-2">
+                <div className="text-xs font-medium text-gray-700">
+                  起飞点位置
+                </div>
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
-                  className="h-7 text-xs px-2 flex items-center"
+                  className="h-7 text-xs px-2 flex items-center bg-white"
                   onClick={() => startTakeoffPointSetting(drone.key)}
                 >
                   <MapPin className="h-3 w-3 mr-1" />
@@ -622,125 +704,101 @@ export default function DronePanel({
                 </Button>
               </div>
 
-              {/* 显示起飞点信息 */}
               {drone.takeoffPoint ? (
-                <div className="mt-1">
-                  <div className="grid grid-cols-3 gap-1 text-xs mb-1">
-                    <div className="flex flex-col">
-                      <span className="text-gray-500 mb-1">经度:</span>
-                      <input
-                        type="number"
-                        className="w-full h-6 px-1 py-0 text-xs border border-gray-200 rounded"
-                        value={drone.takeoffPoint.lng}
-                        step="0.000001"
-                        onChange={(e) => {
-                          // 更新经度值
-                          const value = Number(e.target.value);
-                          if (!isNaN(value)) {
-                            // 确保所有必需属性都被明确设置为非空值，避免类型错误
-                            const updatedTakeoffPoint = {
-                              lng: value,
-                              lat: drone.takeoffPoint!.lat,
-                              altitude: drone.takeoffPoint!.altitude
-                            };
-                            
-                            dispatch({
-                              type: "SET_DRONE_TAKEOFF_POINT",
-                              payload: {
-                                drone_key: drone.key,
-                                takeoffPoint: updatedTakeoffPoint
-                              }
-                            });
-                            
-                            // 添加简洁的成功提示
-                            toast({
-                              title: "起飞点已更新",
-                              description: `经度已修改为 ${value.toFixed(6)}`,
-                              duration: 2000, // 显示2秒
-                            });
-                          }
-                        }}
-                      />
-                    </div>
-                    <div className="flex flex-col">
-                      <span className="text-gray-500 mb-1">纬度:</span>
-                      <input
-                        type="number"
-                        className="w-full h-6 px-1 py-0 text-xs border border-gray-200 rounded"
-                        value={drone.takeoffPoint.lat}
-                        step="0.000001"
-                        onChange={(e) => {
-                          // 更新纬度值
-                          const value = Number(e.target.value);
-                          if (!isNaN(value) && drone.takeoffPoint) {
-                            // 创建完整的takeoffPoint对象，明确指定所有必需属性
-                            const updatedTakeoffPoint = {
-                              lng: drone.takeoffPoint.lng,
-                              lat: value,
-                              altitude: drone.takeoffPoint.altitude
-                            };
-                            
-                            dispatch({
-                              type: "SET_DRONE_TAKEOFF_POINT",
-                              payload: {
-                                drone_key: drone.key,
-                                takeoffPoint: updatedTakeoffPoint
-                              }
-                            });
-                            
-                            // 添加简洁的成功提示
-                            toast({
-                              title: "起飞点已更新",
-                              description: `纬度已修改为 ${value.toFixed(6)}`,
-                              duration: 2000, // 显示2秒
-                            });
-                          }
-                        }}
-                      />
-                    </div>
-                    <div className="flex flex-col">
-                      <span className="text-gray-500 mb-1">高度(米):</span>
-                      <input
-                        type="number"
-                        className="w-full h-6 px-1 py-0 text-xs border border-gray-200 rounded"
-                        value={drone.takeoffPoint.altitude}
-                        min="0"
-                        max="500"
-                        step="1"
-                        onChange={(e) => {
-                          // 更新高度值
-                          const value = Number(e.target.value);
-                          if (!isNaN(value) && value >= 0 && drone.takeoffPoint) {
-                            // 创建完整的takeoffPoint对象，明确指定所有必需属性
-                            const updatedTakeoffPoint = {
-                              lng: drone.takeoffPoint.lng,
-                              lat: drone.takeoffPoint.lat,
-                              altitude: value
-                            };
-                            
-                            dispatch({
-                              type: "SET_DRONE_TAKEOFF_POINT",
-                              payload: {
-                                drone_key: drone.key,
-                                takeoffPoint: updatedTakeoffPoint
-                              }
-                            });
-                            
-                            // 添加简洁的成功提示
-                            toast({
-                              title: "起飞点已更新",
-                              description: `起飞高度已修改为 ${value} 米`,
-                              duration: 2000, // 显示2秒
-                            });
-                          }
-                        }}
-                      />
-                    </div>
+                <div className="grid grid-cols-3 gap-2 text-xs">
+                  {/* 经纬度和高度输入框保持不变，只是稍微调整样式 */}
+                  <div className="flex flex-col">
+                    <span className="text-gray-600 mb-1">经度:</span>
+                    <input
+                      type="number"
+                      className="w-full h-7 px-2 py-0 text-xs border border-gray-300 rounded bg-white"
+                      value={drone.takeoffPoint.lng}
+                      step="0.000001"
+                      onChange={(e) => {
+                        // 更新经度值
+                        const value = Number(e.target.value);
+                        if (!isNaN(value)) {
+                          // 确保所有必需属性都被明确设置为非空值，避免类型错误
+                          const updatedTakeoffPoint = {
+                            lng: value,
+                            lat: drone.takeoffPoint!.lat,
+                            altitude: drone.takeoffPoint!.altitude,
+                          };
+
+                          dispatch({
+                            type: "SET_DRONE_TAKEOFF_POINT",
+                            payload: {
+                              drone_key: drone.key,
+                              takeoffPoint: updatedTakeoffPoint,
+                            },
+                          });
+                        }
+                      }}
+                    />
+                  </div>
+                  {/* 纬度和高度输入框类似修改 */}
+                  <div className="flex flex-col">
+                    <span className="text-gray-600 mb-1">纬度:</span>
+                    <input
+                      type="number"
+                      className="w-full h-7 px-2 py-0 text-xs border border-gray-300 rounded bg-white"
+                      value={drone.takeoffPoint.lat}
+                      step="0.000001"
+                      onChange={(e) => {
+                        // 更新纬度值
+                        const value = Number(e.target.value);
+                        if (!isNaN(value)) {
+                          // 确保所有必需属性都被明确设置为非空值，避免类型错误
+                          const updatedTakeoffPoint = {
+                            lng: drone.takeoffPoint!.lng,
+                            lat: value,
+                            altitude: drone.takeoffPoint!.altitude,
+                          };
+
+                          dispatch({
+                            type: "SET_DRONE_TAKEOFF_POINT",
+                            payload: {
+                              drone_key: drone.key,
+                              takeoffPoint: updatedTakeoffPoint,
+                            },
+                          });
+                        }
+                      }}
+                    />
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-gray-600 mb-1">高度:</span>
+                    <input
+                      type="number"
+                      className="w-full h-7 px-2 py-0 text-xs border border-gray-300 rounded bg-white"
+                      value={drone.takeoffPoint.altitude}
+                      step="0.1"
+                      onChange={(e) => {
+                        // 更新高度值
+                        const value = Number(e.target.value);
+                        if (!isNaN(value)) {
+                          // 确保所有必需属性都被明确设置为非空值，避免类型错误
+                          const updatedTakeoffPoint = {
+                            lng: drone.takeoffPoint!.lng,
+                            lat: drone.takeoffPoint!.lat,
+                            altitude: value,
+                          };
+
+                          dispatch({
+                            type: "SET_DRONE_TAKEOFF_POINT",
+                            payload: {
+                              drone_key: drone.key,
+                              takeoffPoint: updatedTakeoffPoint,
+                            },
+                          });
+                        }
+                      }}
+                    />
                   </div>
                 </div>
               ) : (
-                <div className="mt-1 text-xs text-gray-400 italic">
-                  未设置起飞点位置
+                <div className="text-xs text-gray-500 bg-white p-2 rounded border border-dashed border-gray-200 text-center">
+                  点击上方按钮，在地图上设置起飞点位置
                 </div>
               )}
             </div>
@@ -891,10 +949,6 @@ export default function DronePanel({
                     setBindDialogOpen(false);
                     setSelectedPhysicalDroneId("");
                     setSelectedLensType("visible"); // 重置为默认值
-                    toast({
-                      title: "设置成功",
-                      description: "无人机配置已成功设置",
-                    });
                   }
                 } else {
                   toast({
@@ -910,6 +964,14 @@ export default function DronePanel({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {isSettingTakeoffPoint && (
+        <div className="fixed inset-0 bg-black bg-opacity-5 z-40 pointer-events-none flex items-center justify-center">
+          <div className="bg-blue-600 text-white px-4 py-2 rounded-md shadow-lg text-sm font-medium">
+            请在地图上点击选择起飞点位置
+          </div>
+        </div>
+      )}
     </div>
   );
 }

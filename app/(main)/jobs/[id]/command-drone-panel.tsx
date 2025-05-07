@@ -5,7 +5,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { CommandDroneState, JobAction, JobState } from "./job-state";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -13,9 +12,61 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Label } from "@/components/ui/label";
 import { Trash2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+
+// 颜色选择器组件
+interface CommandDroneColorPickerProps {
+  color: string;
+  onColorChange: (color: string) => void;
+}
+
+const COMMAND_DRONE_COLORS = [
+  "#FF5733", "#33FF57", "#3357FF", "#F033FF", "#33FFF6", "#FF33A6", 
+  "#FFD700", "#4169E1", "#32CD32", "#8A2BE2", "#FF6347", "#20B2AA",
+  "#FF4500", "#9370DB", "#3CB371", "#DC143C", "#00CED1", "#FF8C00",
+  "#8B008B", "#2E8B57", "#DAA520", "#D2691E", "#6495ED", "#7B68EE"
+];
+
+function CommandDroneColorPicker({ color, onColorChange }: CommandDroneColorPickerProps) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <div
+          className="h-4 w-4 rounded-full mr-2 border border-gray-100 cursor-pointer hover:scale-125 transition-transform"
+          style={{ backgroundColor: color }}
+          title="点击更改指挥机颜色"
+        />
+      </PopoverTrigger>
+      <PopoverContent className="w-64 p-2">
+        <div className="text-xs font-medium mb-1.5 text-gray-700">选择颜色</div>
+        <div className="grid grid-cols-6 gap-1">
+          {COMMAND_DRONE_COLORS.map((colorValue) => (
+            <div
+              key={colorValue}
+              className={`h-6 w-6 rounded-full cursor-pointer border hover:scale-110 transition-transform ${
+                color === colorValue ? "border-2 border-gray-800" : "border-gray-200"
+              }`}
+              style={{ backgroundColor: colorValue }}
+              onClick={() => {
+                onColorChange(colorValue);
+                setOpen(false);
+              }}
+              title={colorValue}
+            />
+          ))}
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
 
 interface CommandDronePanelProps {
   state: JobState;
@@ -205,52 +256,59 @@ export default function CommandDronePanel({
   };
 
   return (
-    <div>
-      <div className="py-3">
-        <div className="text-md font-bold">指挥机设置</div>
+    <div className="space-y-2">
+      <div className="flex items-center justify-between mb-1">
+        <div className="text-md font-medium">指挥机信息</div>
       </div>
-      {/* <CardContent className="py-2"> */}
-      {/* 选择无人机作为指挥机 */}
-      <div className="flex items-center gap-2 mb-4">
-        <Select
-          value={selectedDroneKey}
-          onValueChange={(value) => setSelectedDroneKey(value)}
-          disabled={isMapPickingMode}
-        >
-          <SelectTrigger className="w-full">
-            <SelectValue placeholder="选择无人机" />
-          </SelectTrigger>
-          <SelectContent>
+      
+      {/* 选择无人机工具栏 */}
+      <div className="flex justify-between items-center mt-2">
+        <div className="w-3/4 mr-4">
+          <Select
+            value={selectedDroneKey}
+            onValueChange={(value) => setSelectedDroneKey(value)}
+            disabled={isMapPickingMode}
+          >
+            <SelectTrigger className="h-10 border-gray-300 focus:ring-blue-400 bg-white">
+              <SelectValue placeholder="选择无人机作为指挥机" />
+            </SelectTrigger>
+          <SelectContent className="max-h-[300px] overflow-y-auto">
             {availableDrones.length === 0 ? (
-              <SelectItem value="none" disabled>
+              <SelectItem value="none" disabled className="text-sm">
                 没有可用的无人机
               </SelectItem>
             ) : (
               availableDrones.map((drone) => (
-                <SelectItem key={drone.key} value={drone.key}>
+                <SelectItem key={drone.key} value={drone.key} className="text-sm">
                   {drone.name || `无人机 ${drone.index || 0}`}
                 </SelectItem>
               ))
             )}
           </SelectContent>
-        </Select>
+          </Select>
+        </div>
         <Button
           type="button"
           disabled={!selectedDroneKey || isMapPickingMode}
           onClick={addCommandDrone}
-          className="whitespace-nowrap"
+          className="h-10 bg-blue-500 text-white hover:bg-blue-600 transition-colors"
+          size="sm"
         >
           {isMapPickingMode ? "点击地图选择位置" : "添加指挥机"}
         </Button>
       </div>
 
       {isMapPickingMode && (
-        <div className="mb-4 p-2 bg-amber-50 border border-amber-200 rounded text-amber-700 text-sm">
-          请在地图上点击选择指挥机位置，或者
+        <div className="mt-3 mb-4 p-3 bg-blue-50 border border-blue-200 rounded-md text-blue-700 text-sm flex items-center justify-between">
+          <div className="flex items-center">
+            <div className="h-2 w-2 rounded-full bg-blue-500 mr-2"></div>
+            请在地图上点击选择指挥机位置
+          </div>
           <Button
             type="button"
-            variant="link"
-            className="p-0 h-auto text-amber-700 underline"
+            variant="outline"
+            size="sm"
+            className="h-7 border-blue-200 text-blue-700 bg-blue-50 hover:bg-blue-100"
             onClick={() => setIsMapPickingMode(false)}
           >
             取消选择
@@ -263,21 +321,26 @@ export default function CommandDronePanel({
         {state.commandDrones.map((commandDrone) => (
           <div
             key={commandDrone.drone_key}
-            className="border rounded-md p-3 bg-slate-50"
+            className="mt-4 px-3 py-3 space-y-2 border border-gray-200 rounded-md shadow-sm hover:shadow-md transition-shadow bg-white"
           >
-            <div className="flex justify-between items-center mb-2">
-              <div className="font-medium flex items-center gap-2">
-                <div
-                  className="w-3 h-3 rounded-full"
-                  style={{ backgroundColor: commandDrone.color }}
-                ></div>
-                {getDroneName(commandDrone.drone_key)}
+            <div className="flex justify-between items-center">
+              <div className="text-sm font-semibold overflow-auto flex items-center">
+                <CommandDroneColorPicker
+                  color={commandDrone.color}
+                  onColorChange={(newColor) => {
+                    dispatch({
+                      type: "UPDATE_COMMAND_DRONE_COLOR",
+                      payload: { drone_key: commandDrone.drone_key, color: newColor }
+                    });
+                  }}
+                />
+                <span title="指挥机">{getDroneName(commandDrone.drone_key)}</span>
               </div>
               <Button
-                type="button"
                 variant="ghost"
-                size="sm"
-                className="h-8 w-8 p-0"
+                title="删除指挥机"
+                size="icon"
+                className="h-8 w-8 hover:bg-red-50 hover:text-red-600 transition-colors"
                 onClick={() => removeCommandDrone(commandDrone.drone_key)}
               >
                 <Trash2 className="h-4 w-4" />
@@ -285,84 +348,86 @@ export default function CommandDronePanel({
             </div>
 
             {/* 位置信息 */}
-            <div className="grid grid-cols-3 gap-2">
-              <div className="space-y-1">
-                <Label
-                  htmlFor={`lat-${commandDrone.drone_key}`}
-                  className="text-xs"
-                >
-                  纬度
-                </Label>
-                <Input
-                  id={`lat-${commandDrone.drone_key}`}
-                  type="number"
-                  step="0.000001"
-                  value={commandDrone.position.lat}
-                  onChange={(e) =>
-                    updatePosition(
-                      commandDrone.drone_key,
-                      "lat",
-                      parseFloat(e.target.value)
-                    )
-                  }
-                  className="h-8"
-                />
+            <div className="mt-3 border border-gray-200 rounded-md bg-gray-50 p-2">
+              <div className="flex items-center justify-between mb-2">
+                <div className="text-xs font-medium text-gray-700">
+                  指挥机位置
+                </div>
               </div>
-              <div className="space-y-1">
-                <Label
-                  htmlFor={`lng-${commandDrone.drone_key}`}
-                  className="text-xs"
-                >
-                  经度
-                </Label>
-                <Input
-                  id={`lng-${commandDrone.drone_key}`}
-                  type="number"
-                  step="0.000001"
-                  value={commandDrone.position.lng}
-                  onChange={(e) =>
-                    updatePosition(
-                      commandDrone.drone_key,
-                      "lng",
-                      parseFloat(e.target.value)
-                    )
-                  }
-                  className="h-8"
-                />
-              </div>
-              <div className="space-y-1">
-                <Label
-                  htmlFor={`alt-${commandDrone.drone_key}`}
-                  className="text-xs"
-                >
-                  高度(米)
-                </Label>
-                <Input
-                  id={`alt-${commandDrone.drone_key}`}
-                  type="number"
-                  min="0"
-                  step="1"
-                  value={commandDrone.position.altitude}
-                  onChange={(e) =>
-                    updatePosition(
-                      commandDrone.drone_key,
-                      "altitude",
-                      parseInt(e.target.value)
-                    )
-                  }
-                  className="h-8"
-                />
+              
+              <div className="grid grid-cols-3 gap-2 text-xs">
+                <div className="flex flex-col">
+                  <span className="text-gray-600 mb-1">纬度:</span>
+                  <input
+                    id={`lat-${commandDrone.drone_key}`}
+                    type="number"
+                    className="w-full h-7 px-2 py-0 text-xs border border-gray-300 rounded bg-white"
+                    step="0.000001"
+                    value={commandDrone.position.lat}
+                    onChange={(e) =>
+                      updatePosition(
+                        commandDrone.drone_key,
+                        "lat",
+                        parseFloat(e.target.value)
+                      )
+                    }
+                  />
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-gray-600 mb-1">经度:</span>
+                  <input
+                    id={`lng-${commandDrone.drone_key}`}
+                    type="number"
+                    className="w-full h-7 px-2 py-0 text-xs border border-gray-300 rounded bg-white"
+                    step="0.000001"
+                    value={commandDrone.position.lng}
+                    onChange={(e) =>
+                      updatePosition(
+                        commandDrone.drone_key,
+                        "lng",
+                        parseFloat(e.target.value)
+                      )
+                    }
+                  />
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-gray-600 mb-1">高度(米):</span>
+                  <input
+                    id={`alt-${commandDrone.drone_key}`}
+                    type="number"
+                    className="w-full h-7 px-2 py-0 text-xs border border-gray-300 rounded bg-white"
+                    min="0"
+                    step="1"
+                    value={commandDrone.position.altitude}
+                    onChange={(e) =>
+                      updatePosition(
+                        commandDrone.drone_key,
+                        "altitude",
+                        parseInt(e.target.value)
+                      )
+                    }
+                  />
+                </div>
               </div>
             </div>
           </div>
         ))}
 
         {state.commandDrones.length === 0 && (
-          <div className="text-center text-gray-500 py-4">
-            暂无指挥机，请添加指挥机
+          <div className="mt-4 p-6 border border-dashed border-gray-300 rounded-md bg-gray-50 text-center">
+            <div className="text-gray-500 mb-2">暂无指挥机</div>
+            <div className="text-xs text-gray-400">请从下拉菜单选择无人机，然后在地图上点击设置指挥机位置</div>
           </div>
         )}
       </div>
+      
+      {isMapPickingMode && (
+        <div className="fixed inset-0 bg-black bg-opacity-5 z-40 pointer-events-none flex items-center justify-center">
+          <div className="bg-blue-600 text-white px-4 py-2 rounded-md shadow-lg text-sm font-medium">
+            请在地图上点击选择指挥机位置
+          </div>
+        </div>
+      )}
     </div>
   );
 }

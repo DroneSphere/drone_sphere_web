@@ -113,6 +113,14 @@ export type JobAction =
       type: "REMOVE_DRONE_TAKEOFF_POINT";
       payload: { drone_key: string };
     }
+  | {
+      type: "UPDATE_DRONE_COLOR";
+      payload: { drone_key: string; color: string };
+    }
+  | {
+      type: "UPDATE_COMMAND_DRONE_COLOR";
+      payload: { drone_key: string; color: string };
+    }
   | { type: "RESET_STATE"; payload: Partial<JobState> };
 
 // 创建初始状态
@@ -274,6 +282,30 @@ export function jobReducer(state: JobState, action: JobAction): JobState {
           drone.key === action.payload.drone_key
             ? { ...drone, takeoffPoint: undefined }
             : drone
+        ),
+      };
+    case "UPDATE_DRONE_COLOR":
+      return {
+        ...state,
+        drones: state.drones.map((drone) =>
+          drone.key === action.payload.drone_key
+            ? { ...drone, color: action.payload.color }
+            : drone
+        ),
+        // 同步更新指挥机的颜色（如果使用了该无人机）
+        commandDrones: state.commandDrones.map((commandDrone) =>
+          commandDrone.drone_key === action.payload.drone_key
+            ? { ...commandDrone, color: action.payload.color }
+            : commandDrone
+        ),
+      };
+    case "UPDATE_COMMAND_DRONE_COLOR":
+      return {
+        ...state,
+        commandDrones: state.commandDrones.map((commandDrone) =>
+          commandDrone.drone_key === action.payload.drone_key
+            ? { ...commandDrone, color: action.payload.color }
+            : commandDrone
         ),
       };
     case "RESET_STATE":

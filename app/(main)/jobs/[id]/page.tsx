@@ -70,9 +70,10 @@ export default function Page() {
     isPickingTakeoffPoint, // 添加起飞点选择状态
     setIsPickingTakeoffPoint, // 添加起飞点选择状态设置函数
   } = useMap();
-  
+
   // 存储当前选中设置起飞点的无人机键值
-  const [selectedTakeoffPointDroneKey, setSelectedTakeoffPointDroneKey] = useState<string>("");
+  const [selectedTakeoffPointDroneKey, setSelectedTakeoffPointDroneKey] =
+    useState<string>("");
 
   // 使用reducer管理复杂状态
   const [state, dispatch] = useReducer(jobReducer, initialJobState);
@@ -256,19 +257,17 @@ export default function Page() {
   const handleCommandDronePositionPick = useCallback(
     (position: { lat: number; lng: number }) => {
       console.log("选中的指挥机位置", position);
-      
+
       // 触发自定义事件，供CommandDronePanel组件接收
-      const positionEvent = new CustomEvent('map-position-picked', {
-        detail: position
+      const positionEvent = new CustomEvent("map-position-picked", {
+        detail: position,
       });
       window.dispatchEvent(positionEvent);
-      
+
       if (!selectedCommandDroneKey) return;
 
       // 获取选中的无人机信息 - 使用drones替代selectedDrones
-      const drone = state.drones.find(
-        (d) => d.key === selectedCommandDroneKey
-      );
+      const drone = state.drones.find((d) => d.key === selectedCommandDroneKey);
       if (!drone) return;
 
       // 创建新的指挥机对象
@@ -289,18 +288,18 @@ export default function Page() {
     },
     [selectedCommandDroneKey, state.selectedDrones, dispatch]
   );
-  
+
   // 处理起飞点位置选择
   const handleTakeoffPointPick = useCallback(
     (position: { lat: number; lng: number }) => {
       console.log("选中的起飞点位置", position);
-      
+
       // 触发自定义事件，供DronePanel组件接收
-      const positionEvent = new CustomEvent('map-position-picked', {
-        detail: position
+      const positionEvent = new CustomEvent("map-position-picked", {
+        detail: position,
       });
       window.dispatchEvent(positionEvent);
-      
+
       if (!selectedTakeoffPointDroneKey) return;
 
       // 获取选中的无人机信息
@@ -369,7 +368,7 @@ export default function Page() {
       drawCommandDrones(state.commandDrones, isCreating);
     }
   }, [isMapLoaded, state.commandDrones, isCreating, drawCommandDrones]);
-  
+
   // 监听无人机起飞点变化，更新地图标记
   useEffect(() => {
     if (isMapLoaded && state.drones.length > 0) {
@@ -407,7 +406,7 @@ export default function Page() {
       );
     };
   }, [dispatch]);
-  
+
   // 添加起飞点位置变更事件监听
   useEffect(() => {
     // 处理起飞点位置变更事件
@@ -456,7 +455,7 @@ export default function Page() {
     setupCommandDronePickingMode,
     handleCommandDronePositionPick,
   ]);
-  
+
   // 设置起飞点选择模式
   useEffect(() => {
     if (isPickingTakeoffPoint && isMapLoaded) {
@@ -508,13 +507,6 @@ export default function Page() {
                   setIsMapPickingMode={setIsPickingTakeoffPoint}
                   onPositionPick={handleTakeoffPointPick}
                 />
-                <WaylinePanel
-                  state={state}
-                  dispatch={dispatch}
-                  AMapRef={AMapRef}
-                  mapRef={mapRef}
-                />
-                {/* 添加指挥机面板 */}
                 <CommandDronePanel
                   state={state}
                   dispatch={dispatch}
@@ -524,6 +516,13 @@ export default function Page() {
                   setIsMapPickingMode={setIsPickingCommandDronePosition}
                   onPositionPick={handleCommandDronePositionPick}
                 />
+                <WaylinePanel
+                  state={state}
+                  dispatch={dispatch}
+                  AMapRef={AMapRef}
+                  mapRef={mapRef}
+                />
+                {/* 添加指挥机面板 */}
               </div>
 
               <div className="mt-4 flex justify-end gap-4">
