@@ -274,28 +274,122 @@ export function generateWaypoints(
     scanDirection = !scanDirection;
   }
 
-  // 如果提供了起飞点坐标，判断是否需要反转航线
+  // 如果提供了起飞点坐标，优化航线顺序
   if (takeoffPoint && waypoints.length > 1) {
-    // 创建起飞点对象
-    const droneStartPoint = new AMapRef.current.LngLat(takeoffPoint.lng, takeoffPoint.lat);
-    
-    // 只比较首尾两个航点与起飞点的距离
-    const firstWaypoint = waypoints[0];
-    const lastWaypoint = waypoints[waypoints.length - 1];
-    
-    // 计算首尾航点到起飞点的距离
-    const distanceToFirst = AMapRef.current.GeometryUtil.distance(droneStartPoint, firstWaypoint);
-    const distanceToLast = AMapRef.current.GeometryUtil.distance(droneStartPoint, lastWaypoint);
-    
-    // 如果尾部航点比首部航点距离起飞点更近，则反转整个航线
-    if (distanceToLast < distanceToFirst) {
-      console.log('航线终点比起点更靠近起飞位置，反转整个航线顺序');
-      // 直接反转整个航线，保持航线形状不变
-      return waypoints.slice().reverse();
-    }
+    return optimizeWaypointsWithTakeoff(waypoints, takeoffPoint, AMapRef);
   }
 
   // 注意: 云台参数 (gimbalPitch 和 gimbalZoom) 应该被传递到实际的飞行控制系统
   // 在这里我们仅返回航点坐标，但在实际应用中这些参数会与航点一起使用
   return waypoints;
+}
+
+/**
+ * 原始航线 - 保持航点顺序不变
+ */
+function originalWaypoints(waypoints: AMap.LngLat[]): AMap.LngLat[] {
+  return [...waypoints];
+}
+
+/**
+ * 整体反转航线 - 将所有航点顺序颠倒
+ */
+function reverseWaypoints(waypoints: AMap.LngLat[]): AMap.LngLat[] {
+  return [...waypoints].reverse();
+}
+
+/**
+ * 交换相邻航点
+ * 例如：A->B->C->D->E->F 变为 B->A->D->C->F->E
+ */
+function swapNeighborWaypoints(waypoints: AMap.LngLat[]): AMap.LngLat[] {
+  if (waypoints.length < 2) return [...waypoints];
+  
+  const result: AMap.LngLat[] = [];
+  
+  // 两两一组反转航点
+  for (let i = 0; i < waypoints.length; i += 2) {
+    if (i + 1 < waypoints.length) {
+      // 如果有配对的点，则交换顺序添加（先第二个点，再第一个点）
+      result.push(waypoints[i + 1], waypoints[i]);
+    } else {
+      // 如果是单独的最后一个点（奇数长度的情况），直接添加
+      result.push(waypoints[i]);
+    }
+  }
+  return result;
+}
+
+/**
+ * 整体反转后交换相邻两个
+ * 例如：对于 A->B->C->D->E->F 变为 E->F->C->D->A->B
+ */
+function reverseSwapNeighborWaypoints(waypoints: AMap.LngLat[]): AMap.LngLat[] {
+  if (waypoints.length < 2) return [...waypoints];
+  
+  const result: AMap.LngLat[] = [];
+  
+  // 整体反转
+  const reversedWaypoints = [...waypoints].reverse();
+
+  // 两两一组反转航点
+  for (let i = 0; i < reversedWaypoints.length; i += 2) {
+    if (i + 1 < reversedWaypoints.length) {
+      // 如果有配对的点，则交换顺序添加（先第二个点，再第一个点）
+      result.push(reversedWaypoints[i + 1], reversedWaypoints[i]);
+    } else {
+      // 如果是单独的最后一个点（奇数长度的情况），直接添加
+      result.push(reversedWaypoints[i]);
+    }
+  }
+  return result;
+}
+
+/**
+ * 根据起飞点优化航线顺序
+ * @param waypoints 原始航线航点
+ * @param takeoffPoint 起飞点
+ * @param AMapRef AMap引用
+ * @returns 优化后的航线
+ */
+function optimizeWaypointsWithTakeoff(
+  waypoints: AMap.LngLat[],
+  takeoffPoint: { lat: number; lng: number; altitude?: number },
+  AMapRef: MutableRefObject<typeof AMap | null>
+): AMap.LngLat[] {
+  if (!AMapRef.current || waypoints.length <= 1) return waypoints;
+
+  // 创建起飞点对象
+  const droneStartPoint = new AMapRef.current.LngLat(takeoffPoint.lng, takeoffPoint.lat);
+
+  // 生成四种不同顺序的航线
+  const waypointVariants = [
+    { name: "原始航线", waypoints: originalWaypoints(waypoints) },
+    { name: "整体反转航线", waypoints: reverseWaypoints(waypoints) },
+    { name: "交换相邻航点", waypoints: swapNeighborWaypoints(waypoints) },
+    { name: "整体反转后交换相邻航点", waypoints: reverseSwapNeighborWaypoints(waypoints) },
+  ];
+
+  // 计算每种方案的第一个航点到起飞点的距离
+  let bestVariant = waypointVariants[0];
+  let shortestDistance = AMapRef.current.GeometryUtil.distance(
+    droneStartPoint, 
+    bestVariant.waypoints[0]
+  );
+
+  for (let i = 1; i < waypointVariants.length; i++) {
+    const variant = waypointVariants[i];
+    const distance = AMapRef.current.GeometryUtil.distance(
+      droneStartPoint,
+      variant.waypoints[0]
+    );
+
+    if (distance < shortestDistance) {
+      shortestDistance = distance;
+      bestVariant = variant;
+    }
+  }
+
+  console.log(`选择航线类型: ${bestVariant.name}, 起飞点到第一个航点距离: ${shortestDistance}米`);
+  return bestVariant.waypoints;
 }
