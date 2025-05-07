@@ -126,6 +126,7 @@ export function dividePolygonAmongDrones(
 
   return droneSubRegions;
 }
+
 /**
  * 为每个区域生成航点路径
  * 实现类似割草机模式的飞行路径
@@ -204,83 +205,71 @@ export function generateWaypoints(
   // 计算在当前纬度下需要间隔多少经度以达到所需的米数
   const lngSpacing = effectiveWidth / metersPerLngDegree;
 
-  // 确定扫描方向（这里选择东西方向）
+  
   const waypoints: AMap.LngLat[] = [];
   let scanDirection = true; // true为从南到北，false为从北到南
-
-  // 重新实现割草机模式航线生成算法
-  // 1. 沿经度方向（西到东）等间距生成扫描线
-  // 2. 每条扫描线与多边形求交点，交点两两配对，依次连接，形成锯齿状航线
-  // 3. 每条扫描线的航点顺序交替，保证飞行路径连续
-
-  // 记录上一条扫描线的航点，用于连接锯齿
-  let lastLinePoints: [number, number][] | null = null;
-
-  // 计算第一条航线的经度，位于第一个扫描带的中间
   let currentWaypointLng = minLng + lngSpacing / 2;
 
-  // 循环生成位于扫描带中间的航线
   for (; currentWaypointLng <= maxLng; currentWaypointLng += lngSpacing) {
-    // 创建当前航线（位于扫描带中间）
     const line = turf.lineString([
-      [currentWaypointLng, minLat - 1], // 向外延伸，确保能与多边形相交
+      [currentWaypointLng, minLat - 1],
       [currentWaypointLng, maxLat + 1],
     ]);
 
-    // 计算当前线与多边形的交点
     const intersection = turf.lineIntersect(polygon, line);
-    // 提取交点坐标
     const points = intersection.features.map(
       (f) => f.geometry.coordinates as [number, number]
     );
-    // 按纬度升序排序（从南到北）
-    points.sort((a, b) => a[1] - b[1]);
+    points.sort((a, b) => a[1] - b[1]); // 按纬度升序排序（从南到北）
 
-    // 只处理偶数个交点（理论上多边形每条扫描线应有偶数个交点）
-    if (points.length % 2 !== 0 || points.length === 0) continue; // 如果没有交点或交点数为奇数，则跳过
+    if (points.length < 2) continue; // 至少需要两个交点形成一条线段
 
-    // 当前扫描线的航点
-    const lineWaypoints: [number, number][] = [];
-    for (let i = 0; i < points.length; i += 2) {
-      // 每对交点作为一段航线的起止点
-      // 按照 scanDirection 决定顺序
-      if (scanDirection) {
-        lineWaypoints.push(points[i], points[i + 1]);
-      } else {
-        lineWaypoints.push(points[i + 1], points[i]);
+    // 根据扫描方向确定当前扫描线的实际起点和终点
+    // 注意：这里的 "points" 是按纬度升序排列的。
+    // "lineWaypoints" 在原代码中是根据 scanDirection 排序的。
+    // 我们现在直接取 points 的头和尾，然后根据 scanDirection 决定哪个是入口哪个是出口。
+    let currentScanLineEntryCoord: [number, number];
+    let currentScanLineExitCoord: [number, number];
+
+    if (scanDirection) { // 从南到北扫描
+      currentScanLineEntryCoord = points[0]; // 最南边的交点是入口
+      currentScanLineExitCoord = points[points.length - 1]; // 最北边的交点是出口
+    } else { // 从北到南扫描
+      currentScanLineEntryCoord = points[points.length - 1]; // 最北边的交点是入口
+      currentScanLineExitCoord = points[0]; // 最南边的交点是出口
+    }
+
+    const entryPoint = new AMapRef.current.LngLat(currentScanLineEntryCoord[0], currentScanLineEntryCoord[1]);
+    const exitPoint = new AMapRef.current.LngLat(currentScanLineExitCoord[0], currentScanLineExitCoord[1]);
+
+    if (waypoints.length === 0) {
+      // 第一个扫描带，添加其入口点
+      waypoints.push(entryPoint);
+    } else {
+      // 非第一个扫描带，获取上一个扫描带的出口点
+      const previousExitPoint = waypoints[waypoints.length - 1];
+      // 添加连接点：上一个出口点 (如果不同) 和 当前入口点
+      // 通常，割草机模式下，上一个出口点和当前入口点是不同的，它们构成了拐弯
+      if (!previousExitPoint.equals(entryPoint)) {
+        // 如果上一个航点不是当前入口点，则将当前入口点加入，形成拐弯的第二个点
+        // （上一个出口点已经是航点列表的最后一个元素了）
+         waypoints.push(entryPoint);
       }
     }
+    // 添加当前扫描带的出口点
+    // 确保不与刚添加的入口点重复（如果扫描线只有一个有效点，或者入口出口很近）
+    const lastAddedPoint = waypoints[waypoints.length - 1];
+    if (!lastAddedPoint.equals(exitPoint)) {
+        waypoints.push(exitPoint);
+    }
 
-    // 如果不是第一条扫描线，连接上一条扫描线的终点和当前扫描线的起点，形成锯齿
-    if (lastLinePoints && lineWaypoints.length > 0) {
-      // 连接上一条的最后一个点和当前的第一个点
-      waypoints.push(
-        new AMapRef.current.LngLat(
-          lastLinePoints[lastLinePoints.length - 1][0],
-          lastLinePoints[lastLinePoints.length - 1][1]
-        )
-      );
-      waypoints.push(
-        new AMapRef.current.LngLat(lineWaypoints[0][0], lineWaypoints[0][1])
-      );
-    }
-    // 添加当前扫描线的所有航点
-    for (const pt of lineWaypoints) {
-      waypoints.push(new AMapRef.current.LngLat(pt[0], pt[1]));
-    }
-    // 记录本次扫描线的航点
-    lastLinePoints = lineWaypoints;
-    // 切换扫描方向
-    scanDirection = !scanDirection;
+    scanDirection = !scanDirection; // 切换扫描方向
   }
 
-  // 如果提供了起飞点坐标，优化航线顺序
   if (takeoffPoint && waypoints.length > 1) {
     return optimizeWaypointsWithTakeoff(waypoints, takeoffPoint, AMapRef);
   }
 
-  // 注意: 云台参数 (gimbalPitch 和 gimbalZoom) 应该被传递到实际的飞行控制系统
-  // 在这里我们仅返回航点坐标，但在实际应用中这些参数会与航点一起使用
   return waypoints;
 }
 
