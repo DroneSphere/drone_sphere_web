@@ -2,7 +2,7 @@ import httpClient from "@/api/http_client";
 import { Response } from "@/api/response";
 import {
   JobCreationRequest,
-  JobCreationResult,
+  JobCreationOptions,
   JobDetailResult,
   PhysicalDrone,
   JobEditRequest,
@@ -52,8 +52,8 @@ export async function createJob(data: JobCreationRequest): Promise<number> {
  * @param id 相关ID
  * @returns 任务创建选项数据
  */
-export async function getJobCreateOptions(): Promise<JobCreationResult> {
-  const res = await httpClient.instance.get<Response<JobCreationResult>>(
+export async function getJobCreateOptions(): Promise<JobCreationOptions> {
+  const res = await httpClient.instance.get<Response<JobCreationOptions>>(
     `${prefix}/creation/options`
   );
   return res.data.data;

@@ -91,7 +91,7 @@ export default function CommandDronePanel({
   const availableDrones = state.drones.filter(
     (drone) =>
       // 不能已经是指挥机
-      !state.commandDrones.some((c) => c.drone_key === drone.key) &&
+      !state.commandDrones.some((c) => c.droneKey === drone.key) &&
       // 不能已经有航线任务
       !state.waylineAreas.some((w) => w.droneKey === drone.key)
   );
@@ -150,7 +150,7 @@ export default function CommandDronePanel({
 
       // 创建指挥机对象
       const newCommandDrone: CommandDroneState = {
-        drone_key: selectedDroneKey,
+        droneKey: selectedDroneKey,
         position: {
           lat: position.lat,
           lng: position.lng,
@@ -233,7 +233,7 @@ export default function CommandDronePanel({
     value: number
   ) => {
     const commandDrone = state.commandDrones.find(
-      (c) => c.drone_key === droneKey
+      (c) => c.droneKey === droneKey
     );
     if (!commandDrone) return;
 
@@ -320,7 +320,7 @@ export default function CommandDronePanel({
       <div className="space-y-3">
         {state.commandDrones.map((commandDrone) => (
           <div
-            key={commandDrone.drone_key}
+            key={commandDrone.droneKey}
             className="mt-4 px-3 py-3 space-y-2 border border-gray-200 rounded-md shadow-sm hover:shadow-md transition-shadow bg-white"
           >
             <div className="flex justify-between items-center">
@@ -330,18 +330,18 @@ export default function CommandDronePanel({
                   onColorChange={(newColor) => {
                     dispatch({
                       type: "UPDATE_COMMAND_DRONE_COLOR",
-                      payload: { drone_key: commandDrone.drone_key, color: newColor }
+                      payload: { drone_key: commandDrone.droneKey, color: newColor }
                     });
                   }}
                 />
-                <span title="指挥机">{getDroneName(commandDrone.drone_key)}</span>
+                <span title="指挥机">{getDroneName(commandDrone.droneKey)}</span>
               </div>
               <Button
                 variant="ghost"
                 title="删除指挥机"
                 size="icon"
                 className="h-8 w-8 hover:bg-red-50 hover:text-red-600 transition-colors"
-                onClick={() => removeCommandDrone(commandDrone.drone_key)}
+                onClick={() => removeCommandDrone(commandDrone.droneKey)}
               >
                 <Trash2 className="h-4 w-4" />
               </Button>
@@ -359,14 +359,14 @@ export default function CommandDronePanel({
                 <div className="flex flex-col">
                   <span className="text-gray-600 mb-1">纬度:</span>
                   <input
-                    id={`lat-${commandDrone.drone_key}`}
+                    id={`lat-${commandDrone.droneKey}`}
                     type="number"
                     className="w-full h-7 px-2 py-0 text-xs border border-gray-300 rounded bg-white"
                     step="0.000001"
                     value={commandDrone.position.lat}
                     onChange={(e) =>
                       updatePosition(
-                        commandDrone.drone_key,
+                        commandDrone.droneKey,
                         "lat",
                         parseFloat(e.target.value)
                       )
@@ -376,14 +376,14 @@ export default function CommandDronePanel({
                 <div className="flex flex-col">
                   <span className="text-gray-600 mb-1">经度:</span>
                   <input
-                    id={`lng-${commandDrone.drone_key}`}
+                    id={`lng-${commandDrone.droneKey}`}
                     type="number"
                     className="w-full h-7 px-2 py-0 text-xs border border-gray-300 rounded bg-white"
                     step="0.000001"
                     value={commandDrone.position.lng}
                     onChange={(e) =>
                       updatePosition(
-                        commandDrone.drone_key,
+                        commandDrone.droneKey,
                         "lng",
                         parseFloat(e.target.value)
                       )
@@ -393,7 +393,7 @@ export default function CommandDronePanel({
                 <div className="flex flex-col">
                   <span className="text-gray-600 mb-1">高度(米):</span>
                   <input
-                    id={`alt-${commandDrone.drone_key}`}
+                    id={`alt-${commandDrone.droneKey}`}
                     type="number"
                     className="w-full h-7 px-2 py-0 text-xs border border-gray-300 rounded bg-white"
                     min="0"
@@ -401,7 +401,7 @@ export default function CommandDronePanel({
                     value={commandDrone.position.altitude}
                     onChange={(e) =>
                       updatePosition(
-                        commandDrone.drone_key,
+                        commandDrone.droneKey,
                         "altitude",
                         parseInt(e.target.value)
                       )

@@ -29,11 +29,10 @@ import CommandDronePanel from "./command-drone-panel"; // 添加指挥机面板�
 import { jobReducer, initialJobState } from "./job-state";
 import { useMap } from "./use-map";
 import {
+  formatCommandDronesData,
   formatDronesData,
-  formatMappingsData,
   formatWaylinesData,
   prepareSubmitData,
-  validateJobData,
 } from "./data-utils";
 import { JobCreationRequest, JobEditRequest } from "./types";
 
@@ -107,7 +106,7 @@ export default function Page() {
 
   // 处理数据加载与更新表单
   const updateFormAndState = useCallback(() => {
-    if (!dataQuery.data || !isMapLoaded || !AMapRef.current) return;
+    if (!dataQuery.data || !optionsQuery.data || !isMapLoaded || !AMapRef.current) return;
 
     const { area } = dataQuery.data;
 
@@ -120,12 +119,18 @@ export default function Page() {
     });
 
     // 使用数据工具函数格式化并更新状态
-    const formattedDrones = formatDronesData(dataQuery.data.drones);
-    const formattedMappings = formatMappingsData(dataQuery.data.mappings);
+    const formattedDrones = formatDronesData(dataQuery.data.drones, optionsQuery.data.drones);
+    const formattedCommandDrones = formatCommandDronesData(dataQuery.data.command_drones);
     const formattedWaylines = formatWaylinesData(
       dataQuery.data.waylines,
       AMapRef.current
     );
+    
+    console.log("格式化后的数据", {
+      formattedDrones,
+      formattedCommandDrones,
+      formattedWaylines,
+    });
 
     // 设置区域路径
     if (area?.points) {
@@ -139,42 +144,21 @@ export default function Page() {
     dispatch({
       type: "RESET_STATE",
       payload: {
-        selectedDrones: formattedDrones,
-        droneMappings: formattedMappings,
+        drones: formattedDrones,
         waylineAreas: formattedWaylines,
+        commandDrones: formattedCommandDrones,
       },
     });
 
     console.log("数据加载完成，状态已更新");
-  }, [dataQuery.data, isMapLoaded, AMapRef, form]);
+  }, [dataQuery.data, optionsQuery.data, isMapLoaded, AMapRef, form]);
 
   // 处理数据提交
   function onSubmit(formData: z.infer<typeof formSchema>) {
     console.log("提交表单数据", formData);
 
-    // 验证数据
-    const validation = validateJobData(
-      state.selectedDrones,
-      state.waylineAreas,
-      state.droneMappings,
-      state.commandDrones // 添加指挥机数据进行验证
-    );
-    if (!validation.isValid) {
-      toast({
-        title: "操作失败",
-        description: validation.errorMessage,
-        variant: "destructive",
-      });
-      return;
-    }
-
     // 准备提交数据
-    const submitData = prepareSubmitData(formData, {
-      selectedDrones: state.selectedDrones,
-      waylineAreas: state.waylineAreas,
-      droneMappings: state.droneMappings,
-      commandDrones: state.commandDrones, // 添加指挥机数据
-    });
+    const submitData = prepareSubmitData(formData, state);
 
     console.log("提交数据", submitData);
 
@@ -274,7 +258,7 @@ export default function Page() {
       dispatch({
         type: "ADD_COMMAND_DRONE",
         payload: {
-          drone_key: selectedCommandDroneKey,
+          droneKey: selectedCommandDroneKey,
           position: {
             ...position,
             altitude: 100, // 默认高度100米
@@ -286,7 +270,7 @@ export default function Page() {
       // 重置选中的无人机键值
       setSelectedCommandDroneKey("");
     },
-    [selectedCommandDroneKey, state.selectedDrones, dispatch]
+    [selectedCommandDroneKey, state.drones, dispatch]
   );
 
   // 处理起飞点位置选择
@@ -355,7 +339,6 @@ export default function Page() {
     isMapLoaded,
     state.waylineAreas,
     state.drones,
-    state.selectedDrones,
     isCreating,
     drawWaylines,
     handlePolygonEdit,

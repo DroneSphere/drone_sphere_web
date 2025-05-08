@@ -33,7 +33,6 @@ import { MapPin, Trash } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { getJobPhysicalDrones } from "../report/[id]/request";
 import {
-  DroneMappingState,
   DroneStateV2,
   JobAction,
   JobState,
@@ -225,6 +224,7 @@ export default function DronePanel({
       name: droneModel.name,
       description: droneModel.description,
       color: color,
+      lens_type: selectedLensType,
       variation: droneVariation!,
     };
     dispatch({
@@ -846,12 +846,6 @@ export default function DronePanel({
                                 <SelectItem
                                   key={physicalDrone.id}
                                   value={String(physicalDrone.id)}
-                                  disabled={state.droneMappings.some(
-                                    (m: DroneMappingState) =>
-                                      m.physical_drone_id ===
-                                        physicalDrone.id &&
-                                      m.selected_drone_key !== lastAddedDroneKey
-                                  )}
                                 >
                                   {physicalDrone.callsign} - {physicalDrone.sn}
                                 </SelectItem>

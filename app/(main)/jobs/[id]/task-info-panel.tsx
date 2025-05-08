@@ -23,11 +23,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Calendar1 } from "lucide-react";
-import { DroneMappingState, DroneState, JobAction, WaylineAreaState } from "./job-state";
-// import { CalendarIcon } from "@radix-ui/react-icons";
-// import { cn } from "@/lib/utils";
-// import { format } from "date-fns";
-// import { zhCN } from "date-fns/locale";
+import { JobAction, JobState } from "./job-state";
 
 interface TaskInfoPanelProps {
   isEditing: boolean;
@@ -58,12 +54,7 @@ interface TaskInfoPanelProps {
     };
   };
   // 替换setPath为state和dispatch
-  state: {
-    path: AMap.LngLat[];
-    selectedDrones: DroneState[];
-    waylineAreas: WaylineAreaState[];
-    droneMappings: DroneMappingState[];
-  };
+  state: JobState;
   dispatch: React.Dispatch<JobAction>; // 使用更具体的Action类型会更好
   AMapRef: React.MutableRefObject<typeof AMap | null>;
 }

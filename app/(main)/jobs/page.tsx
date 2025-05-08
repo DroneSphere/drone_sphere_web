@@ -84,7 +84,7 @@ export default function JobListPage() {
     columnHelper.accessor("drones", {
       header: () => <div className="min-w-8">无人机</div>,
       cell: (info) =>
-        info.getValue().length > 0 ? (
+        (info.getValue() && info.getValue().length) > 0 ? (
           <div className="flex flex-col">规划{info.getValue().length}架</div>
         ) : (
           <span className="text-gray-400">无</span>

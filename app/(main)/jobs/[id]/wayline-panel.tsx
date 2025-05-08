@@ -31,7 +31,7 @@ export default function WaylinePanel({
 
   // 过滤掉被指定为指挥机的无人机，只使用普通无人机参与航线飞行
   const availableDrones = state.drones.filter(
-    (drone) => !state.commandDrones.some((cmd) => cmd.drone_key === drone.key)
+    (drone) => !state.commandDrones.some((cmd) => cmd.droneKey === drone.key)
   );
 
   return (
@@ -99,19 +99,17 @@ export default function WaylinePanel({
                     ? subPaths[index]
                     : subPaths[subPaths.length - 1];
 
-                // 使用当前设置的参数生成航点，并传入无人机的起飞点以优化航线
-                const waypoints = generateWaypoints(
-                  subPath,
-                  waylineParams,
-                  AMapRef,
-                  drone.takeoffPoint // 传入无人机的起飞点以优化航点顺序
-                );
-
                 return {
                   droneKey: drone.key,
                   color: drone.color,
+                  altitude: waylineParams.flyingHeight + index * waylineParams.heightInterval,
                   path: subPath,
-                  points: waypoints,
+                  waypoints: generateWaypoints(
+                    subPath,
+                    waylineParams,
+                    AMapRef,
+                    drone.takeoffPoint // 传入无人机的起飞点以优化航点顺序
+                  ),
                   visible: true,
                   gimbalPitch: waylineParams.gimbalPitch,
                   gimbalZoom: waylineParams.gimbalZoom,

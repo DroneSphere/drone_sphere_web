@@ -179,10 +179,10 @@ export function useMap() {
         currentMap.add(subPolygon);
 
         // 如果有飞行路径点，绘制为折线
-        if (wayline.points && wayline.points.length > 0) {
+        if (wayline.waypoints && wayline.waypoints.length > 0) {
           // 创建折线
           const polyline = new currentAMap.Polyline({
-            path: wayline.points,
+            path: wayline.waypoints,
             strokeColor: drone.color,
             strokeWeight: 4,
             strokeOpacity: 0.9,
@@ -199,7 +199,7 @@ export function useMap() {
           // 在每个转折点添加圆形标记
           const waypointMarkers: AMap.Marker[] = [];
 
-          wayline.points.forEach((point, pointIndex) => {
+          wayline.waypoints.forEach((point, pointIndex) => {
             const marker = new currentAMap.Marker({
               position: point,
               offset: new currentAMap.Pixel(-8, -8),
@@ -460,7 +460,7 @@ export function useMap() {
               "commandDronePositionChanged",
               {
                 detail: {
-                  drone_key: commandDrone.drone_key,
+                  drone_key: commandDrone.droneKey,
                   position: {
                     lat: newPos.getLat(),
                     lng: newPos.getLng(),

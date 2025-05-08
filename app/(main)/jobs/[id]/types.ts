@@ -1,39 +1,3 @@
-/**
- * 任务创建请求的接口定义
- * Definition for job creation request
- * @interface JobCreationRequest
- * @property {string} name - 任务名称
- * @property {string} [description] - 任务描述（可选）
- * @property {number} area_id - 区域ID
- * @property {Array<{
- *   id: number;                  - 无人机ID
- *   index: number;               - 无人机索引
- *   key: string;                 - 无人机唯一键，格式：${index}-${drone_id}-${variation_index}
- *   name: string;                - 无人机名称
- *   description?: string;        - 无人机描述（可选）
- *   model?: string;              - 无人机型号（可选）
- *   color: string;               - 无人机颜色
- *   variantion: JobDroneVariation; - 无人机变体信息
- * }>} [drones] - 任务中使用的无人机列表（可选）
- * @property {Array<{
- *   droneKey: string;            - 无人机唯一键，关联到drones中的key
- *   height: number;              - 航线高度
- *   color: string;               - 航线颜色
- *   points: Array<{              - 航线点位列表
- *     lat: number;               - 纬度
- *     lng: number;               - 经度
- *   }>;
- * }>} [waylines] - 任务航线列表（可选）
- * @property {Array<{
- *   selectedDroneKey: string;    - 选定的无人机唯一键
- *   physicalDroneId: number;     - 物理无人机ID
- *   physicalDroneSN: string;     - 物理无人机序列号
- * }>} mappings - 虚拟无人机到物理无人机的映射关系
- */
-/**
- * 任务创建请求接口
- * 定义创建新任务时需要提交的数据结构
- */
 export interface JobCreationRequest {
   /** 任务名称（必填） */
   name: string;
@@ -55,9 +19,20 @@ export interface JobCreationRequest {
     /** 无人机型号ID，关联到无人机型号数据表 */
     model_id: number;
     /** 无人机变体ID，指定该无人机的具体配置变种 */
-    variantion_id: number;
+    variation_id: number;
     /** 无人机在地图上的显示颜色（十六进制颜色码） */
     color: string;
+    physical_drone_id?: number; // 物理无人机ID
+    lens_type: string; // 镜头类型
+    /** 无人机起飞点位置（选填） */
+    takeoff_point?: {
+      /** 纬度 */
+      lat: number;
+      /** 经度 */
+      lng: number;
+      /** 高度(米) */
+      altitude: number;
+    };
   }[];
   /**
    * 任务航线列表（选填）
@@ -67,24 +42,18 @@ export interface JobCreationRequest {
     /** 无人机唯一键，关联到drones数组中对应无人机的key */
     drone_key: string;
     /** 航线飞行高度（单位：米） */
-    height: number;
+    altitude: number;
     /** 航线在地图上的显示颜色（十六进制颜色码） */
     color: string;
-    /**
-     * 航线路径点集
-     * 按顺序定义无人机需要飞行的路径
-     */
+    gimbal_pitch?: number; // 云台俯仰角参数，默认-90度（垂直向下）
+    gimbal_zoom?: number; // 云台放大倍数参数，默认1倍
     path: {
       /** 纬度坐标（WGS84坐标系） */
       lat: number;
       /** 经度坐标（WGS84坐标系） */
       lng: number;
     }[];
-    /**
-     * 航线特殊点位（选填）
-     * 定义航线上需要特别关注的点，如拍照点、悬停点等
-     */
-    points?: {
+    waypoints?: {
       /** 点位在航线中的索引编号 */
       index: number;
       /** 纬度坐标（WGS84坐标系） */
@@ -93,17 +62,18 @@ export interface JobCreationRequest {
       lng: number;
     }[];
   }[];
-  /**
-   * 虚拟无人机到物理无人机的映射关系
-   * 定义哪台实体无人机将执行哪个虚拟无人机的任务
-   */
-  mappings: {
-    /** 选定的虚拟无人机唯一键，关联到drones数组中的key */
-    selected_drone_key: string;
-    /** 物理无人机的系统ID */
-    physical_drone_id: number;
-    /** 物理无人机的序列号（SN），用于唯一标识设备 */
-    physical_drone_sn?: string;
+  command_drones?: {
+    /** 关联到selectedDrones中的无人机唯一键 */
+    drone_key: string;
+    /** 指挥机目标位置 */
+    position: {
+      /** 纬度 */
+      lat: number;
+      /** 经度 */
+      lng: number;
+      /** 高度(米) */
+      altitude: number;
+    };
   }[];
 }
 
@@ -174,7 +144,7 @@ export interface PhysicalDrone {
  * 任务创建结果接口
  * Job creation result interface
  */
-export interface JobCreationResult {
+export interface JobCreationOptions {
   /** 区域列表 */
   areas: {
     /** 区域ID */
@@ -236,30 +206,39 @@ export interface JobDetailResult {
   /** 无人机列表 */
   drones: {
     /** 无人机索引（可选） */
-    index?: number;
     /** 无人机唯一键, 格式：${index}-${drone_id}-${variation_index} */
     key: string;
+    index: number;
     /** 无人机ID */
-    id: number;
-    /** 无人机名称 */
-    name: string;
-    /** 无人机描述（可选） */
-    description?: string;
+    model_id: number;
+    variation_id: number;
+    physical_drone_id?: number; // 物理无人机ID
     /** 无人机型号（可选） */
     model?: string;
     /** 无人机颜色 */
     color: string;
-    /** 无人机变体信息 */
-    variantion: JobDroneVariation;
+    lens_type: string; // 镜头类型
+    takeoff_point?: {
+      /** 纬度 */
+      lat: number;
+      /** 经度 */
+      lng: number;
+      /** 高度(米) */
+      altitude: number;
+    };
   }[];
   /** 航线列表 */
   waylines: {
     /** 无人机唯一键, 格式：${index}-${drone_id}-${variation_index} */
     drone_key: string;
     /** 航线高度 */
-    height: number;
+    altitude: number;
     /** 航线颜色 */
     color: string;
+    /** 云台俯仰 */
+    gimbal_pitch?: number;
+    /** 云台变焦 */
+    gimbal_zoom?: number;
     /** 航线路径 */
     path: {
       /** 纬度 */
@@ -268,29 +247,23 @@ export interface JobDetailResult {
       lng: number;
     }[];
     /** 航线点位 */
-    points: {
+    waypoints: {
       /** 点位索引 */
       index: number;
       /** 纬度 */
       lat: number;
       /** 经度 */
       lng: number;
-      /** 云台俯仰 */
-      gimbal_pitch?: number;
-      /** 云台变焦 */
-      gimbal_zoom?: number;
     }[];
   }[];
-  /** 映射关系列表 */
-  mappings: {
-    /** 选定的无人机唯一键 */
-    selected_drone_key: string;
-    /** 物理无人机ID */
-    physical_drone_id: number;
-    /** 物理无人机序列号 */
-    physical_drone_sn: string;
-    /** 物理无人机呼号 */
-    physical_drone_callsign: string;
+  command_drones?: {
+    drone_key: string;
+    position: {
+      lat: number;
+      lng: number;
+      altitude: number;
+    };
+    color: string;
   }[];
 }
 

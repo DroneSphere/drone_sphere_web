@@ -16,7 +16,7 @@ export type DroneStateV2 = {
   description?: string;
   /** 无人机颜色 */
   color: string;
-  lens_type?: string; // 镜头类型
+  lens_type: string; // 镜头类型
   /** 无人机变体信息 */
   variation: JobDroneVariation;
   /** 无人机起飞点位置 */
@@ -33,22 +33,18 @@ export type DroneState = JobDetailResult["drones"][0];
 export type WaylineAreaState = {
   droneKey: string;
   color: string;
+  altitude: number; // 区域高度
   path: AMap.LngLat[];
-  points?: AMap.LngLat[];
+  waypoints?: AMap.LngLat[];
   visible?: boolean;
   gimbalPitch?: number; // 云台俯仰角参数，默认-90度（垂直向下）
   gimbalZoom?: number; // 云台放大倍数参数，默认1倍
-};
-export type DroneMappingState = {
-  selected_drone_key: string;
-  physical_drone_id: number;
-  lens_type: "visible" | "thermal" | "zoom"; // 镜头类型
 };
 
 // 指挥机状态定义
 export type CommandDroneState = {
   /** 关联到selectedDrones中的无人机唯一键 */
-  drone_key: string;
+  droneKey: string;
   /** 指挥机目标位置 */
   position: {
     /** 纬度 */
@@ -65,9 +61,7 @@ export type CommandDroneState = {
 // 统一的任务状态类型
 export interface JobState {
   drones: DroneStateV2[];
-  selectedDrones: DroneState[];
   waylineAreas: WaylineAreaState[];
-  droneMappings: DroneMappingState[];
   path: AMap.LngLat[]; // 区域路径
   commandDrones: CommandDroneState[]; // 指挥机列表
 }
@@ -83,11 +77,6 @@ export type JobAction =
   | {
       type: "UPDATE_WAYLINE_AREA";
       payload: { index: number; wayline: Partial<WaylineAreaState> };
-    }
-  | { type: "SET_DRONE_MAPPINGS"; payload: DroneMappingState[] }
-  | {
-      type: "UPDATE_DRONE_MAPPING";
-      payload: { key: string; mapping: Partial<DroneMappingState> };
     }
   | { type: "ADD_DRONE"; payload: DroneState }
   | { type: "REMOVE_DRONE"; payload: { key: string } }
@@ -126,9 +115,7 @@ export type JobAction =
 // 创建初始状态
 export const initialJobState: JobState = {
   drones: [],
-  selectedDrones: [],
   waylineAreas: [],
-  droneMappings: [],
   path: [],
   commandDrones: [], // 添加空的指挥机数组
 };
@@ -163,11 +150,6 @@ export function jobReducer(state: JobState, action: JobAction): JobState {
         ),
       };
     }
-    case "SET_SELECTED_DRONES":
-      return {
-        ...state,
-        selectedDrones: action.payload,
-      };
     case "SET_WAYLINE_AREAS":
       return {
         ...state,
@@ -182,51 +164,6 @@ export function jobReducer(state: JobState, action: JobAction): JobState {
             : area
         ),
       };
-    case "SET_DRONE_MAPPINGS":
-      return {
-        ...state,
-        droneMappings: action.payload,
-      };
-    case "UPDATE_DRONE_MAPPING":
-      return {
-        ...state,
-        droneMappings: state.droneMappings.map((mapping) =>
-          mapping.selected_drone_key === action.payload.key
-            ? { ...mapping, ...action.payload.mapping }
-            : mapping
-        ),
-      };
-    case "ADD_DRONE": {
-      // 添加无人机，并创建默认映射
-      const newDrone = action.payload;
-      const newMapping: DroneMappingState = {
-        selected_drone_key: newDrone.key,
-        physical_drone_id: 0,
-        lens_type: "visible",
-      };
-
-      return {
-        ...state,
-        selectedDrones: [...state.selectedDrones, newDrone],
-        droneMappings: [...state.droneMappings, newMapping],
-      };
-    }
-    case "REMOVE_DRONE": {
-      // 移除无人机及其相关的映射和航线
-      const droneKey = action.payload.key;
-      return {
-        ...state,
-        selectedDrones: state.selectedDrones.filter(
-          (drone) => drone.key !== droneKey
-        ),
-        droneMappings: state.droneMappings.filter(
-          (mapping) => mapping.selected_drone_key !== droneKey
-        ),
-        waylineAreas: state.waylineAreas.filter(
-          (area) => area.droneKey !== droneKey
-        ),
-      };
-    }
     case "SET_PATH":
       return {
         ...state,
@@ -241,7 +178,7 @@ export function jobReducer(state: JobState, action: JobAction): JobState {
       // 确保同一个无人机不会被添加为多个指挥机
       if (
         state.commandDrones.some(
-          (c) => c.drone_key === action.payload.drone_key
+          (c) => c.droneKey === action.payload.droneKey
         )
       ) {
         return state;
@@ -254,14 +191,14 @@ export function jobReducer(state: JobState, action: JobAction): JobState {
       return {
         ...state,
         commandDrones: state.commandDrones.filter(
-          (c) => c.drone_key !== action.payload.drone_key
+          (c) => c.droneKey !== action.payload.drone_key
         ),
       };
     case "UPDATE_COMMAND_DRONE_POSITION":
       return {
         ...state,
         commandDrones: state.commandDrones.map((c) =>
-          c.drone_key === action.payload.drone_key
+          c.droneKey === action.payload.drone_key
             ? { ...c, position: action.payload.position }
             : c
         ),
@@ -294,7 +231,7 @@ export function jobReducer(state: JobState, action: JobAction): JobState {
         ),
         // 同步更新指挥机的颜色（如果使用了该无人机）
         commandDrones: state.commandDrones.map((commandDrone) =>
-          commandDrone.drone_key === action.payload.drone_key
+          commandDrone.droneKey === action.payload.drone_key
             ? { ...commandDrone, color: action.payload.color }
             : commandDrone
         ),
@@ -303,7 +240,7 @@ export function jobReducer(state: JobState, action: JobAction): JobState {
       return {
         ...state,
         commandDrones: state.commandDrones.map((commandDrone) =>
-          commandDrone.drone_key === action.payload.drone_key
+          commandDrone.droneKey === action.payload.drone_key
             ? { ...commandDrone, color: action.payload.color }
             : commandDrone
         ),
