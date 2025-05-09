@@ -92,15 +92,19 @@ export default function TaskInfoPanel({
     // 根据修改的类型更新对应的时间值
     let newDate = "";
     if (type === "year") {
-      newDate = `${value}-${month}-${day} ${hour}:${minute}`;
+      newDate = `${value}-${month}-${day} ${hour}:${minute}:00`;
     } else if (type === "month") {
-      newDate = `${year}-${value}-${day} ${hour}:${minute}`;
+      newDate = `${year}-${value}-${day} ${hour}:${minute}:00`;
     } else if (type === "day") {
-      newDate = `${year}-${month}-${value} ${hour}:${minute}`;
+      newDate = `${year}-${month}-${value} ${hour}:${minute}:00`;
     } else if (type === "hour") {
-      newDate = `${year}-${month}-${day} ${value.padStart(2, "0")}:${minute}`;
+      newDate = `${year}-${month}-${day} ${value.padStart(2, "0")}:${minute}:00`;
+    } else if (type === "minute") {
+      newDate = `${year}-${month}-${day} ${hour}:${value.padStart(2, "0")}:00`;
+    } else if (type === "second") {
+      newDate = `${year}-${month}-${day} ${hour}:${minute}:${value.padStart(2, "0")}`;
     } else {
-      newDate = `${year}-${month}-${day} ${hour}:${value.padStart(2, "0")}`;
+      newDate = `${year}-${month}-${day} ${hour}:${minute}:00`;
     }
 
     form.setValue("schedule_time", newDate);
