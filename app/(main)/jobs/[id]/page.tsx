@@ -43,8 +43,8 @@ const formSchema = z.object({
   schedule_time: z
     .string()
     .regex(
-      /^\d{4}-([0][1-9]|1[0-2])-([0-2][0-9]|3[0-1])\s([01][0-9]|2[0-3]):[0-5][0-9]$/,
-      "请输入有效的时间格式 (yyyy-MM-DD HH:mm)"
+      /^\d{4}-([0][1-9]|1[0-2])-([0-2][0-9]|3[0-1])\s([01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]$/,
+      "请输入有效的时间格式 (yyyy-MM-DD HH:mm:ss)"
     )
     .optional(),
   area_id: z.number().optional(),
@@ -468,7 +468,7 @@ export default function Page() {
           id="map"
           className="h-[calc(100vh-132px)] w-full border rounded-md shadow-sm"
         />
-        <div className="w-[460px]">
+        <div className="w-[520px]">
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
               <div className="max-h-[calc(100vh-180px)] overflow-y-auto pl-2 pr-4 space-y-4">
