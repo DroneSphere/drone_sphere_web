@@ -774,10 +774,13 @@ export default function DronePanel({
                   <div className="flex flex-col">
                     <span className="text-gray-600 mb-1">经度:</span>
                     <input
+                      id={`lng-${drone.key}`}
                       type="number"
                       className="w-full h-7 px-2 py-0 text-xs border border-gray-300 rounded bg-white"
                       value={drone.takeoffPoint.lng}
                       step="0.000001"
+                      placeholder="输入经度"
+                      title="无人机起飞点经度坐标"
                       onChange={(e) => {
                         // 更新经度值
                         const value = Number(e.target.value);
@@ -800,14 +803,16 @@ export default function DronePanel({
                       }}
                     />
                   </div>
-                  {/* 纬度和高度输入框类似修改 */}
                   <div className="flex flex-col">
                     <span className="text-gray-600 mb-1">纬度:</span>
                     <input
+                      id={`lat-${drone.key}`}
                       type="number"
                       className="w-full h-7 px-2 py-0 text-xs border border-gray-300 rounded bg-white"
                       value={drone.takeoffPoint.lat}
                       step="0.000001"
+                      placeholder="输入纬度"
+                      title="无人机起飞点纬度坐标"
                       onChange={(e) => {
                         // 更新纬度值
                         const value = Number(e.target.value);
@@ -833,10 +838,13 @@ export default function DronePanel({
                   <div className="flex flex-col">
                     <span className="text-gray-600 mb-1">高度:</span>
                     <input
+                      id={`alt-${drone.key}`}
                       type="number"
                       className="w-full h-7 px-2 py-0 text-xs border border-gray-300 rounded bg-white"
                       value={drone.takeoffPoint.altitude}
                       step="0.1"
+                      placeholder="输入高度"
+                      title="无人机起飞点高度（米）"
                       onChange={(e) => {
                         // 更新高度值
                         const value = Number(e.target.value);

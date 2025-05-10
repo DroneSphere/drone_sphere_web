@@ -27,13 +27,36 @@ interface CommandDroneColorPickerProps {
 }
 
 const COMMAND_DRONE_COLORS = [
-  "#FF5733", "#33FF57", "#3357FF", "#F033FF", "#33FFF6", "#FF33A6", 
-  "#FFD700", "#4169E1", "#32CD32", "#8A2BE2", "#FF6347", "#20B2AA",
-  "#FF4500", "#9370DB", "#3CB371", "#DC143C", "#00CED1", "#FF8C00",
-  "#8B008B", "#2E8B57", "#DAA520", "#D2691E", "#6495ED", "#7B68EE"
+  "#FF5733",
+  "#33FF57",
+  "#3357FF",
+  "#F033FF",
+  "#33FFF6",
+  "#FF33A6",
+  "#FFD700",
+  "#4169E1",
+  "#32CD32",
+  "#8A2BE2",
+  "#FF6347",
+  "#20B2AA",
+  "#FF4500",
+  "#9370DB",
+  "#3CB371",
+  "#DC143C",
+  "#00CED1",
+  "#FF8C00",
+  "#8B008B",
+  "#2E8B57",
+  "#DAA520",
+  "#D2691E",
+  "#6495ED",
+  "#7B68EE",
 ];
 
-function CommandDroneColorPicker({ color, onColorChange }: CommandDroneColorPickerProps) {
+function CommandDroneColorPicker({
+  color,
+  onColorChange,
+}: CommandDroneColorPickerProps) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -52,7 +75,9 @@ function CommandDroneColorPicker({ color, onColorChange }: CommandDroneColorPick
             <div
               key={colorValue}
               className={`h-6 w-6 rounded-full cursor-pointer border hover:scale-110 transition-transform ${
-                color === colorValue ? "border-2 border-gray-800" : "border-gray-200"
+                color === colorValue
+                  ? "border-2 border-gray-800"
+                  : "border-gray-200"
               }`}
               style={{ backgroundColor: colorValue }}
               onClick={() => {
@@ -260,7 +285,7 @@ export default function CommandDronePanel({
       <div className="flex items-center justify-between mb-1">
         <div className="text-md font-medium">指挥机信息</div>
       </div>
-      
+
       {/* 选择无人机工具栏 */}
       <div className="flex justify-between items-center mt-2">
         <div className="w-3/4 mr-4">
@@ -272,19 +297,23 @@ export default function CommandDronePanel({
             <SelectTrigger className="h-10 border-gray-300 focus:ring-blue-400 bg-white">
               <SelectValue placeholder="选择无人机作为指挥机" />
             </SelectTrigger>
-          <SelectContent className="max-h-[300px] overflow-y-auto">
-            {availableDrones.length === 0 ? (
-              <SelectItem value="none" disabled className="text-sm">
-                没有可用的无人机
-              </SelectItem>
-            ) : (
-              availableDrones.map((drone) => (
-                <SelectItem key={drone.key} value={drone.key} className="text-sm">
-                  {drone.name || `无人机 ${drone.index || 0}`}
+            <SelectContent className="max-h-[300px] overflow-y-auto">
+              {availableDrones.length === 0 ? (
+                <SelectItem value="none" disabled className="text-sm">
+                  没有可用的无人机
                 </SelectItem>
-              ))
-            )}
-          </SelectContent>
+              ) : (
+                availableDrones.map((drone) => (
+                  <SelectItem
+                    key={drone.key}
+                    value={drone.key}
+                    className="text-sm"
+                  >
+                    {drone.name || `无人机 ${drone.index || 0}`}
+                  </SelectItem>
+                ))
+              )}
+            </SelectContent>
           </Select>
         </div>
         <Button
@@ -330,11 +359,16 @@ export default function CommandDronePanel({
                   onColorChange={(newColor) => {
                     dispatch({
                       type: "UPDATE_COMMAND_DRONE_COLOR",
-                      payload: { drone_key: commandDrone.droneKey, color: newColor }
+                      payload: {
+                        drone_key: commandDrone.droneKey,
+                        color: newColor,
+                      },
                     });
                   }}
                 />
-                <span title="指挥机">{getDroneName(commandDrone.droneKey)}</span>
+                <span title="指挥机">
+                  {getDroneName(commandDrone.droneKey)}
+                </span>
               </div>
               <Button
                 variant="ghost"
@@ -354,16 +388,23 @@ export default function CommandDronePanel({
                   指挥机位置
                 </div>
               </div>
-              
+
               <div className="grid grid-cols-3 gap-2 text-xs">
                 <div className="flex flex-col">
-                  <span className="text-gray-600 mb-1">纬度:</span>
+                  <label
+                    htmlFor={`lat-${commandDrone.droneKey}`}
+                    className="text-gray-600 mb-1"
+                  >
+                    纬度:
+                  </label>
                   <input
                     id={`lat-${commandDrone.droneKey}`}
                     type="number"
                     className="w-full h-7 px-2 py-0 text-xs border border-gray-300 rounded bg-white"
                     step="0.000001"
                     value={commandDrone.position.lat}
+                    placeholder="输入纬度"
+                    title="指挥机纬度坐标"
                     onChange={(e) =>
                       updatePosition(
                         commandDrone.droneKey,
@@ -374,13 +415,20 @@ export default function CommandDronePanel({
                   />
                 </div>
                 <div className="flex flex-col">
-                  <span className="text-gray-600 mb-1">经度:</span>
+                  <label
+                    htmlFor={`lng-${commandDrone.droneKey}`}
+                    className="text-gray-600 mb-1"
+                  >
+                    经度:
+                  </label>
                   <input
                     id={`lng-${commandDrone.droneKey}`}
                     type="number"
                     className="w-full h-7 px-2 py-0 text-xs border border-gray-300 rounded bg-white"
                     step="0.000001"
                     value={commandDrone.position.lng}
+                    placeholder="输入经度"
+                    title="指挥机经度坐标"
                     onChange={(e) =>
                       updatePosition(
                         commandDrone.droneKey,
@@ -391,7 +439,12 @@ export default function CommandDronePanel({
                   />
                 </div>
                 <div className="flex flex-col">
-                  <span className="text-gray-600 mb-1">高度(米):</span>
+                  <label
+                    htmlFor={`alt-${commandDrone.droneKey}`}
+                    className="text-gray-600 mb-1"
+                  >
+                    高度(米):
+                  </label>
                   <input
                     id={`alt-${commandDrone.droneKey}`}
                     type="number"
@@ -399,6 +452,8 @@ export default function CommandDronePanel({
                     min="0"
                     step="1"
                     value={commandDrone.position.altitude}
+                    placeholder="输入高度"
+                    title="指挥机高度（米）"
                     onChange={(e) =>
                       updatePosition(
                         commandDrone.droneKey,
@@ -416,11 +471,13 @@ export default function CommandDronePanel({
         {state.commandDrones.length === 0 && (
           <div className="mt-4 p-6 border border-dashed border-gray-300 rounded-md bg-gray-50 text-center">
             <div className="text-gray-500 mb-2">暂无指挥机</div>
-            <div className="text-xs text-gray-400">请从下拉菜单选择无人机，然后在地图上点击设置指挥机位置</div>
+            <div className="text-xs text-gray-400">
+              请从下拉菜单选择无人机，然后在地图上点击设置指挥机位置
+            </div>
           </div>
         )}
       </div>
-      
+
       {isMapPickingMode && (
         <div className="fixed inset-0 bg-black bg-opacity-5 z-40 pointer-events-none flex items-center justify-center">
           <div className="bg-blue-600 text-white px-4 py-2 rounded-md shadow-lg text-sm font-medium">
