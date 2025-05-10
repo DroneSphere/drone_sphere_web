@@ -18,6 +18,7 @@ import { Image as ImageIcon } from "lucide-react";
 import Image from "next/image";
 import { useState } from "react";
 import { SearchResultItem } from "./type";
+import { Button } from "@/components/ui/button";
 
 interface SearchResultListProps {
   searchResults: SearchResultItem[];
@@ -59,29 +60,26 @@ const SearchResultList = ({
       {/* 表格展示 - 高度溢出时滚动 */}
       <div className="max-h-[400px] overflow-auto">
         {/* 设置最小宽度以防止表格内容挤压 */}
-        <div className="min-w-[800px]">
+        <div className="">
           <Table>
             {/* 参考列表页样式的表头 */}
             <TableHeader className="bg-gray-100">
               <TableRow className="border-b border-gray-200">
-                {/* 为每列设置最小宽度并防止文本换行 */}
-                <TableHead className="text-center p-2 whitespace-nowrap min-w-[120px]">
-                  检测时间
-                </TableHead>
-                <TableHead className="text-center p-2 whitespace-nowrap min-w-[100px]">
+                <TableHead className="text-center whitespace-nowrap">
                   类型
                 </TableHead>
-                <TableHead className="text-center p-2 whitespace-nowrap min-w-[80px]">
+                <TableHead className="text-center whitespace-nowrap">
                   置信度
                 </TableHead>
-                <TableHead className="text-center p-2 whitespace-nowrap min-w-[100px]">
+                <TableHead className="text-center whitespace-nowrap">
                   经度
                 </TableHead>
-                <TableHead className="text-center p-2 whitespace-nowrap min-w-[100px]">
+                <TableHead className="text-center whitespace-nowrap">
                   纬度
                 </TableHead>
-                <TableHead className="text-center p-2 min-w-[60px]">
-                  查看
+                <TableHead className="text-center ">查看</TableHead>
+                <TableHead className="text-center whitespace-nowrap">
+                  检测时间
                 </TableHead>
               </TableRow>
             </TableHeader>
@@ -89,19 +87,13 @@ const SearchResultList = ({
               {searchResults.map((result) => (
                 <TableRow
                   key={result.id}
-                  className="cursor-pointer hover:bg-gray-50 border-b border-gray-200 group"
+                  className="p-2 cursor-pointer hover:bg-gray-50 border-b border-gray-200 group"
                 >
                   {/* 检测时间 */}
-                  <TableCell
-                    className="text-xs text-center p-2 border-x border-gray-200 whitespace-nowrap"
-                    onClick={() => onResultClick?.(result)}
-                  >
-                    {result.created_at}
-                  </TableCell>
 
                   {/* 类型 */}
                   <TableCell
-                    className="font-medium text-xs text-center p-2 border-x border-gray-200 whitespace-nowrap"
+                    className="font-medium text-xs text-center p-1 border-x border-gray-200 whitespace-nowrap"
                     onClick={() => onResultClick?.(result)}
                   >
                     {result.target_label}
@@ -109,7 +101,7 @@ const SearchResultList = ({
 
                   {/* 置信度 */}
                   <TableCell
-                    className="text-xs text-muted-foreground text-center p-2 border-x border-gray-200 whitespace-nowrap"
+                    className="text-xs text-muted-foreground text-center p-1 border-x border-gray-200 whitespace-nowrap"
                     onClick={() => onResultClick?.(result)}
                   >
                     90%
@@ -117,7 +109,7 @@ const SearchResultList = ({
 
                   {/* 经度 */}
                   <TableCell
-                    className="text-xs text-muted-foreground text-center p-2 border-x border-gray-200 whitespace-nowrap"
+                    className="text-xs text-muted-foreground text-center p-1 border-x border-gray-200 whitespace-nowrap"
                     onClick={() => onResultClick?.(result)}
                   >
                     {Number(result.lng).toFixed(6)}
@@ -125,15 +117,17 @@ const SearchResultList = ({
 
                   {/* 纬度 */}
                   <TableCell
-                    className="text-xs text-muted-foreground text-center p-2 border-x border-gray-200 whitespace-nowrap"
+                    className="text-xs text-muted-foreground text-center p-1 border-x border-gray-200 whitespace-nowrap"
                     onClick={() => onResultClick?.(result)}
                   >
                     {Number(result.lat).toFixed(6)}
                   </TableCell>
 
                   {/* 图片预览按钮 - 修改为始终可见 */}
-                  <TableCell className="text-center p-2 border-x border-gray-200">
-                    <button
+                  <TableCell className="text-center p-1 border-x border-gray-200">
+                    <Button
+                      size="sm"
+                      type="button"
                       onClick={(e) => {
                         e.stopPropagation(); // 防止触发行点击事件
                         openDetailDialog(result);
@@ -141,7 +135,13 @@ const SearchResultList = ({
                       className="bg-gray-100 hover:bg-gray-200 p-1 rounded transition-colors"
                     >
                       <ImageIcon className="h-4 w-4 text-blue-500 hover:text-blue-600 mx-auto" />
-                    </button>
+                    </Button>
+                  </TableCell>
+                  <TableCell
+                    className="text-xs text-center p-1 border-x border-gray-200 whitespace-nowrap"
+                    onClick={() => onResultClick?.(result)}
+                  >
+                    {result.created_at}
                   </TableCell>
                 </TableRow>
               ))}

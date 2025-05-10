@@ -16,8 +16,9 @@ export async function fetchAllJobs(
   console.log("fetchAllJobs", params);
 
   const res = await httpClient.instance.get<Response<JobItemResult[]>>(
-    `${prefix}`, {
-      params: params
+    `${prefix}`,
+    {
+      params: params,
     }
   );
   return res.data.data;

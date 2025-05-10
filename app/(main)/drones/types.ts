@@ -79,7 +79,7 @@ export interface DroneItemResult {
   last_online_at: string;
 }
 
-export interface DroneState {
+export interface DroneRTState {
   sn: string;
   lat: number;
   lng: number;

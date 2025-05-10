@@ -3,7 +3,7 @@ import { Response } from "../../../api/response";
 import {
   DroneDetailResult,
   DroneItemResult,
-  DroneState,
+  DroneRTState,
   DroneUpdateRequest,
 } from "./types";
 
@@ -54,8 +54,8 @@ export async function updateDrone(
   return res.data.data;
 }
 
-export async function fetchDroneState(sn: string): Promise<DroneState> {
-  const res = await httpClient.instance.get<Response<DroneState>>(
+export async function fetchDroneState(sn: string): Promise<DroneRTState> {
+  const res = await httpClient.instance.get<Response<DroneRTState>>(
     `/drone/state/sse/${sn}`
   );
   return res.data.data;

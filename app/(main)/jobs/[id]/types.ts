@@ -205,7 +205,6 @@ export interface JobDetailResult {
   };
   /** 无人机列表 */
   drones: {
-    /** 无人机索引（可选） */
     /** 无人机唯一键, 格式：${index}-${drone_id}-${variation_index} */
     key: string;
     index: number;
@@ -225,6 +224,13 @@ export interface JobDetailResult {
       lng: number;
       /** 高度(米) */
       altitude: number;
+    };
+    physical_drone?: {
+      drone_id: number;
+      sn: string;
+      callsign: string;
+      drone_description: string;
+      drone_model_id: number;
     };
     wayline?: {
       id: number;

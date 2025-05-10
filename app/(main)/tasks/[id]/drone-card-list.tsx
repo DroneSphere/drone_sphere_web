@@ -8,24 +8,24 @@ import {
 } from "@/components/ui/dialog";
 import { Video } from "lucide-react";
 import { useState } from "react";
-import { DroneState } from "../../drones/types";
-import { DroneData } from "./types";
 import Image from "next/image";
+import { DroneStateV2 } from "../../jobs/[id]/job-state";
+import { DroneRTState } from "../../drones/types";
 
 interface DroneCardListProps {
-  drones?: DroneData[];
-  droneStates: Record<string, DroneState>;
+  drones?: DroneStateV2[];
+  droneRTStates: Record<string, DroneRTState>;
   droneConnections: Record<string, boolean>;
 }
 
 const DroneCardList = ({
   drones,
-  droneStates,
+  droneRTStates,
   droneConnections,
 }: DroneCardListProps) => {
   const [videoDialog, setVideoDialog] = useState<{
     open: boolean;
-    drone: DroneData | null;
+    drone: DroneStateV2 | null;
   }>({
     open: false,
     drone: null,
@@ -34,7 +34,7 @@ const DroneCardList = ({
   // 添加全局操作的状态
   const [globalCommand, setGlobalCommand] = useState<string>("hover");
 
-  const openVideoDialog = (drone: DroneData) => {
+  const openVideoDialog = (drone: DroneStateV2) => {
     setVideoDialog({ open: true, drone });
   };
 
@@ -79,10 +79,15 @@ const DroneCardList = ({
 
           <div className="flex items-center py-3 px-3">
             <div className="flex items-center gap-2">
+              <label htmlFor="global-drone-command" className="sr-only">
+                选择全局无人机命令
+              </label>
               <select
+                id="global-drone-command"
                 className="text-xs border rounded px-2 py-1 bg-white"
                 value={globalCommand}
                 onChange={(e) => setGlobalCommand(e.target.value)}
+                aria-label="全局无人机命令选择"
               >
                 <option value="hover">悬停</option>
                 <option value="takeoff">起飞</option>
@@ -105,21 +110,24 @@ const DroneCardList = ({
         {drones.map((drone, index) => (
           <div
             key={index}
-            className="relative bg-white rounded-sm overflow-hidden border border-gray-100 shadow-md last:border-b-0"
+            className="relative bg-white rounded-sm overflow-hidden border border-gray-100 shadow-md last:mb-2"
           >
             {/* 顶部标题栏 */}
             <div className="p-2 flex items-center justify-between">
               <div className="font-medium text-sm">
-                {drone.callsign || "未命名无人机"}
+                {drone.physical_drone_sn || "未命名无人机"}
               </div>
               <div
                 className={`text-xs ${
-                  droneConnections[drone.sn || ""]
+                  droneConnections[drone.physical_drone_sn || ""]
                     ? "text-green-600"
                     : "text-gray-400"
                 }`}
               >
-                {drone.sn && droneConnections[drone.sn] ? "已连接" : "未连接"}
+                {drone.physical_drone_sn &&
+                droneConnections[drone.physical_drone_sn]
+                  ? "已连接"
+                  : "未连接"}
               </div>
             </div>
 
@@ -151,15 +159,20 @@ const DroneCardList = ({
                   <div className="flex items-center">
                     <span className="text-gray-500 w-12">经度：</span>
                     <span>
-                      {(drone.sn && droneStates[drone.sn]?.lng?.toFixed(6)) ??
+                      {(drone.physical_drone_sn &&
+                        droneRTStates[drone.physical_drone_sn]?.lng?.toFixed(
+                          6
+                        )) ??
                         "--"}
                     </span>
                   </div>
                   <div className="flex items-center">
                     <span className="text-gray-500 w-12">总高：</span>
                     <span>
-                      {(drone.sn &&
-                        droneStates[drone.sn]?.height?.toFixed(1)) ??
+                      {(drone.physical_drone_sn &&
+                        droneRTStates[drone.physical_drone_sn]?.height?.toFixed(
+                          1
+                        )) ??
                         "--"}{" "}
                       米
                     </span>
@@ -167,36 +180,53 @@ const DroneCardList = ({
                   <div className="flex items-center">
                     <span className="text-gray-500 w-12">纬度：</span>
                     <span>
-                      {(drone.sn && droneStates[drone.sn]?.lat?.toFixed(6)) ??
+                      {(drone.physical_drone_sn &&
+                        droneRTStates[drone.physical_drone_sn]?.lat?.toFixed(
+                          6
+                        )) ??
                         "--"}
                     </span>
                   </div>
                   <div className="flex items-center">
                     <span className="text-gray-500 w-12">速度：</span>
                     <span>
-                      {(drone.sn && droneStates[drone.sn]?.speed) ?? "--"} 米/秒
+                      {(drone.physical_drone_sn &&
+                        droneRTStates[drone.physical_drone_sn]?.speed) ??
+                        "--"}{" "}
+                      米/秒
                     </span>
                   </div>
                   <div className="flex items-center">
                     <span className="text-gray-500 w-12">航向：</span>
                     <span>
-                      {(drone.sn && droneStates[drone.sn]?.heading) ?? "--"}°
+                      {(drone.physical_drone_sn &&
+                        droneRTStates[drone.physical_drone_sn]?.heading) ??
+                        "--"}
+                      °
                     </span>
                   </div>
                   <div className="flex items-center">
                     <span className="text-gray-500 w-12">电量：</span>
                     <span>
-                      {(drone.sn && droneStates[drone.sn]?.battery) ?? "--"} %
+                      {(drone.physical_drone_sn &&
+                        droneRTStates[drone.physical_drone_sn]?.battery) ??
+                        "--"}{" "}
+                      %
                     </span>
                   </div>
                 </div>
               </div>
             </div>
-
-            {/* 底部操作区域 */}
-            <div className="flex items-center justify-between py-2 px-2 bg-gray-50">
+            <div className="px-2 pb-2">
               <div className="flex items-center gap-2">
-                <select className="text-xs border rounded px-2 py-1 bg-white">
+                <label htmlFor={`drone-command-${index}`} className="sr-only">
+                  选择无人机命令
+                </label>
+                <select
+                  id={`drone-command-${index}`}
+                  className="text-xs border rounded px-2 py-1 bg-white"
+                  aria-label="无人机命令选择"
+                >
                   <option value="hover">悬停</option>
                   <option value="takeoff">起飞</option>
                   <option value="return">返航</option>
@@ -215,7 +245,7 @@ const DroneCardList = ({
         <DialogContent className="max-w-3xl">
           <DialogHeader>
             <DialogTitle>
-              {videoDialog.drone?.callsign || "无人机"} 实时视频
+              {videoDialog.drone?.physical_drone_sn || "无人机"} 实时视频
             </DialogTitle>
           </DialogHeader>
 
@@ -234,15 +264,19 @@ const DroneCardList = ({
               <div className="text-gray-500 text-xs">位置信息</div>
               <div className="grid grid-cols-2 gap-2 text-xs">
                 <div>
-                  经度:{" "}
-                  {(videoDialog.drone?.sn &&
-                    droneStates[videoDialog.drone.sn]?.lng?.toFixed(6)) ??
+                  经度:
+                  {(videoDialog.drone?.physical_drone_sn &&
+                    droneRTStates[
+                      videoDialog.drone.physical_drone_sn
+                    ]?.lng?.toFixed(6)) ??
                     "--"}
                 </div>
                 <div>
-                  纬度:{" "}
-                  {(videoDialog.drone?.sn &&
-                    droneStates[videoDialog.drone.sn]?.lat?.toFixed(6)) ??
+                  纬度:
+                  {(videoDialog.drone?.physical_drone_sn &&
+                    droneRTStates[
+                      videoDialog.drone.physical_drone_sn
+                    ]?.lat?.toFixed(6)) ??
                     "--"}
                 </div>
               </div>
@@ -252,23 +286,27 @@ const DroneCardList = ({
               <div className="text-gray-500 text-xs">飞行数据</div>
               <div className="grid grid-cols-3 gap-2 text-xs">
                 <div>
-                  高度:{" "}
-                  {(videoDialog.drone?.sn &&
-                    droneStates[videoDialog.drone.sn]?.height?.toFixed(1)) ??
+                  高度:
+                  {(videoDialog.drone?.physical_drone_sn &&
+                    droneRTStates[
+                      videoDialog.drone.physical_drone_sn
+                    ]?.height?.toFixed(1)) ??
                     "--"}
                   米
                 </div>
                 <div>
-                  速度:{" "}
-                  {(videoDialog.drone?.sn &&
-                    droneStates[videoDialog.drone.sn]?.speed) ??
+                  速度:
+                  {(videoDialog.drone?.physical_drone_sn &&
+                    droneRTStates[videoDialog.drone.physical_drone_sn]
+                      ?.speed) ??
                     "--"}
                   米/秒
                 </div>
                 <div>
-                  电量:{" "}
-                  {(videoDialog.drone?.sn &&
-                    droneStates[videoDialog.drone.sn]?.battery) ??
+                  电量:
+                  {(videoDialog.drone?.physical_drone_sn &&
+                    droneRTStates[videoDialog.drone.physical_drone_sn]
+                      ?.battery) ??
                     "--"}
                   %
                 </div>
