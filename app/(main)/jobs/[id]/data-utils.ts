@@ -39,6 +39,8 @@ export function formatDronesData(
             altitude: drone.takeoff_point.altitude,
           }
         : undefined,
+      wayline_name: drone?.wayline?.wayline_name || null,
+      wayline_url: drone.wayline?.url || null,
     } as DroneStateV2;
   });
 }

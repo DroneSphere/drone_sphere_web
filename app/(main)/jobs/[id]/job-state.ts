@@ -28,6 +28,8 @@ export type DroneStateV2 = {
     /** 高度(米) */
     altitude: number;
   };
+  wayline_name?: string;
+  wayline_url?: string;
 };
 export type DroneState = JobDetailResult["drones"][0];
 export type WaylineAreaState = {

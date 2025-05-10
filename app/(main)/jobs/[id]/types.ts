@@ -226,6 +226,18 @@ export interface JobDetailResult {
       /** 高度(米) */
       altitude: number;
     };
+    wayline?: {
+      id: number;
+      wayline_name: string;
+      start_wayline_point: {
+        start_latitude: number;
+        start_longitude: number;
+      };
+      drone_model_key: string;
+      payload_model_keys: string[];
+      s3_key: string;
+      url: string;
+    };
   }[];
   /** 航线列表 */
   waylines: {

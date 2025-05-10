@@ -29,14 +29,10 @@ import {
 } from "@/components/ui/popover";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
-import { MapPin, Trash } from "lucide-react";
+import { Download, MapPin, Trash } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { getJobPhysicalDrones } from "../report/[id]/request";
-import {
-  DroneStateV2,
-  JobAction,
-  JobState,
-} from "./job-state";
+import { DroneStateV2, JobAction, JobState } from "./job-state";
 
 // 颜色选择器组件
 interface DroneColorPickerProps {
@@ -45,10 +41,30 @@ interface DroneColorPickerProps {
 }
 
 const DRONE_COLORS = [
-  "#FF5733", "#33FF57", "#3357FF", "#F033FF", "#33FFF6", "#FF33A6", 
-  "#FFD700", "#4169E1", "#32CD32", "#8A2BE2", "#FF6347", "#20B2AA",
-  "#FF4500", "#9370DB", "#3CB371", "#DC143C", "#00CED1", "#FF8C00",
-  "#8B008B", "#2E8B57", "#DAA520", "#D2691E", "#6495ED", "#7B68EE"
+  "#FF5733",
+  "#33FF57",
+  "#3357FF",
+  "#F033FF",
+  "#33FFF6",
+  "#FF33A6",
+  "#FFD700",
+  "#4169E1",
+  "#32CD32",
+  "#8A2BE2",
+  "#FF6347",
+  "#20B2AA",
+  "#FF4500",
+  "#9370DB",
+  "#3CB371",
+  "#DC143C",
+  "#00CED1",
+  "#FF8C00",
+  "#8B008B",
+  "#2E8B57",
+  "#DAA520",
+  "#D2691E",
+  "#6495ED",
+  "#7B68EE",
 ];
 
 function DroneColorPicker({ color, onColorChange }: DroneColorPickerProps) {
@@ -70,7 +86,9 @@ function DroneColorPicker({ color, onColorChange }: DroneColorPickerProps) {
             <div
               key={colorValue}
               className={`h-6 w-6 rounded-full cursor-pointer border hover:scale-110 transition-transform ${
-                color === colorValue ? "border-2 border-gray-800" : "border-gray-200"
+                color === colorValue
+                  ? "border-2 border-gray-800"
+                  : "border-gray-200"
               }`}
               style={{ backgroundColor: colorValue }}
               onClick={() => {
@@ -255,6 +273,34 @@ export default function DronePanel({
       type: "REMOVE_DRONE_V2",
       payload: { key: droneKey },
     });
+  };
+
+  // 下载航线文件
+  const handleDownloadWayline = (fileName: string, waylineUrl: string) => {
+    try {
+      // 创建一个隐藏的a标签用于下载
+      const link = document.createElement("a");
+      link.href = waylineUrl;
+      link.download = fileName;
+
+      // 将链接添加到文档中，触发点击事件，然后移除
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      // 显示成功提示
+      toast({
+        title: "下载成功",
+        description: "航线文件下载已开始",
+      });
+    } catch (error) {
+      console.error("下载航线文件失败:", error);
+      toast({
+        title: "下载失败",
+        description: "无法下载航线文件，请稍后再试",
+        variant: "destructive",
+      });
+    }
   };
 
   // 为无人机设定参数
@@ -507,12 +553,12 @@ export default function DronePanel({
             {/* 无人机基本信息 */}
             <div className="flex justify-between items-center">
               <div className="text-sm font-semibold overflow-auto flex items-center">
-                <DroneColorPicker 
+                <DroneColorPicker
                   color={drone.color}
                   onColorChange={(newColor) => {
                     dispatch({
                       type: "UPDATE_DRONE_COLOR",
-                      payload: { drone_key: drone.key, color: newColor }
+                      payload: { drone_key: drone.key, color: newColor },
                     });
                   }}
                 />
@@ -521,10 +567,28 @@ export default function DronePanel({
                 </span>
               </div>
 
+              {drone.wayline_url && drone.wayline_name && (
+                <Button
+                  variant="ghost"
+                  title="下载航线文件"
+                  size="icon"
+                  type="button"
+                  className="h-8 w-8 hover:bg-red-50 hover:text-red-600 transition-colors"
+                  onClick={() =>
+                    handleDownloadWayline(
+                      drone.wayline_name!,
+                      drone.wayline_url!
+                    )
+                  }
+                >
+                  <Download className="h-4 w-4" />
+                </Button>
+              )}
               <Button
                 variant="ghost"
                 title="删除无人机"
                 size="icon"
+                type="button"
                 className="h-8 w-8 hover:bg-red-50 hover:text-red-600 transition-colors"
                 onClick={() => handleRemoveDrone(drone.key)}
               >
