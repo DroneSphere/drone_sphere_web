@@ -277,16 +277,14 @@ export default function DronePanel({
 
   // 下载航线文件
   const handleDownloadWayline = (fileName: string, waylineUrl: string) => {
+    console.log("fileName", fileName);
     try {
       // 创建一个隐藏的a标签用于下载
       const link = document.createElement("a");
       link.href = waylineUrl;
       link.download = fileName;
 
-      // 将链接添加到文档中，触发点击事件，然后移除
-      document.body.appendChild(link);
       link.click();
-      document.body.removeChild(link);
 
       // 显示成功提示
       toast({
@@ -573,7 +571,7 @@ export default function DronePanel({
                   title="下载航线文件"
                   size="icon"
                   type="button"
-                  className="h-8 w-8 hover:bg-red-50 hover:text-red-600 transition-colors"
+                  className="h-8 w-8 hover:bg-blue-50 hover:text-blue-600 transition-colors"
                   onClick={() =>
                     handleDownloadWayline(
                       drone.wayline_name!,
