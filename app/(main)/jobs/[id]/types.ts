@@ -75,6 +75,25 @@ export interface JobCreationRequest {
       altitude: number;
     };
   }[];
+  /** 航线生成参数 */
+  wayline_generation_params?: WaylineGenerationParams;
+}
+
+/**
+ * 航线生成参数接口
+ * Parameters for wayline generation
+ */
+export interface WaylineGenerationParams {
+  /** 飞行高度(米) */
+  flying_height?: number;
+  /** 重叠率 (0-1) */
+  overlap_rate?: number;
+  /** 航线层高间隔(米) */
+  height_interval?: number;
+  /** 云台俯仰角(度) */
+  gimbal_pitch?: number;
+  /** 云台变焦倍数 */
+  gimbal_zoom?: number;
 }
 
 /**
@@ -283,6 +302,8 @@ export interface JobDetailResult {
     };
     color: string;
   }[];
+  /** 航线生成参数 */
+  wayline_generation_params?: WaylineGenerationParams;
 }
 
 /**

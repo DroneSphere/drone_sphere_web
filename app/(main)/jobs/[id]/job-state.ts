@@ -61,12 +61,23 @@ export type CommandDroneState = {
   color: string;
 };
 
+// 定义航线参数状态接口
+export interface WaylineParamsState {
+  flyingHeight: number; // 飞行高度(米)
+  coverageWidth: number; // 覆盖宽度(米)
+  overlapRate: number; // 重叠率 (0-1)
+  heightInterval: number; // 航线层高间隔(米)
+  gimbalPitch: number; // 云台俯仰角(度)
+  gimbalZoom: number; // 云台变焦倍数
+}
+
 // 统一的任务状态类型
 export interface JobState {
   drones: DroneStateV2[];
   waylineAreas: WaylineAreaState[];
   path: AMap.LngLat[]; // 区域路径
   commandDrones: CommandDroneState[]; // 指挥机列表
+  waylineParams: WaylineParamsState; // 航线参数
 }
 
 // 定义所有可能的动作
@@ -113,7 +124,8 @@ export type JobAction =
       type: "UPDATE_COMMAND_DRONE_COLOR";
       payload: { drone_key: string; color: string };
     }
-  | { type: "RESET_STATE"; payload: Partial<JobState> };
+  | { type: "RESET_STATE"; payload: Partial<JobState> }
+  | { type: "SET_WAYLINE_PARAMS"; payload: Partial<WaylineParamsState> }; // 添加设置航线参数的动作
 
 // 创建初始状态
 export const initialJobState: JobState = {
@@ -121,6 +133,15 @@ export const initialJobState: JobState = {
   waylineAreas: [],
   path: [],
   commandDrones: [], // 添加空的指挥机数组
+  // 初始化航线参数，使用 wayline-panel.tsx 中的默认值
+  waylineParams: {
+    flyingHeight: 30, // 默认飞行高度30米
+    coverageWidth: 12, // 默认每次覆盖12米宽 (注意原为20米，根据wayline-panel.tsx修改为12)
+    overlapRate: 0.1, // 默认20%的重叠率
+    heightInterval: 0.5, // 默认航线层高间隔0.5米 (注意原为5米，根据wayline-panel.tsx修改为0.5)
+    gimbalPitch: -90, // 默认云台俯仰角-90度（垂直向下）
+    gimbalZoom: 1, // 默认放大倍数1x
+  },
 };
 
 // 创建reducer函数
@@ -252,6 +273,14 @@ export function jobReducer(state: JobState, action: JobAction): JobState {
       return {
         ...state,
         ...action.payload,
+      };
+    case "SET_WAYLINE_PARAMS": // 处理设置航线参数的动作
+      return {
+        ...state,
+        waylineParams: {
+          ...state.waylineParams,
+          ...action.payload,
+        },
       };
     default:
       return state;

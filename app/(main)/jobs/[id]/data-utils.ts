@@ -2,13 +2,28 @@ import {
   JobCreationOptions,
   JobCreationRequest,
   JobDetailResult,
+  WaylineGenerationParams,
 } from "./types";
 import {
   WaylineAreaState,
   CommandDroneState,
   DroneStateV2,
   JobState,
+  WaylineParamsState,
 } from "./job-state";
+
+export function formatWaylineParamsData(
+  waylineParams: WaylineGenerationParams
+): WaylineParamsState {
+  return {
+    flyingHeight: waylineParams.flying_height || 0,
+    coverageWidth: -1,
+    overlapRate: waylineParams.overlap_rate || 0,
+    heightInterval: waylineParams.height_interval || 0,
+    gimbalPitch: waylineParams.gimbal_pitch || 0,
+    gimbalZoom: waylineParams.gimbal_zoom || 0,
+  };
+}
 
 // 将API返回的无人机数据转换为前端状态格式
 export function formatDronesData(

@@ -1,8 +1,10 @@
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { MutableRefObject, useState } from "react";
+import { MutableRefObject } from "react";
 import { dividePolygonAmongDrones, generateWaypoints } from "./actions";
 import { JobAction, JobState, WaylineAreaState } from "./job-state";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 interface WaylinePanelProps {
   state: JobState;
@@ -19,15 +21,21 @@ export default function WaylinePanel({
 }: WaylinePanelProps) {
   const { toast } = useToast();
 
-  // 添加无人机飞行参数状态，增加云台相关参数和航线层高间隔
-  const [waylineParams, setWaylineParams] = useState({
-    flyingHeight: 30, // 默认飞行高度30米
-    coverageWidth: 12, // 默认每次覆盖20米宽
-    overlapRate: 0.2, // 默认20%的重叠率
-    heightInterval: 0.5, // 默认航线层高间隔5米，用于避免不同航线的高度冲突
-    gimbalPitch: -90, // 默认云台俯仰角-90度（垂直向下）
-    gimbalZoom: 1, // 默认放大倍数1x
-  });
+  // 处理航线参数变化的函数
+  const handleWaylineParamChange = (paramName: string, value: string) => {
+    const numericValue = parseFloat(value);
+    if (!isNaN(numericValue)) {
+      dispatch({
+        type: "SET_WAYLINE_PARAMS",
+        payload: { [paramName]: numericValue },
+      });
+    } else if (value === "") {
+      dispatch({
+        type: "SET_WAYLINE_PARAMS",
+        payload: { [paramName]: undefined },
+      });
+    }
+  };
 
   // 过滤掉被指定为指挥机的无人机，只使用普通无人机参与航线飞行
   const availableDrones = state.drones.filter(
@@ -91,33 +99,59 @@ export default function WaylinePanel({
             }
 
             // 生成新的航线区域，包含云台参数
-            const newWaylineAreas: WaylineAreaState[] = availableDrones.map(
-              (drone, index) => {
+            const newWaylineAreas: WaylineAreaState[] = availableDrones
+              .map((drone, index) => {
                 // 获取对应的子区域路径，如果index超出了subPaths的长度，则使用最后一个
                 const subPath =
                   index < subPaths.length
                     ? subPaths[index]
                     : subPaths[subPaths.length - 1];
 
+                // 使用 state.waylineParams 中的参数
+                const altitude =
+                  state.waylineParams.flyingHeight +
+                  index * state.waylineParams.heightInterval;
+                const waypoints = generateWaypoints(
+                  subPath,
+                  // 直接传递 state.waylineParams 对象，它包含了所有需要的参数
+                  state.waylineParams,
+                  AMapRef,
+                  // 传递无人机的起飞点信息（如果存在）
+                  drone.takeoffPoint
+                );
+
+                if (!waypoints || waypoints.length === 0) {
+                  // 如果没有生成航点，可以返回一个空的或者标记无效的航线区域
+                  // 或者直接在此处过滤掉，不创建此无人机的航线
+                  // 为简化，这里假设总能生成航点，实际应用中应有更完善的错误处理
+                  return null;
+                }
+
                 return {
                   droneKey: drone.key,
-                  color: drone.color,
-                  altitude: waylineParams.flyingHeight + index * waylineParams.heightInterval,
-                  path: subPath,
-                  waypoints: generateWaypoints(
-                    subPath,
-                    waylineParams,
-                    AMapRef,
-                    drone.takeoffPoint // 传入无人机的起飞点以优化航点顺序
+                  path: waypoints.map(
+                    (p) => new AMapRef.current!.LngLat(p.lng, p.lat)
                   ),
+                  waypoints: waypoints.map(
+                    (p) => new AMapRef.current!.LngLat(p.lng, p.lat)
+                  ),
+                  altitude: altitude,
+                  color: drone.color,
+                  gimbalPitch: state.waylineParams.gimbalPitch, // 使用 state 中的值
+                  gimbalZoom: state.waylineParams.gimbalZoom, // 使用 state 中的值
                   visible: true,
-                  gimbalPitch: waylineParams.gimbalPitch,
-                  gimbalZoom: waylineParams.gimbalZoom,
                 };
-              }
-            );
+              })
+              .filter((area) => area !== null) as WaylineAreaState[];
 
-            // 使用dispatch更新航线区域
+            if (newWaylineAreas.length === 0 && availableDrones.length > 0) {
+              toast({
+                title: "无法生成航线点",
+                description:
+                  "请检查区域形状和航线参数设置，确保可以生成有效的航点。",
+              });
+            }
+
             dispatch({
               type: "SET_WAYLINE_AREAS",
               payload: newWaylineAreas,
@@ -128,124 +162,88 @@ export default function WaylinePanel({
         </Button>
       </div>
 
-      {/* 航线参数卡片 */}
-      <div className="mt-2 border p-2 rounded-md">
-        <p className="text-sm font-medium mb-1">航线参数</p>
-        <div className="grid grid-cols-2 gap-2">
-          <div>
-            <label className="text-xs text-gray-500">飞行高度(米)</label>
-            <input
-              type="number"
-              className="w-full border rounded px-2 py-1 text-sm"
-              value={waylineParams.flyingHeight}
-              onChange={(e) =>
-                setWaylineParams({
-                  ...waylineParams,
-                  flyingHeight: Number(e.target.value),
-                })
-              }
-              min="10"
-              max="120"
-            />
-          </div>
-          <div>
-            <label className="text-xs text-gray-500">覆盖宽度(米)</label>
-            <input
-              type="number"
-              className="w-full border rounded px-2 py-1 text-sm"
-              value={waylineParams.coverageWidth}
-              onChange={(e) =>
-                setWaylineParams({
-                  ...waylineParams,
-                  coverageWidth: Number(e.target.value),
-                })
-              }
-              min="1"
-              max="50"
-            />
-          </div>
-          <div>
-            <label className="text-xs text-gray-500">旁向重叠率(%)</label>
-            <input
-              type="number"
-              className="w-full border rounded px-2 py-1 text-sm"
-              value={waylineParams.overlapRate * 100}
-              onChange={(e) =>
-                setWaylineParams({
-                  ...waylineParams,
-                  overlapRate: Number(e.target.value) / 100,
-                })
-              }
-              min="0"
-              max="100"
-            />
-          </div>
-          <div>
-            <label className="text-xs text-gray-500">航线层高间隔(米)</label>
-            <input
-              type="number"
-              className="w-full border rounded px-2 py-1 text-sm"
-              value={waylineParams.heightInterval}
-              onChange={(e) =>
-                setWaylineParams({
-                  ...waylineParams,
-                  heightInterval: Number(e.target.value),
-                })
-              }
-              min="0.1"
-              max="10"
-              step="0.1"
-            />
-            <div className="text-xs text-gray-400 p-1">(相邻航线高度差)</div>
-          </div>
+      {/* 添加航线参数设置UI */}
+      <div className="grid grid-cols-2 gap-4 mt-4 p-4 border rounded-md">
+        <div>
+          <Label htmlFor="flyingHeight">飞行高度 (米)</Label>
+          <Input
+            id="flyingHeight"
+            type="number"
+            value={state.waylineParams.flyingHeight}
+            onChange={(e) =>
+              handleWaylineParamChange("flyingHeight", e.target.value)
+            }
+            className="mt-1"
+          />
         </div>
-      </div>
-
-      {/* 云台参数卡片 */}
-      <div className="mt-2 border p-2 rounded-md">
-        <p className="text-sm font-medium mb-1">云台参数</p>
-        <div className="grid grid-cols-2 gap-2">
-          <div>
-            <label className="text-xs text-gray-500">俯仰角(度)</label>
-            <input
-              type="number"
-              className="w-full border rounded px-2 py-1 text-sm"
-              value={waylineParams.gimbalPitch}
-              onChange={(e) =>
-                setWaylineParams({
-                  ...waylineParams,
-                  gimbalPitch: Math.max(
-                    -90,
-                    Math.min(0, Number(e.target.value))
-                  ),
-                })
-              }
-              min="-90"
-              max="0"
-              step="5"
-            />
-            <div className="text-xs text-gray-400 p-1">
-              (-90°垂直向下，0°水平)
-            </div>
-          </div>
-          <div>
-            <label className="text-xs text-gray-500">放大倍数</label>
-            <input
-              type="number"
-              className="w-full border rounded px-2 py-1 text-sm"
-              value={waylineParams.gimbalZoom}
-              onChange={(e) =>
-                setWaylineParams({
-                  ...waylineParams,
-                  gimbalZoom: Math.max(1, Math.min(30, Number(e.target.value))),
-                })
-              }
-              min="1"
-              max="30"
-              step="0.5"
-            />
-            <div className="text-xs text-gray-400 p-1">(1-30倍)</div>
-          </div>
+        <div>
+          <Label htmlFor="coverageWidth">覆盖宽度 (米)</Label>
+          <Input
+            id="coverageWidth"
+            type="number"
+            value={state.waylineParams.coverageWidth}
+            onChange={(e) =>
+              handleWaylineParamChange("coverageWidth", e.target.value)
+            }
+            className="mt-1"
+          />
+        </div>
+        <div>
+          <Label htmlFor="overlapRate">重叠率 (0-1)</Label>
+          <Input
+            id="overlapRate"
+            type="number"
+            step="0.01"
+            min="0"
+            max="1"
+            value={state.waylineParams.overlapRate}
+            onChange={(e) =>
+              handleWaylineParamChange("overlapRate", e.target.value)
+            }
+            className="mt-1"
+          />
+        </div>
+        <div>
+          <Label htmlFor="heightInterval">层高间隔 (米)</Label>
+          <Input
+            id="heightInterval"
+            type="number"
+            step="0.1"
+            value={state.waylineParams.heightInterval}
+            onChange={(e) =>
+              handleWaylineParamChange("heightInterval", e.target.value)
+            }
+            className="mt-1"
+          />
+        </div>
+        <div>
+          <Label htmlFor="gimbalPitch">云台俯仰角 (°)</Label>
+          <Input
+            id="gimbalPitch"
+            type="number"
+            step="1"
+            min="-90"
+            max="90"
+            value={state.waylineParams.gimbalPitch}
+            onChange={(e) =>
+              handleWaylineParamChange("gimbalPitch", e.target.value)
+            }
+            className="mt-1"
+          />
+        </div>
+        <div>
+          <Label htmlFor="gimbalZoom">云台变焦 (x)</Label>
+          <Input
+            id="gimbalZoom"
+            type="number"
+            step="0.1"
+            min="1"
+            value={state.waylineParams.gimbalZoom}
+            onChange={(e) =>
+              handleWaylineParamChange("gimbalZoom", e.target.value)
+            }
+            className="mt-1"
+          />
         </div>
       </div>
     </div>

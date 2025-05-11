@@ -31,6 +31,7 @@ import { useMap } from "./use-map";
 import {
   formatCommandDronesData,
   formatDronesData,
+  formatWaylineParamsData,
   formatWaylinesData,
   prepareSubmitData,
 } from "./data-utils";
@@ -106,7 +107,13 @@ export default function Page() {
 
   // 处理数据加载与更新表单
   const updateFormAndState = useCallback(() => {
-    if (!dataQuery.data || !optionsQuery.data || !isMapLoaded || !AMapRef.current) return;
+    if (
+      !dataQuery.data ||
+      !optionsQuery.data ||
+      !isMapLoaded ||
+      !AMapRef.current
+    )
+      return;
 
     const { area } = dataQuery.data;
 
@@ -119,17 +126,26 @@ export default function Page() {
     });
 
     // 使用数据工具函数格式化并更新状态
-    const formattedDrones = formatDronesData(dataQuery.data.drones, optionsQuery.data.drones);
-    const formattedCommandDrones = formatCommandDronesData(dataQuery.data.command_drones);
+    const formattedDrones = formatDronesData(
+      dataQuery.data.drones,
+      optionsQuery.data.drones
+    );
+    const formattedCommandDrones = formatCommandDronesData(
+      dataQuery.data.command_drones
+    );
     const formattedWaylines = formatWaylinesData(
       dataQuery.data.waylines,
       AMapRef.current
     );
-    
+    const formattedWaylineGenerationParams = formatWaylineParamsData(
+      dataQuery.data.wayline_generation_params!
+    );
+
     console.log("格式化后的数据", {
       formattedDrones,
       formattedCommandDrones,
       formattedWaylines,
+      formattedWaylineGenerationParams,
     });
 
     // 设置区域路径
@@ -147,6 +163,7 @@ export default function Page() {
         drones: formattedDrones,
         waylineAreas: formattedWaylines,
         commandDrones: formattedCommandDrones,
+        waylineParams: formattedWaylineGenerationParams,
       },
     });
 
