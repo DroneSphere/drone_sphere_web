@@ -3,11 +3,12 @@
 import { getConnectionParams, getPlatformInfo } from "@/api/platform/request";
 import { toast } from "@/hooks/use-toast";
 import {
-    APIParams,
-    DJIModule,
-    jsNativeAPI,
-    ThingParams,
-    WSParams,
+  APIParams,
+  DJIModule,
+  jsNativeAPI,
+  LiveParams,
+  ThingParams,
+  WSParams,
 } from "@/lib/dji-bridge";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
@@ -46,6 +47,12 @@ export default function Page() {
       id: "api",
       name: "API模块",
       description: "连接云平台API模块",
+      status: ModuleStatus.DISCONNECTED,
+    },
+    {
+      id: "liveshare",
+      name: "直播模块",
+      description: "连接云平台直播模块",
       status: ModuleStatus.DISCONNECTED,
     },
     {
@@ -100,6 +107,11 @@ export default function Page() {
         description: "已成功连接到 Pilot",
       });
     }
+  };
+
+  const liveStatusCallback = async (arg: boolean) => {
+    console.log(arg);
+    // 直播状态回调
   };
 
   //  调试时挂载 vConsole
@@ -185,6 +197,7 @@ export default function Page() {
         host: api.host,
         token: api.token,
       };
+      console.log("API Params:", apiParams);
       jsNativeAPI.setApiParams(apiParams);
       jsNativeAPI.initComponent(DJIModule.API);
       const checkApiConnection = setInterval(() => {
@@ -208,8 +221,39 @@ export default function Page() {
         } else {
           console.log("API模块连接失败");
         }
-      }, 300);
+      }, 200);
       jsNativeAPI.apiSetToken(api.token);
+
+      const liveParams: LiveParams = {
+        videoPublishType: "video-demand-aux-manual",
+        statusCallback: "liveStatusCallback",
+      };
+      window.liveStatusCallback = liveStatusCallback;
+      jsNativeAPI.setLiveParams(liveParams);
+      console.log("Live Params:", liveParams);
+      jsNativeAPI.initComponent(DJIModule.LIVE);
+      const checkLiveConnection = setInterval(() => {
+        const res = jsNativeAPI.isComponentLoaded(DJIModule.LIVE);
+        if (res) {
+          console.log("直播模块连接成功");
+          // 清除定时器
+          clearInterval(checkLiveConnection);
+          // 更新模块状态
+          setModules((prevModules) =>
+            prevModules.map((module) => {
+              if (module.id === "liveshare") {
+                return {
+                  ...module,
+                  status: ModuleStatus.CONNECTED,
+                };
+              }
+              return module;
+            })
+          );
+        } else {
+          console.log("直播模块连接失败");
+        }
+      }, 300);
 
       // WS 模块连接
       const wsParams: WSParams = {
@@ -220,28 +264,28 @@ export default function Page() {
       window.wsConenctCallback = wsConenctCallback;
       jsNativeAPI.setWSParams(wsParams);
       jsNativeAPI.initComponent(DJIModule.WS);
-      const checkWSConnection = setInterval(() => {
-        const res = jsNativeAPI.isComponentLoaded(DJIModule.API);
-        if (res) {
-          console.log("WS模块连接成功");
-          // 清除定时器
-          clearInterval(checkWSConnection);
-          // 更新模块状态
-          setModules((prevModules) =>
-            prevModules.map((module) => {
-              if (module.id === "ws") {
-                return {
-                  ...module,
-                  status: ModuleStatus.CONNECTED,
-                };
-              }
-              return module;
-            })
-          );
-        } else {
-          console.log("WS模块连接失败");
-        }
-      }, 300);
+      // const checkWSConnection = setInterval(() => {
+      //   const res = jsNativeAPI.isComponentLoaded(DJIModule.API);
+      //   if (res) {
+      //     console.log("WS模块连接成功");
+      //     // 清除定时器
+      //     clearInterval(checkWSConnection);
+      //     // 更新模块状态
+      //     setModules((prevModules) =>
+      //       prevModules.map((module) => {
+      //         if (module.id === "ws") {
+      //           return {
+      //             ...module,
+      //             status: ModuleStatus.CONNECTED,
+      //           };
+      //         }
+      //         return module;
+      //       })
+      //     );
+      //   } else {
+      //     console.log("WS模块连接失败");
+      //   }
+      // }, 300);
 
       // 连接航线模块
       jsNativeAPI.initComponent(DJIModule.MISSION);

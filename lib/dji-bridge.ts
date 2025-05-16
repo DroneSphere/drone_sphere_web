@@ -29,11 +29,18 @@ export interface WSParams {
   connectCallback: string;
 }
 
+export interface LiveParams {
+  videoPublishType: string;
+  statusCallback: string;
+}
+
+
 export interface EmptyParams {}
 
 export enum DJIModule {
   THING = "thing",
   API = "api",
+  LIVE = "liveshare",
   WS = "ws",
   MISSION = "mission",
   TSA = "tsa",
@@ -45,6 +52,7 @@ class JsNativeAPI {
   private thingParams: ThingParams | null = null;
   private apiParams: APIParams | null = null;
   private wsParams: WSParams | null = null;
+  private liveParams: LiveParams | null = null;
 
   /**
    * 解析响应并返回字符串数据
@@ -155,6 +163,13 @@ class JsNativeAPI {
         );
         console.log("tsaRes: ", tsaRes);
         return this.returnBool(tsaRes);
+      case DJIModule.LIVE:
+        const liveRes = window.djiBridge.platformLoadComponent(
+          DJIModule.LIVE,
+          JSON.stringify(this.liveParams)
+        );
+        console.log("liveRes: ", liveRes);
+        return this.returnBool(liveRes);
       default:
         console.error("未知模块");
         return false;
@@ -347,6 +362,20 @@ class JsNativeAPI {
    */
   setWSParams(params: WSParams): boolean {
     this.wsParams = params;
+    return true;
+  }
+
+  
+  /**** 直播模块 ****/
+  /**
+   * 设置直播参数
+   *
+   * @param params - 直播参数
+   * @returns 设置是否成功
+   * @memberof JsNativeAPI
+   */
+  setLiveParams(params: LiveParams): boolean {
+   this.liveParams = params;
     return true;
   }
 }
