@@ -185,10 +185,10 @@ export function generateWaypoints(
     2 * waylineParams.flyingHeight * Math.tan(fovRadians / 2) * pitchFactor;
 
   // 使用计算得到的覆盖宽度或参数中提供的值（以较小者为准，确保安全覆盖）
-  const actualCoverageWidth = Math.min(
-    coverageWidth,
-    waylineParams.coverageWidth
-  );
+  const actualCoverageWidth =
+    waylineParams.coverageWidth <= 0
+      ? coverageWidth
+      : Math.min(coverageWidth, waylineParams.coverageWidth);
   console.log("理论覆盖宽度", actualCoverageWidth);
 
   // 考虑重叠率计算有效宽度
@@ -205,7 +205,6 @@ export function generateWaypoints(
   // 计算在当前纬度下需要间隔多少经度以达到所需的米数
   const lngSpacing = effectiveWidth / metersPerLngDegree;
 
-  
   const waypoints: AMap.LngLat[] = [];
   let scanDirection = true; // true为从南到北，false为从北到南
   let currentWaypointLng = minLng + lngSpacing / 2;
@@ -231,16 +230,24 @@ export function generateWaypoints(
     let currentScanLineEntryCoord: [number, number];
     let currentScanLineExitCoord: [number, number];
 
-    if (scanDirection) { // 从南到北扫描
+    if (scanDirection) {
+      // 从南到北扫描
       currentScanLineEntryCoord = points[0]; // 最南边的交点是入口
       currentScanLineExitCoord = points[points.length - 1]; // 最北边的交点是出口
-    } else { // 从北到南扫描
+    } else {
+      // 从北到南扫描
       currentScanLineEntryCoord = points[points.length - 1]; // 最北边的交点是入口
       currentScanLineExitCoord = points[0]; // 最南边的交点是出口
     }
 
-    const entryPoint = new AMapRef.current.LngLat(currentScanLineEntryCoord[0], currentScanLineEntryCoord[1]);
-    const exitPoint = new AMapRef.current.LngLat(currentScanLineExitCoord[0], currentScanLineExitCoord[1]);
+    const entryPoint = new AMapRef.current.LngLat(
+      currentScanLineEntryCoord[0],
+      currentScanLineEntryCoord[1]
+    );
+    const exitPoint = new AMapRef.current.LngLat(
+      currentScanLineExitCoord[0],
+      currentScanLineExitCoord[1]
+    );
 
     if (waypoints.length === 0) {
       // 第一个扫描带，添加其入口点
@@ -253,14 +260,14 @@ export function generateWaypoints(
       if (!previousExitPoint.equals(entryPoint)) {
         // 如果上一个航点不是当前入口点，则将当前入口点加入，形成拐弯的第二个点
         // （上一个出口点已经是航点列表的最后一个元素了）
-         waypoints.push(entryPoint);
+        waypoints.push(entryPoint);
       }
     }
     // 添加当前扫描带的出口点
     // 确保不与刚添加的入口点重复（如果扫描线只有一个有效点，或者入口出口很近）
     const lastAddedPoint = waypoints[waypoints.length - 1];
     if (!lastAddedPoint.equals(exitPoint)) {
-        waypoints.push(exitPoint);
+      waypoints.push(exitPoint);
     }
 
     scanDirection = !scanDirection; // 切换扫描方向
@@ -293,9 +300,9 @@ function reverseWaypoints(waypoints: AMap.LngLat[]): AMap.LngLat[] {
  */
 function swapNeighborWaypoints(waypoints: AMap.LngLat[]): AMap.LngLat[] {
   if (waypoints.length < 2) return [...waypoints];
-  
+
   const result: AMap.LngLat[] = [];
-  
+
   // 两两一组反转航点
   for (let i = 0; i < waypoints.length; i += 2) {
     if (i + 1 < waypoints.length) {
@@ -315,9 +322,9 @@ function swapNeighborWaypoints(waypoints: AMap.LngLat[]): AMap.LngLat[] {
  */
 function reverseSwapNeighborWaypoints(waypoints: AMap.LngLat[]): AMap.LngLat[] {
   if (waypoints.length < 2) return [...waypoints];
-  
+
   const result: AMap.LngLat[] = [];
-  
+
   // 整体反转
   const reversedWaypoints = [...waypoints].reverse();
 
@@ -349,20 +356,26 @@ function optimizeWaypointsWithTakeoff(
   if (!AMapRef.current || waypoints.length <= 1) return waypoints;
 
   // 创建起飞点对象
-  const droneStartPoint = new AMapRef.current.LngLat(takeoffPoint.lng, takeoffPoint.lat);
+  const droneStartPoint = new AMapRef.current.LngLat(
+    takeoffPoint.lng,
+    takeoffPoint.lat
+  );
 
   // 生成四种不同顺序的航线
   const waypointVariants = [
     { name: "原始航线", waypoints: originalWaypoints(waypoints) },
     { name: "整体反转航线", waypoints: reverseWaypoints(waypoints) },
     { name: "交换相邻航点", waypoints: swapNeighborWaypoints(waypoints) },
-    { name: "整体反转后交换相邻航点", waypoints: reverseSwapNeighborWaypoints(waypoints) },
+    {
+      name: "整体反转后交换相邻航点",
+      waypoints: reverseSwapNeighborWaypoints(waypoints),
+    },
   ];
 
   // 计算每种方案的第一个航点到起飞点的距离
   let bestVariant = waypointVariants[0];
   let shortestDistance = AMapRef.current.GeometryUtil.distance(
-    droneStartPoint, 
+    droneStartPoint,
     bestVariant.waypoints[0]
   );
 
@@ -379,6 +392,8 @@ function optimizeWaypointsWithTakeoff(
     }
   }
 
-  console.log(`选择航线类型: ${bestVariant.name}, 起飞点到第一个航点距离: ${shortestDistance}米`);
+  console.log(
+    `选择航线类型: ${bestVariant.name}, 起飞点到第一个航点距离: ${shortestDistance}米`
+  );
   return bestVariant.waypoints;
 }
