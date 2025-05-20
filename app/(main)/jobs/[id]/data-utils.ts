@@ -141,6 +141,13 @@ export function prepareSubmitData(
         lng: p.getLng(),
       })),
     })),
+    wayline_generation_params: {
+      flying_height: state.waylineParams.flyingHeight || 0,
+      overlap_rate: state.waylineParams.overlapRate || 0,
+      height_interval: state.waylineParams.heightInterval || 0,
+      gimbal_pitch: state.waylineParams.gimbalPitch || 0,
+      gimbal_zoom: state.waylineParams.gimbalZoom || 0,
+    },
   };
 
   // 如果存在指挥机数据，添加到提交数据中
