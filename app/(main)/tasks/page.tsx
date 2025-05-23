@@ -165,7 +165,7 @@ export default function Page() {
             <Button
               variant={"outline"}
               className={cn(
-                "w-[128px] justify-start text-left font-normal",
+                "w-fit justify-start text-left font-normal",
                 !searchParams?.schedule_time_start && "text-muted-foreground"
               )}
             >
@@ -199,7 +199,7 @@ export default function Page() {
             <Button
               variant={"outline"}
               className={cn(
-                "w-[128px] justify-start text-left font-normal",
+                "w-fit justify-start text-left font-normal",
                 !searchParams?.schedule_time_end && "text-muted-foreground"
               )}
             >
