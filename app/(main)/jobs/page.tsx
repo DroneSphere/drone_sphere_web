@@ -126,13 +126,14 @@ export default function JobListPage() {
       ),
     }),
     // 操作列
-    columnHelper.accessor("id", {
+    columnHelper.display({
+      id: "actions",
       header: () => <div className="text-center">操作</div>,
       cell: (row) => (
         <div className="flex justify-center space-x-2">
           <Button
             variant="secondary"
-            className="h-8 px-2 bg-blue-400 text-gray-100 hover:bg-blue-500 flex items-center"
+            className="h-8 px-2 bg-blue-400 text-gray-100 hover:bg-blue-500 flex items-center min-w-[80px]" // 修改1：添加 min-width
             onClick={() => {
               window.location.href = `/jobs/${row.row.original.id}`;
             }}
@@ -142,7 +143,7 @@ export default function JobListPage() {
           </Button>
           <Button
             variant="secondary"
-            className="h-8 px-2 bg-blue-400 text-gray-100 hover:bg-blue-500 flex items-center"
+            className="h-8 px-2 bg-blue-400 text-gray-100 hover:bg-blue-500 flex items-center min-w-[100px]" // 修改2：添加 min-width
             onClick={() => {
               router.push(`/jobs/report/${row.row.original.id}`);
             }}
@@ -152,7 +153,7 @@ export default function JobListPage() {
           </Button>{" "}
           <Button
             variant="destructive"
-            className="h-8 px-2 flex items-center"
+            className="h-8 px-2 flex items-center min-w-[80px]" // 修改3：添加 min-width
             onClick={() => {
               deleteMutation.mutate(row.row.original.id);
             }}
@@ -302,14 +303,18 @@ export default function JobListPage() {
       {/* 成功 */}
       {query.isSuccess && query.data && (
         <div className="my-4 max-w-full overflow-x-auto">
-          <Table className="border border-gray-200 rounded-md border-collapse">
+          <Table className="border border-gray-200 rounded-md border-collapse min-w-[800px] w-full">
             <TableHeader className="bg-gray-100">
               <TableRow className="border-b border-gray-300">
                 {table.getHeaderGroups().map((headerGroup) =>
                   headerGroup.headers.map((header) => (
                     <TableHead
                       key={header.id}
-                      className="text-center border border-gray-300 p-2"
+                      className={cn(
+                        "text-center border border-gray-300 p-2",
+                        header.id === "description" && "w-[35%] min-w-[300px]",
+                        header.id === "actions" && "w-[380px]",
+                      )}
                     >
                       {header.isPlaceholder
                         ? null
@@ -331,7 +336,11 @@ export default function JobListPage() {
                   {row.getVisibleCells().map((cell) => (
                     <TableCell
                       key={cell.id}
-                      className="text-center p-2 border-x border-gray-200"
+                      className={cn(
+                        "text-center p-2 border-x border-gray-200",
+                        // 同步单元格宽度设置
+                        cell.column.id === "description" && "text-left truncate min-w-[300px]"
+                      )}
                     >
                       {flexRender(
                         cell.column.columnDef.cell,

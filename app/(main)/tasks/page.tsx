@@ -255,7 +255,10 @@ export default function Page() {
                   headerGroup.headers.map((header) => (
                     <TableHead
                       key={header.id}
-                      className="text-center border border-gray-300 p-2"
+                      className={cn("text-center border border-gray-300 p-2"
+                        ,header.id === "job_description" && "w-[35%] min-w-[300px]"
+                        ,header.id === "actions" && "w-[150px]"
+                      )}
                     >
                       {header.isPlaceholder
                         ? null
