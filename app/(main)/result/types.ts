@@ -39,7 +39,7 @@ export interface ResultDetail {
 // 目标类型选项
 export interface ObjectTypeOption {
   id: number;
-  type: number;
+  type: string;
   label: string;
 }
 

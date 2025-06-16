@@ -104,7 +104,7 @@ export default function ResultPage() {
 
   // 使用 React Query 获取数据，禁用自动获取
   const { data, isLoading, isFetching, isError, refetch } = useQuery({
-    queryKey: ["results"],
+    queryKey: ["results", searchParams],
     queryFn: () => fetchResults(searchParams),
   });
 
@@ -270,6 +270,7 @@ export default function ResultPage() {
                 ...prev,
                 page: prev.page + 1,
               }))
+
             }
             disabled={
               searchParams.page >=

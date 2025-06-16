@@ -38,6 +38,12 @@ const nextConfig = {
         hostname: "47.245.40.222",
         port: "9000",
         pathname: "/**",
+      },
+      {
+        protocol: "https",
+        hostname: "minio.thuray.xyz",
+        port: "",
+        pathname: "/**",
       }
     ],
   },
