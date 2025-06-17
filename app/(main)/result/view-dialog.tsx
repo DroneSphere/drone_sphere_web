@@ -57,17 +57,25 @@ export default function ViewDialog(
             <DialogTitle>检测结果详情</DialogTitle>
             <div className="pt-4 flex gap-4">
               {/* 左侧图片 */}
-                {/* 左侧图片 */}
-                <div className="w-1/2 aspect-video">
+              {/* 左侧图片 */}
+              <div
+                className="w-1/2 aspect-video cursor-pointer group"
+                onClick={() => window.open(query.data.image_url, "_blank")}
+              >
                 <Image
                   src={query.data.image_url}
                   alt="检测结果图片"
                   width={500} // 宽度固定
                   height={300} // 高度固定，会被 aspect-video 覆盖
                   style={{ objectFit: "cover" }} // 保持宽高比并填充容器
-                  className="rounded-sm"
+                  className="rounded-sm group-hover:opacity-80 transition-opacity" // 添加悬停效果
                 />
+                <div className="relative inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black bg-opacity-20 rounded-sm">
+                  <span className="text-white text-sm font-medium">
+                    点击查看大图
+                  </span>
                 </div>
+              </div>
               {/* 右侧信息 */}
               <div className="flex-1">
                 <dl className="divide-y divide-gray-200">
@@ -78,18 +86,22 @@ export default function ViewDialog(
                       {String(query.data.id)}
                     </dd>
                   </div>
-                  
+
                   {/* 任务名称 */}
                   <div className="py-2 grid grid-cols-3 gap-4">
-                    <dt className="text-sm font-medium text-gray-500">任务名称</dt>
+                    <dt className="text-sm font-medium text-gray-500">
+                      任务名称
+                    </dt>
                     <dd className="text-sm text-gray-900 col-span-2">
                       {String(query.data.job_name)}
                     </dd>
                   </div>
-                  
+
                   {/* 无人机呼号 */}
                   <div className="py-2 grid grid-cols-3 gap-4">
-                    <dt className="text-sm font-medium text-gray-500">检测无人机</dt>
+                    <dt className="text-sm font-medium text-gray-500">
+                      检测无人机
+                    </dt>
                     <dd className="text-sm text-gray-900 col-span-2">
                       {String(query.data.drone_callsign)}
                     </dd>
@@ -97,20 +109,24 @@ export default function ViewDialog(
 
                   {/* 目标标签 */}
                   <div className="py-2 grid grid-cols-3 gap-4">
-                    <dt className="text-sm font-medium text-gray-500">目标标签</dt>
+                    <dt className="text-sm font-medium text-gray-500">
+                      目标标签
+                    </dt>
                     <dd className="text-sm text-gray-900 col-span-2">
                       {String(query.data.object_label)}
                     </dd>
                   </div>
-                  
+
                   {/* 置信度 */}
                   <div className="py-2 grid grid-cols-3 gap-4">
-                    <dt className="text-sm font-medium text-gray-500">置信度</dt>
+                    <dt className="text-sm font-medium text-gray-500">
+                      置信度
+                    </dt>
                     <dd className="text-sm text-gray-900 col-span-2">
                       {`${(query.data.object_confidence * 100).toFixed(2)}%`}
                     </dd>
                   </div>
-                  
+
                   {/* 坐标信息 - 经度 */}
                   <div className="py-2 grid grid-cols-3 gap-4">
                     <dt className="text-sm font-medium text-gray-500">经度</dt>
@@ -118,7 +134,7 @@ export default function ViewDialog(
                       {query.data.coordinate.lng.toFixed(6)}
                     </dd>
                   </div>
-                  
+
                   {/* 坐标信息 - 纬度 */}
                   <div className="py-2 grid grid-cols-3 gap-4">
                     <dt className="text-sm font-medium text-gray-500">纬度</dt>
@@ -126,7 +142,7 @@ export default function ViewDialog(
                       {query.data.coordinate.lat.toFixed(6)}
                     </dd>
                   </div>
-                  
+
                   {/* 检测结果 - X坐标 */}
                   {/* <div className="py-2 grid grid-cols-3 gap-4">
                     <dt className="text-sm font-medium text-gray-500">检测结果 - X坐标</dt>
@@ -134,7 +150,7 @@ export default function ViewDialog(
                       {query.data.position.x}
                     </dd>
                   </div> */}
-                  
+
                   {/* 检测结果 - Y坐标 */}
                   {/* <div className="py-2 grid grid-cols-3 gap-4">
                     <dt className="text-sm font-medium text-gray-500">检测结果 - Y坐标</dt>
@@ -142,7 +158,7 @@ export default function ViewDialog(
                       {query.data.position.y}
                     </dd>
                   </div> */}
-                  
+
                   {/* 检测结果 - 宽度 */}
                   {/* <div className="py-2 grid grid-cols-3 gap-4">
                     <dt className="text-sm font-medium text-gray-500">检测结果 - 宽度</dt>
@@ -150,7 +166,7 @@ export default function ViewDialog(
                       {query.data.position.w}
                     </dd>
                   </div> */}
-                  
+
                   {/* 检测结果 - 高度 */}
                   {/* <div className="py-2 grid grid-cols-3 gap-4">
                     <dt className="text-sm font-medium text-gray-500">检测结果 - 高度</dt>
@@ -158,10 +174,12 @@ export default function ViewDialog(
                       {query.data.position.h}
                     </dd>
                   </div> */}
-                  
+
                   {/* 创建时间 */}
                   <div className="py-2 grid grid-cols-3 gap-4">
-                    <dt className="text-sm font-medium text-gray-500">检测时间</dt>
+                    <dt className="text-sm font-medium text-gray-500">
+                      检测时间
+                    </dt>
                     <dd className="text-sm text-gray-900 col-span-2">
                       {String(query.data.created_at)}
                     </dd>

@@ -3,8 +3,8 @@ import { Metadata } from "next";
 import Provider from "../provider";
 
 export const metadata: Metadata = {
-  title: "无人机集群搜索系统",
-  description: "无人机集群搜索系统",
+  title: "无人机集群协同搜索原型系统——地面站指挥软件",
+  description: "无人机集群协同搜索原型系统——地面站指挥软件",
 };
 
 export default function RootLayout({

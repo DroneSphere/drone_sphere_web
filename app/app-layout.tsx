@@ -39,7 +39,7 @@ export default function AppLayout({
       <div className="flex items-center justify-between w-full px-8 h-16 bg-sidebar shrink-0">
         <div className="flex-1" />
         <h1 className="flex-1 font-bold text-center text-2xl text-white tracking-wide drop-shadow-sm">
-          无人机集群搜索系统
+          无人机集群协同搜索原型系统——地面站指挥软件
         </h1>
 
         {!isLoading && user && (

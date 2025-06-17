@@ -28,17 +28,7 @@ export const routeMap = {
     avatar: "/avatars/shadcn.jpg",
   },
   navMain: [
-    {
-      title: "无人机管理",
-      url: "/drones",
-      icon: Plane,
-    },
-    // {
-    //   title: "网关管理",
-    //   url: "/gateways",
-    //   icon: Router,
-    // },
-    {
+{
       title: "基本信息管理",
       icon: Frame,
       url: "/models",
@@ -61,6 +51,16 @@ export const routeMap = {
         // },
       ],
     },
+    {
+      title: "无人机管理",
+      url: "/drones",
+      icon: Plane,
+    },
+    // {
+    //   title: "网关管理",
+    //   url: "/gateways",
+    //   icon: Router,
+    // },
     {
       title: "区域管理",
       url: "/areas",
@@ -99,10 +99,6 @@ export const routeMap = {
         {
           title: "用户管理",
           url: "/settings/users",
-        },
-        {
-          title: "通用",
-          url: "/settings#general",
         },
       ],
     },

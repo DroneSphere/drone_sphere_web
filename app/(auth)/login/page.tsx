@@ -125,7 +125,7 @@ export default function AuthPage() {
       <Card className="w-[400px]">
         <CardHeader>
           <CardTitle className="text-2xl text-center">
-            无人机搜索原型系统
+            无人机集群协同搜索原型系统
           </CardTitle>
         </CardHeader>
         <CardContent>
