@@ -119,7 +119,7 @@ const DroneCardList = ({
             {/* 顶部标题栏 */}
             <div className="p-2 flex items-center justify-between">
               <div className="font-medium text-sm">
-                {drone.physical_drone_sn || "未命名无人机"}
+                {drone.physical_drone_callsign || drone.physical_drone_sn}
               </div>
               <div
                 className={`text-xs ${
@@ -252,13 +252,13 @@ const DroneCardList = ({
         <DialogContent className="max-w-3xl">
           <DialogHeader>
             <DialogTitle>
-              {videoDialog.drone?.physical_drone_sn || "无人机"} 实时视频
+              {videoDialog.drone?.physical_drone_callsign || videoDialog.drone?.physical_drone_sn } 实时视频
             </DialogTitle>
           </DialogHeader>
 
           <div ref={containerRef} className="w-full aspect-video bg-black rounded-md overflow-hidden">
             <div className="w-full h-full flex items-center justify-center text-white">
-              <ControlledVideoPlayer videoUrl="http://192.168.1.108:1985/rtc/v1/whep/?app=live&stream=livestream"
+              <ControlledVideoPlayer videoUrl={`http://192.168.1.111:1985/rtc/v1/whep/?app=live&stream=${videoDialog.drone?.physical_drone_sn}`}
               width={containerRef.current?.clientWidth || 0}
               height={containerRef.current?.clientHeight || 0}
               type="webrtc"/>

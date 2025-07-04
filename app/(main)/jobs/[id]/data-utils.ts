@@ -43,6 +43,7 @@ export function formatDronesData(
       model_id: drone.model_id,
       physical_drone_id: drone.physical_drone_id,
       physical_drone_sn: drone.physical_drone?.sn,
+      physical_drone_callsign: drone.physical_drone?.callsign,
       name: model?.name || "",
       description: model?.description || "",
       color: drone.color || "",

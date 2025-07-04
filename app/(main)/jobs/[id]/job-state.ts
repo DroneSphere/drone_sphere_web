@@ -11,6 +11,7 @@ export type DroneStateV2 = {
   /** 无人机实例ID */
   physical_drone_id?: number;
   physical_drone_sn?: string;
+  physical_drone_callsign?: string;
   /** 无人机名称 */
   name: string;
   /** 无人机描述（可选） */
