@@ -48,9 +48,8 @@ export function Slider({
                             background: `linear-gradient(to top, #3b82f6 0%, #3b82f6 ${progress}%, #e5e7eb ${progress}%, #e5e7eb 100%)`,
                             WebkitAppearance: 'none',
                             MozAppearance: 'none',
-                            writingMode: 'bt-lr', // IE
-                            WebkitWritingMode: 'vertical-rl',
                             writingMode: 'vertical-rl',
+                            WebkitWritingMode: 'vertical-rl',
                             direction: 'rtl'
                         }}
                     />
