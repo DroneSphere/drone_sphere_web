@@ -6,11 +6,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Video } from "lucide-react";
-import { useState } from "react";
+import { Video,Joystick } from "lucide-react";
+import { useState, useRef } from "react";
 import Image from "next/image";
 import { DroneStateV2 } from "../../jobs/[id]/job-state";
 import { DroneRTState } from "../../drones/types";
+import { ControlledVideoPlayer } from "@/components/video/controlled-video-player";
+import { DirectionsScaleControl } from "@/components/ui/directionscale-control";
 
 interface DroneCardListProps {
   drones?: DroneStateV2[];
@@ -33,6 +35,8 @@ const DroneCardList = ({
 
   // 添加全局操作的状态
   const [globalCommand, setGlobalCommand] = useState<string>("hover");
+  // 用来获取容器的宽度发给视频组件
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const openVideoDialog = (drone: DroneStateV2) => {
     setVideoDialog({ open: true, drone });
@@ -234,6 +238,9 @@ const DroneCardList = ({
                 <button className="bg-blue-600 text-white text-xs px-3 py-1 rounded">
                   发送
                 </button>
+                {/* <button className="bg-green-600 text-white text-xs px-1 py-1 rounded-full">
+                  <Joystick className="h-4 w-4"/>
+                </button> */}
               </div>
             </div>
           </div>
@@ -249,17 +256,22 @@ const DroneCardList = ({
             </DialogTitle>
           </DialogHeader>
 
-          <div className="w-full aspect-video bg-black rounded-md overflow-hidden">
+          <div ref={containerRef} className="w-full aspect-video bg-black rounded-md overflow-hidden">
             <div className="w-full h-full flex items-center justify-center text-white">
-              <img
+              <ControlledVideoPlayer videoUrl="http://192.168.1.108:1985/rtc/v1/whep/?app=live&stream=livestream"
+              width={containerRef.current?.clientWidth || 0}
+              height={containerRef.current?.clientHeight || 0}
+              type="webrtc"/>
+              {/* <img
                 src="http://47.245.40.222:9000/image/WX20250421-150551%402x.png"
                 alt="无人机直播视频"
                 className="w-full h-full object-cover"
-              />
+              /> */}
+              {/* TODO: 将这里的img修改为可拖拽视频的组件，实现实际的视频流播放 */}
             </div>
           </div>
-
-          <div className="grid grid-cols-2 gap-4 text-sm mt-2">
+                <div className="flex flex-row items-center justify-between mt-4">
+          <div className="flex flex-col gap-4 text-sm mt-2">
             <div className="flex flex-col space-y-1">
               <div className="text-gray-500 text-xs">位置信息</div>
               <div className="grid grid-cols-2 gap-2 text-xs">
@@ -282,6 +294,8 @@ const DroneCardList = ({
               </div>
             </div>
 
+            
+
             <div className="flex flex-col space-y-1">
               <div className="text-gray-500 text-xs">飞行数据</div>
               <div className="grid grid-cols-3 gap-2 text-xs">
@@ -298,7 +312,7 @@ const DroneCardList = ({
                   速度:
                   {(videoDialog.drone?.physical_drone_sn &&
                     droneRTStates[videoDialog.drone.physical_drone_sn]
-                      ?.speed) ??
+                      ?.speed.toFixed(2)) ??
                     "--"}
                   米/秒
                 </div>
@@ -313,7 +327,9 @@ const DroneCardList = ({
               </div>
             </div>
           </div>
+          <DirectionsScaleControl/>          
 
+          </div>
           <div className="flex justify-end gap-2 mt-2">
             <button className="bg-red-600 text-white px-3 py-1 text-xs rounded">
               紧急降落

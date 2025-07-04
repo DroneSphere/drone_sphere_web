@@ -32,11 +32,13 @@
     "@tanstack/react-table": "^8.20.5",
     "@turf/intersect": "^7.2.0",
     "@turf/turf": "^7.2.0",
+    "@types/video.js": "^7.3.58",
     "axios": "^1.7.9",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
     "dotenv": "^16.4.7",
+    "hls.js": "^1.6.5",
     "js-cookie": "^3.0.5",
     "lucide-react": "^0.467.0",
     "next": "14.2.20",
@@ -48,6 +50,7 @@
     "tailwind-merge": "^2.5.5",
     "tailwindcss-animate": "^1.0.7",
     "vconsole": "^3.15.1",
+    "video.js": "7.0.3",
     "zod": "^3.24.2"
   },
   "devDependencies": {
