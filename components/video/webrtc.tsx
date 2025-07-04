@@ -16,12 +16,12 @@ export function WebRTCPlayer({
     controls = false
 }: VideoPlayerProps) {
     const videoRef = useRef<HTMLVideoElement>(null);
-    const sdkRef = useRef<any>(null); // 用于全局清理
+    const sdkRef = useRef<ReturnType<typeof SrsRtcWhipWhepAsync> | null>(null); // 明确类型
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
-        let stopped = false;
-        let timeoutId: any = null;
+        // let stopped = false; // 移除未用变量
+        const timeoutId: ReturnType<typeof setTimeout> | null = null;
 
         async function startSrsWebRTC() {
             // 关闭上一个 sdk 实例
@@ -38,7 +38,7 @@ export function WebRTCPlayer({
                     videoRef.current.srcObject = sdk.stream;
                 }
                 try {
-                    const session = await sdk.play(streamUrl, {});
+                    await sdk.play(streamUrl, {}); // session 未用，直接省略
                     // 拉流成功，等待 canplay 事件
                 } catch (e) {
                     sdk.close();
@@ -51,7 +51,6 @@ export function WebRTCPlayer({
         }
         startSrsWebRTC();
         return () => {
-            stopped = true;
             if (sdkRef.current) {
                 sdkRef.current.close();
                 sdkRef.current = null;
@@ -62,11 +61,12 @@ export function WebRTCPlayer({
 
     // 监听 canplay 事件，流可用时隐藏 loading
     useEffect(() => {
-        if (!videoRef.current) return;
+        const videoEl = videoRef.current; // 先保存引用，清理时用
+        if (!videoEl) return;
         const handler = () => setLoading(false);
-        videoRef.current.addEventListener('canplay', handler);
+        videoEl.addEventListener('canplay', handler);
         return () => {
-            videoRef.current && videoRef.current.removeEventListener('canplay', handler);
+            videoEl.removeEventListener('canplay', handler);
         };
     }, [streamUrl]);
 

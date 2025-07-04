@@ -56,6 +56,7 @@ export function DirectionsScaleControl({
         return null;
     }
 
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     useEffect(() => {
         function triggerDirection() {
             const dir = getComboDirection(pressedKeysRef.current);
@@ -177,8 +178,6 @@ export function DirectionsScaleControl({
                     </button>
                 </div>
             </div>
-            <Slider title="倍率" value={scale} onChange={handleScaleChange} />
-            <Slider title="倍率" value={scale} onChange={handleScaleChange} />
             <Slider title="倍率" value={scale} onChange={handleScaleChange} />
         </div>
     );

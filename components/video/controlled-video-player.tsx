@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { VideoPlayer } from "@/components/video/video-player";
 import { WebRTCPlayer } from "@/components/video/webrtc";
 
@@ -44,7 +44,7 @@ export function ControlledVideoPlayer({
   };
 
   // 拖拽中
-  const handleMouseMove = (e: MouseEvent) => {
+  const handleMouseMove = useCallback((e: MouseEvent) => {
     if (!isDragging || controls) return;
     const newX = e.clientX - dragStartPos.current.x;
     const newY = e.clientY - dragStartPos.current.y;
@@ -59,12 +59,12 @@ export function ControlledVideoPlayer({
       x: Math.max(minX, Math.min(newX, maxX)),
       y: Math.max(minY, Math.min(newY, maxY)),
     });
-  };
+  }, [isDragging, controls, width, height]);
 
   // 拖拽结束
-  const handleMouseUp = () => {
+  const handleMouseUp = useCallback(() => {
     setIsDragging(false);
-  };
+  }, []);
 
   // 缩放处理
   const handleWheel = (e: React.WheelEvent) => {
@@ -89,7 +89,7 @@ export function ControlledVideoPlayer({
       document.removeEventListener("mousemove", handleMouseMove);
       document.removeEventListener("mouseup", handleMouseUp);
     };
-  }, [isDragging]);
+  }, [isDragging, handleMouseMove, handleMouseUp]);
 
   return (
     <div

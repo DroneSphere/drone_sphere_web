@@ -6,7 +6,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Video,Joystick } from "lucide-react";
+import { Video } from "lucide-react";
 import { useState, useRef } from "react";
 import Image from "next/image";
 import { DroneStateV2 } from "../../jobs/[id]/job-state";

@@ -4,7 +4,8 @@ import { useRef, useEffect, useState } from "react";
 
 // HLS.js 动态导入，避免 SSR 问题
 // TIP:目前这个项目计划使用webrtc来代替hls.js进行播放，这个组件只作保留
-let Hls: any = null;
+import type { ErrorData } from "hls.js";
+let Hls: typeof import("hls.js")['default'] | null = null;
 if (typeof window !== "undefined") {
   import("hls.js").then((module) => {
     Hls = module.default;
@@ -27,7 +28,7 @@ export function VideoPlayer({
   controls = false
 }: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const hlsRef = useRef<any>(null);
+  const hlsRef = useRef<InstanceType<typeof import("hls.js")['default']> | null>(null);
   const [isReady, setIsReady] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -36,7 +37,7 @@ export function VideoPlayer({
     if (!videoRef.current || !videoUrl) return;
 
     const video = videoRef.current;
-    let hls: any = null;
+    let hls: InstanceType<typeof import("hls.js")['default']> | null = null;
 
     const initPlayer = async () => {
       try {
@@ -78,28 +79,26 @@ export function VideoPlayer({
             console.log("HLS manifest parsed, starting playback");
             setIsReady(true);
             // 强制最低画质
-            hls.currentLevel = 0;
-            hls.autoLevelEnabled = false;
+            hls!.currentLevel = 0;
             // 自动播放
             video.play().catch(console.error);
           });
 
-          hls.on(Hls.Events.ERROR, (event: any, data: any) => {
+          hls.on(Hls.Events.ERROR, (_: unknown, data: ErrorData) => {
             console.error("HLS Error:", data);
-            
-            if (data.fatal) {
+            if (data && typeof data === "object" && "fatal" in data && data.fatal) {
               switch (data.type) {
-                case Hls.ErrorTypes.NETWORK_ERROR:
+                case Hls && Hls.ErrorTypes.NETWORK_ERROR:
                   console.log("Network error, trying to recover...");
-                  hls.startLoad();
+                  hls!.startLoad();
                   break;
-                case Hls.ErrorTypes.MEDIA_ERROR:
+                case Hls && Hls.ErrorTypes.MEDIA_ERROR:
                   console.log("Media error, trying to recover...");
-                  hls.recoverMediaError();
+                  hls!.recoverMediaError();
                   break;
                 default:
                   console.error("Fatal error, destroying HLS instance");
-                  hls.destroy();
+                  hls!.destroy();
                   break;
               }
             }
