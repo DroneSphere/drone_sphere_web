@@ -13,6 +13,7 @@ import { DroneStateV2 } from "../../jobs/[id]/job-state";
 import { DroneRTState } from "../../drones/types";
 import { ControlledVideoPlayer } from "@/components/video/controlled-video-player";
 import { DirectionsScaleControl } from "@/components/ui/directionscale-control";
+const baseRtcURL = process.env.RTC_BASE_URL
 
 interface DroneCardListProps {
   drones?: DroneStateV2[];
@@ -258,7 +259,7 @@ const DroneCardList = ({
 
           <div ref={containerRef} className="w-full aspect-video bg-black rounded-md overflow-hidden">
             <div className="w-full h-full flex items-center justify-center text-white">
-              <ControlledVideoPlayer videoUrl={`http://192.168.1.111:1985/rtc/v1/whep/?app=live&stream=${videoDialog.drone?.physical_drone_sn}`}
+              <ControlledVideoPlayer videoUrl={`${baseRtcURL}/whep/?app=live&stream=${videoDialog.drone?.physical_drone_sn}`}
               width={containerRef.current?.clientWidth || 0}
               height={containerRef.current?.clientHeight || 0}
               type="webrtc"/>
@@ -267,7 +268,6 @@ const DroneCardList = ({
                 alt="无人机直播视频"
                 className="w-full h-full object-cover"
               /> */}
-              {/* TODO: 将这里的img修改为可拖拽视频的组件，实现实际的视频流播放 */}
             </div>
           </div>
                 <div className="flex flex-row items-center justify-between mt-4">
