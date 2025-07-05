@@ -46,7 +46,7 @@ const SearchResultList = ({
     setDetailDialog({ open: false, result: null });
   };
 
-  if (searchResults.length === 0) {
+  if (searchResults === undefined || searchResults?.length === 0) {
     return (
       <div className="flex items-center justify-center w-auto h-full">
         <span className="text-gray-500 text-xs">暂无搜索结果</span>
@@ -84,7 +84,14 @@ const SearchResultList = ({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {searchResults.map((result) => (
+              {searchResults === undefined || searchResults?.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center p-4">
+                    暂无搜索结果
+                  </TableCell>
+                </TableRow>
+              )}
+              {searchResults?.map((result) => (
                 <TableRow
                   key={result.id}
                   className="p-2 cursor-pointer hover:bg-gray-50 border-b border-gray-200 group"

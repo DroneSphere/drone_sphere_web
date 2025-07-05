@@ -17,6 +17,7 @@ import {
 import Image from "next/image";
 import { useState } from "react";
 import { SearchResultItem } from "./types";
+import ViewDialog from "./view-dialog";
 
 interface SearchResultListProps {
   searchResults: SearchResultItem[];
@@ -43,102 +44,106 @@ const SearchResultList = ({
   if (searchResults.length === 0) {
     return (
       <div className="flex items-center justify-center w-auto h-full">
-        <span className="text-gray-500 text-xs">暂无搜索结果</span>
+        <span className="text-gray-500 text-sm">暂无搜索结果</span>
       </div>
     );
   }
 
   return (
     <>
-      <div className="text-md font-medium mb-3">搜索结果</div>
-      {/* 表格展示 - 高度溢出时滚动 */}
-      <div className="max-h-[calc(100vh-200px)] overflow-auto">
-        {/* 设置最小宽度以防止表格内容挤压 */}
-        <div className="min-w-[800px]">
-          <Table>
-            {/* 参考列表页样式的表头 */}
-            <TableHeader className="bg-gray-100">
-              <TableRow className="border-b border-gray-200">
-                {/* 为每列设置最小宽度并防止文本换行 */}
-                <TableHead className="text-center p-1 whitespace-nowrap min-w-[60px]">
-                  ID
-                </TableHead>
-                <TableHead className="text-center p-1 whitespace-nowrap min-w-[120px]">
-                  检测时间
-                </TableHead>
-                <TableHead className="text-center p-1 whitespace-nowrap min-w-[100px]">
-                  类型
-                </TableHead>
-                <TableHead className="text-center p-1 whitespace-nowrap min-w-[80px]">
-                  置信度
-                </TableHead>
-                <TableHead className="text-center p-1 whitespace-nowrap min-w-[100px]">
-                  经度
-                </TableHead>
-                <TableHead className="text-center p-1 whitespace-nowrap min-w-[100px]">
-                  纬度
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {searchResults.map((result) => (
-                <TableRow
-                  key={result.id}
-                  className="cursor-pointer hover:bg-gray-50 border-b border-gray-200 group"
-                >
-                  {/* ID */}
-                  <TableCell
-                    className="text-sm text-center p-2 border-x border-gray-200 whitespace-nowrap"
-                    onClick={() => onResultClick?.(result)}
-                  >
-                    {result.id}
-                  </TableCell>
+      {/* 设置最小宽度以防止表格内容挤压 */}
+      <Table>
+        {/* 参考列表页样式的表头 */}
+        <TableHeader className="bg-gray-100">
+          <TableRow className="border-b border-gray-200">
+            {/* 为每列设置最小宽度并防止文本换行 */}
+            <TableHead className="text-center p-1 whitespace-nowrap">
+              ID
+            </TableHead>
+            <TableHead className="text-center p-1 whitespace-nowrap">
+              检测时间
+            </TableHead>
+            <TableHead className="text-center p-1 whitespace-nowrap">
+              类型
+            </TableHead>
+            <TableHead className="text-center p-1 whitespace-nowrap">
+              置信度
+            </TableHead>
+            <TableHead className="text-center p-1 whitespace-nowrap">
+              经度
+            </TableHead>
+            <TableHead className="text-center p-1 whitespace-nowrap">
+              纬度
+            </TableHead>
+            <TableHead className="text-center p-1 whitespace-nowrap">
+              操作
+            </TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {searchResults.map((result) => (
+            <TableRow
+              key={result.id}
+              className="cursor-pointer hover:bg-gray-50 border-b border-gray-200 group"
+            >
+              {/* ID */}
+              <TableCell
+                className="px-1 text-sm text-center p-2 border-x border-gray-200 whitespace-nowrap"
+                onClick={() => onResultClick?.(result)}
+              >
+                {result.id}
+              </TableCell>
 
-                  {/* 检测时间 */}
-                  <TableCell
-                    className="text-sm text-center p-2 border-x border-gray-200 whitespace-nowrap"
-                    onClick={() => onResultClick?.(result)}
-                  >
-                    {result.created_at}
-                  </TableCell>
+              {/* 检测时间 */}
+              <TableCell
+                className="px-1 text-sm text-center p-2 border-x border-gray-200 whitespace-nowrap"
+                onClick={() => onResultClick?.(result)}
+              >
+                {result.created_at}
+              </TableCell>
 
-                  {/* 类型 */}
-                  <TableCell
-                    className="font-medium text-sm text-center p-2 border-x border-gray-200 whitespace-nowrap"
-                    onClick={() => onResultClick?.(result)}
-                  >
-                    {result.target_label}
-                  </TableCell>
+              {/* 类型 */}
+              <TableCell
+                className="px-1 font-medium text-sm text-center p-2 border-x border-gray-200 whitespace-nowrap"
+                onClick={() => onResultClick?.(result)}
+              >
+                {result.target_label}
+              </TableCell>
 
-                  {/* 置信度 */}
-                  <TableCell
-                    className="text-sm text-muted-foreground text-center p-2 border-x border-gray-200 whitespace-nowrap"
-                    onClick={() => onResultClick?.(result)}
-                  >
-                    90%
-                  </TableCell>
+              {/* 置信度 */}
+              <TableCell
+                className="px-1 text-sm text-muted-foreground text-center p-2 border-x border-gray-200 whitespace-nowrap"
+                onClick={() => onResultClick?.(result)}
+              >
+                90%
+              </TableCell>
 
-                  {/* 经度 */}
-                  <TableCell
-                    className="text-sm text-muted-foreground text-center p-2 border-x border-gray-200 whitespace-nowrap"
-                    onClick={() => onResultClick?.(result)}
-                  >
-                    {Number(result.lng).toFixed(6)}
-                  </TableCell>
+              {/* 经度 */}
+              <TableCell
+                className="px-1 text-sm text-muted-foreground text-center p-2 border-x border-gray-200 whitespace-nowrap"
+                onClick={() => onResultClick?.(result)}
+              >
+                {Number(result.lng).toFixed(6)}
+              </TableCell>
 
-                  {/* 纬度 */}
-                  <TableCell
-                    className="text-sm text-muted-foreground text-center p-2 border-x border-gray-200 whitespace-nowrap"
-                    onClick={() => onResultClick?.(result)}
-                  >
-                    {Number(result.lat).toFixed(6)}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-      </div>
+              {/* 纬度 */}
+              <TableCell
+                className="px-1 text-sm text-muted-foreground text-center p-2 border-x border-gray-200 whitespace-nowrap"
+                onClick={() => onResultClick?.(result)}
+              >
+                {Number(result.lat).toFixed(6)}
+              </TableCell>
+
+              {/* 操作 */}
+              <TableCell
+                className="px-1 text-sm text-muted-foreground text-center p-2 border-x border-gray-200 whitespace-nowrap"
+              >
+                <ViewDialog id={result.id} />
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
 
       {/* 详情对话框 */}
       <Dialog open={detailDialog.open} onOpenChange={closeDetailDialog}>
