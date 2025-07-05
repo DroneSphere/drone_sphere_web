@@ -349,11 +349,6 @@ export default function Page() {
           <div class="mt-1">创建时间: ${new Date(
             result.created_at
           ).toLocaleString()}</div>
-          <div class="mt-1">
-            <img src="${result.image_url}" alt="${
-        result.target_label
-      }" class="max-w-[200px] max-h-[150px] object-cover rounded" />
-          </div>
         </div>
       `;
 
@@ -439,9 +434,9 @@ export default function Page() {
       <div className="flex gap-4">
         <div
           id="map"
-          className="h-[calc(100vh-132px)] w-[calc(100%-480px)] border rounded-md shadow-sm"
+          className="h-[calc(100vh-132px)] flex-1 border rounded-md shadow-sm"
         />
-        <div className="w-[480px] h-[calc(100vh-132px)] overflow-y-auto border rounded-md shadow-sm p-4">
+        <div className="h-[calc(100vh-132px)] flex-shrink-0 overflow-y-auto border rounded-md shadow-sm p-4">
           {/* 顶部下载报告按钮 */}
           <div className="flex justify-end mb-4">
             <button
@@ -643,27 +638,10 @@ export default function Page() {
                         );
                       })}
 
-                      {/* 如果没有无人机数据，显示示例数据 */}
+                      {/* 如果没有无人机数据，显示提示 */}
                       {droneKeysWithFlightData.length === 0 && (
                         <>
-                          <div className="flex justify-between">
-                            <span className="text-gray-500">
-                              无人机 1 飞行长度:
-                            </span>
-                            <span className="font-medium">3.2 千米</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-gray-500">
-                              无人机 2 飞行长度:
-                            </span>
-                            <span className="font-medium">2.8 千米</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-gray-500">
-                              无人机 3 飞行长度:
-                            </span>
-                            <span className="font-medium">4.1 千米</span>
-                          </div>
+                          <div className="text-gray-500">无</div>
                         </>
                       )}
 
@@ -726,7 +704,7 @@ export default function Page() {
 
           {/* 检测结果列表 */}
           <div>
-            <h2 className="text-lg font-bold mb-3 pb-2 border-b">
+            <h2 className="text-lg font-bold mb-3 pb-2">
               检测结果列表
             </h2>
             <SearchResultList
