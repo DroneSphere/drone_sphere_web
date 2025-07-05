@@ -17,6 +17,7 @@ import {
 import Image from "next/image";
 import { useState } from "react";
 import { SearchResultItem } from "./types";
+import ViewDialog from "./view-dialog";
 
 interface SearchResultListProps {
   searchResults: SearchResultItem[];
@@ -74,6 +75,9 @@ const SearchResultList = ({
             <TableHead className="text-center p-1 whitespace-nowrap">
               纬度
             </TableHead>
+            <TableHead className="text-center p-1 whitespace-nowrap">
+              操作
+            </TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -128,6 +132,13 @@ const SearchResultList = ({
                 onClick={() => onResultClick?.(result)}
               >
                 {Number(result.lat).toFixed(6)}
+              </TableCell>
+
+              {/* 操作 */}
+              <TableCell
+                className="px-1 text-sm text-muted-foreground text-center p-2 border-x border-gray-200 whitespace-nowrap"
+              >
+                <ViewDialog id={result.id} />
               </TableCell>
             </TableRow>
           ))}
