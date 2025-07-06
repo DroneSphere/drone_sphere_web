@@ -35,6 +35,7 @@ import DeleteDialog from "./delete-dialog";
 import DetailDialog from "./detail-dialog";
 import AddDroneDialog from "./add-dialog";
 import { Search } from "lucide-react";
+import MaterialPagination from "@/components/material-pagination";
 
 const columnHelper = createColumnHelper<DroneItemResult>();
 
@@ -56,11 +57,17 @@ const renderIndicator = (value: boolean | undefined) => {
 export default function DronesPage() {
   // 使用一个状态来存储搜索参数
   const [searchParams, setSearchParams] = useState<DroneSearchParams | null>(
-    null
+    {
+      page: 1,
+      page_size: 10
+    }
   );
   // 使用另一个状态来存储实际执行查询的参数
   const [queryParams, setQueryParams] = useState<DroneSearchParams | null>(
-    null
+    {
+      page: 1,
+      page_size: 10
+    }
   );
 
   // 查询配置，只依赖于 queryParams 而不是 searchParams
@@ -155,7 +162,7 @@ export default function DronesPage() {
   );
 
   const table = useReactTable({
-    data: query.data || [],
+    data: query.data?.items || [],
     columns,
     getCoreRowModel: getCoreRowModel(),
   });
@@ -227,7 +234,7 @@ export default function DronesPage() {
         </div>
       )}
       {/* 成功 */}
-      {query.isSuccess && query.data && (
+      {query.isSuccess && query.data.items && (
         <div className="my-4 max-w-full overflow-x-auto">
           <Table className="border border-gray-200 rounded-md border-collapse">
             <TableHeader className="bg-gray-100">
@@ -273,10 +280,16 @@ export default function DronesPage() {
           </Table>
         </div>
       )}
-      {query.isSuccess && (!query.data || query.data.length === 0) && (
+      {query.isSuccess && (!query.data.items || query.data.items.length === 0) && (
         <div className="text-center text-gray-500">暂无数据</div>
       )}
       {query.isError && <div className="text-center">加载失败</div>}
+      <MaterialPagination currentPage={(()=>{
+        console.log(queryParams?.page)
+        return(queryParams?.page || 0)})()} total={Math.ceil((query.data?.total||0)/((queryParams?.page_size||1)))} onChange={(newPage)=>{
+        setSearchParams((prev)=>({ ...prev, page:newPage }))
+        setQueryParams((prev)=>({ ...prev, page:newPage }))
+      }}/>
     </div>
   );
 }

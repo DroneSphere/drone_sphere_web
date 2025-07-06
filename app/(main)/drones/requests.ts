@@ -17,12 +17,14 @@ export interface DroneSearchParams {
   sn?: string;
   callsign?: string;
   model_id?: number;
+  page?: number;
+  page_size?: number;
 }
 
 export async function fetchAllDrones(
   params: DroneSearchParams | null = null
-): Promise<DroneItemResult[]> {
-  const res = await httpClient.instance.get<Response<DroneItemResult[]>>(
+): Promise<{items: DroneItemResult[],total: number}> {
+  const res = await httpClient.instance.get<Response<{items: DroneItemResult[],total: number}>>(
     "/drone/list",
     {
       params: {

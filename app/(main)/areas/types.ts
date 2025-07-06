@@ -21,4 +21,6 @@ export interface AreaSearchParams {
   name?: string; // 区域名称
   created_at_begin?: string; // 创建时间开始
   created_at_end?: string; // 创建时间结束
+  page?: number;
+  page_size?: number;
 }

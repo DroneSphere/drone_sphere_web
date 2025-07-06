@@ -12,8 +12,8 @@ const prefix = "/areas";
  */
 export async function selectAllAreas(
   params: AreaSearchParams | null = null
-): Promise<AreaItemResult[]> {
-  const res = await httpClient.instance.get<Response<AreaItemResult[]>>(
+): Promise<{items: AreaItemResult[],total:number}> {
+  const res = await httpClient.instance.get<Response<{items: AreaItemResult[],total:number}>>(
     `${prefix}/list`,
     {
       params,

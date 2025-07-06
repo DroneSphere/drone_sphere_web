@@ -30,6 +30,8 @@ import { ResultItem, ResultQuery, ObjectTypeOption } from "./types";
 import ViewDialog from "./view-dialog";
 import DeleteDialog from "./delete-dialog";
 import { Search } from "lucide-react";
+import MaterialPagination from "@/components/material-pagination";
+
 
 // 定义表格列
 const columnHelper = createColumnHelper<ResultItem>();
@@ -246,40 +248,11 @@ export default function ResultPage() {
 
       {/* 分页 TODO: 可以使用组件库的分页组件替换 */}
       {data && data.total > 0 && (
-        <div className="flex justify-end items-center gap-2 mt-4">
-          <Button
-            variant="outline"
-            onClick={() =>
-              setSearchParams((prev) => ({
-                ...prev,
-                page: Math.max(1, prev.page - 1),
-              }))
-            }
-            disabled={searchParams.page <= 1}
-          >
-            上一页
-          </Button>
-          <span className="mx-2">
-            第 {searchParams.page} 页，共{" "}
-            {Math.ceil(data.total / searchParams.page_size)} 页
-          </span>
-          <Button
-            variant="outline"
-            onClick={() =>
-              setSearchParams((prev) => ({
-                ...prev,
-                page: prev.page + 1,
-              }))
-
-            }
-            disabled={
-              searchParams.page >=
-              Math.ceil(data.total / searchParams.page_size)
-            }
-          >
-            下一页
-          </Button>
-        </div>
+        <MaterialPagination currentPage={(()=>{
+        console.log(searchParams?.page)
+        return(searchParams?.page || 0)})()} total={Math.ceil((data?.total||0)/((searchParams?.page_size||1)))} onChange={(newPage)=>{
+        setSearchParams((prev)=>({ ...prev, page:newPage }))
+      }}/>
       )}
     </div>
   );

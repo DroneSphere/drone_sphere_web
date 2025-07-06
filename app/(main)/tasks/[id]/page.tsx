@@ -429,7 +429,7 @@ export default function JobDetailPage() {
           className="h-[calc(100vh-160px)] flex-1 border rounded-md shadow-sm"
         />
         {/* 右侧面板 */}
-        <div className="flex flex-col gap-3 w-96 max-h-[calc(100vh-4rem)]">
+        <div className="flex flex-col gap-3 max-h-[calc(100vh-4rem)]">
           {/* 实时数据区域 */}
           <div className="flex-1 h-auto overflow-y-auto flex flex-col gap-3">
             {query.data && query.data.drones && optionsQuery.data && (
@@ -445,12 +445,13 @@ export default function JobDetailPage() {
           </div>
 
           {/* 搜索结果区域 */}
-          <div className="h-[300px] overflow-y-auto flex flex-col">
+          <h2 className="text-lg font-bold mb-3 pb-2">
+              搜索结果
+            </h2>
             <SearchResultList
               searchResults={searchResults}
               onResultClick={handleSearchResultClick}
             />
-          </div>
         </div>
       </div>
     </div>

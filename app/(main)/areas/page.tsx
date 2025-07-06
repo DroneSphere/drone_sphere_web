@@ -48,17 +48,21 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { deleteArea } from "./[id]/requests";
 import { AreaItemResult, AreaSearchParams } from "./types";
+import MaterialPagination from "@/components/material-pagination";
 
 const columnHelper = createColumnHelper<AreaItemResult>();
 
 export default function AreasPage() {
   const router = useRouter();
   const [searchParams, setSearchParams] = useState<AreaSearchParams | null>(
-    null
+    {
+      page: 1,
+      page_size: 10
+    }
   );
   const queryClient = useQueryClient();
   const query = useQuery({
-    queryKey: ["areas"],
+    queryKey: ["areas",searchParams],
     queryFn: () => {
       return selectAllAreas(searchParams);
     },
@@ -173,7 +177,7 @@ export default function AreasPage() {
   ];
 
   const table = useReactTable({
-    data: query.data || [],
+    data: query.data?.items || [],
     columns,
     getCoreRowModel: getCoreRowModel(),
   });
@@ -307,7 +311,7 @@ export default function AreasPage() {
           </div>
         )
       }
-      {query.isSuccess && query.data && (
+      {query.isSuccess && query.data.items && (
         <div className="my-4 max-w-full overflow-x-auto">
           <Table className="border border-gray-200 rounded-md border-collapse">
             <TableHeader className="bg-gray-100">
@@ -357,7 +361,7 @@ export default function AreasPage() {
         // 无数据
         !query.isLoading &&
           query.isSuccess &&
-          (!query.data || query.data.length === 0) && (
+          (!query.data.items || query.data.items.length === 0) && (
             <div className="text-center text-gray-500">
               未找到符合条件的区域
             </div>
@@ -367,6 +371,11 @@ export default function AreasPage() {
         // 加载失败
         query.isError && <div className="text-center">加载失败</div>
       }
+      <MaterialPagination currentPage={(()=>{
+        console.log(searchParams?.page)
+        return(searchParams?.page || 0)})()} total={Math.ceil((query.data?.total||0)/((searchParams?.page_size||1)))} onChange={(newPage)=>{
+        setSearchParams((prev)=>({ ...prev, page:newPage }))
+      }}/>
     </div>
   );
 }

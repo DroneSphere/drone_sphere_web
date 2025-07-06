@@ -56,29 +56,26 @@ const SearchResultList = ({
 
   return (
     <>
-      <div className="text-md font-medium mb-3">搜索结果</div>
       {/* 表格展示 - 高度溢出时滚动 */}
-      <div className="max-h-[400px] overflow-auto">
         {/* 设置最小宽度以防止表格内容挤压 */}
-        <div className="">
           <Table>
             {/* 参考列表页样式的表头 */}
             <TableHeader className="bg-gray-100">
               <TableRow className="border-b border-gray-200">
-                <TableHead className="text-center whitespace-nowrap">
+                <TableHead className="text-center p-1 whitespace-nowrap">
                   类型
                 </TableHead>
-                <TableHead className="text-center whitespace-nowrap">
+                <TableHead className="text-center p-1 whitespace-nowrap">
                   置信度
                 </TableHead>
-                <TableHead className="text-center whitespace-nowrap">
+                <TableHead className="text-center p-1 whitespace-nowrap">
                   经度
                 </TableHead>
-                <TableHead className="text-center whitespace-nowrap">
+                <TableHead className="text-center p-1 whitespace-nowrap">
                   纬度
                 </TableHead>
-                <TableHead className="text-center ">查看</TableHead>
-                <TableHead className="text-center whitespace-nowrap">
+                <TableHead className="text-center p-1 whitespace-nowrap">查看</TableHead>
+                <TableHead className="text-center p-1 whitespace-nowrap">
                   检测时间
                 </TableHead>
               </TableRow>
@@ -94,13 +91,13 @@ const SearchResultList = ({
               {searchResults?.map((result) => (
                 <TableRow
                   key={result.id}
-                  className="p-2 cursor-pointer hover:bg-gray-50 border-b border-gray-200 group"
+                  className="cursor-pointer hover:bg-gray-50 border-b border-gray-200 group"
                 >
                   {/* 检测时间 */}
 
                   {/* 类型 */}
                   <TableCell
-                    className="font-medium text-xs text-center p-1 border-x border-gray-200 whitespace-nowrap"
+                    className="px-1 font-medium text-sm text-center p-2 border-x border-gray-200 whitespace-nowrap"
                     onClick={() => onResultClick?.(result)}
                   >
                     {result.target_label}
@@ -108,7 +105,7 @@ const SearchResultList = ({
 
                   {/* 置信度 */}
                   <TableCell
-                    className="text-xs text-muted-foreground text-center p-1 border-x border-gray-200 whitespace-nowrap"
+                    className="px-1 text-sm text-muted-foreground text-center p-2 border-x border-gray-200 whitespace-nowrap"
                     onClick={() => onResultClick?.(result)}
                   >
                     90%
@@ -116,7 +113,7 @@ const SearchResultList = ({
 
                   {/* 经度 */}
                   <TableCell
-                    className="text-xs text-muted-foreground text-center p-1 border-x border-gray-200 whitespace-nowrap"
+                    className="px-1 text-sm text-muted-foreground text-center p-2 border-x border-gray-200 whitespace-nowrap"
                     onClick={() => onResultClick?.(result)}
                   >
                     {Number(result.lng).toFixed(6)}
@@ -124,7 +121,7 @@ const SearchResultList = ({
 
                   {/* 纬度 */}
                   <TableCell
-                    className="text-xs text-muted-foreground text-center p-1 border-x border-gray-200 whitespace-nowrap"
+                    className="px-1 text-sm text-muted-foreground text-center p-2 border-x border-gray-200 whitespace-nowrap"
                     onClick={() => onResultClick?.(result)}
                   >
                     {Number(result.lat).toFixed(6)}
@@ -154,8 +151,6 @@ const SearchResultList = ({
               ))}
             </TableBody>
           </Table>
-        </div>
-      </div>
 
       {/* 详情对话框 */}
       <Dialog open={detailDialog.open} onOpenChange={closeDetailDialog}>
