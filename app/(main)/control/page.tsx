@@ -20,7 +20,7 @@ export default function DroneContolPage(){
             const parsedState = JSON.parse(storedState);
             console.log(parsedState)
             if(parsedState){
-                setDrone(parsedState)
+              setDrone(parsedState)
             }
           } catch (e) {
             console.error('解析状态失败', e);

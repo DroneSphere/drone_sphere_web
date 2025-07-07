@@ -24,6 +24,7 @@ export function DirectionsScaleControl({
     const [yaw, setYaw] = useState(180);
     const [zoom, setZoom] = useState(2);
     const [cameraType, setCameraType] = useState("zoom")
+    const [currentCamera, setCurrentCamera] = useState<Camera|null>(null)
     
     const pitchRef = useRef(pitch)
     const yawRef =  useRef(yaw)
@@ -181,13 +182,16 @@ export function DirectionsScaleControl({
             }
 
             // 处理缩放键 - 调整缩放步长
-            if (e.key === "+" || e.key === "=") {
-                e.preventDefault();
-                setZoom(s => Math.min(200, s + 0.5)); // 从1改为0.5，让缩放更细腻
-            }
-            if (e.key === "-" || e.key === "_") {
-                e.preventDefault();
-                setZoom(s => Math.max(1, s - 0.5)); // 从1改为0.5，让缩放更细腻
+            console.log(currentCamera?.is_zoomable)
+            if(currentCamera?.is_zoomable){
+                if (e.key === "+" || e.key === "=") {
+                    e.preventDefault();
+                    setZoom(s => Math.min(200, s + 0.5)); // 从1改为0.5，让缩放更细腻
+                }
+                if (e.key === "-" || e.key === "_") {
+                    e.preventDefault();
+                    setZoom(s => Math.max(1, s - 0.5)); // 从1改为0.5，让缩放更细腻
+                }
             }
         }
 
@@ -213,7 +217,7 @@ export function DirectionsScaleControl({
             window.removeEventListener("keyup", handleKeyUp);
             window.removeEventListener("blur", handleBlur);
         };
-    }, [startContinuousMove, stopContinuousMove]);
+    }, [startContinuousMove, stopContinuousMove,currentCamera]);
 
     // 鼠标事件处理
     const handleMouseDown = useCallback((dir: Direction) => {
@@ -269,6 +273,12 @@ export function DirectionsScaleControl({
             document.removeEventListener('mouseup', handleGlobalMouseUp);
         };
     }, [handleMouseUp]);
+
+    useEffect(()=>{
+        const camera = cameras?.filter((item)=>item.type == cameraType)[0] || null
+        console.log(camera)
+        setCurrentCamera(camera)
+    },[cameraType,cameras])
     
     useEffect(() => {
         zoomRef.current = zoom;
@@ -291,6 +301,22 @@ export function DirectionsScaleControl({
                     console.log('WebSocket connected');
                     webSocketRef.current = socket
                 }
+                socket.onmessage = (event) => {
+      try {
+        const message = JSON.parse(event.data);
+        
+        // 验证消息类型
+        if (message.method === 'init') {
+          console.log('Received init message:', message);
+          setYaw(message.data.yaw)
+          setZoom(message.data.zoom)
+          setPitch(message.data.pitch)
+          setCameraType(message.data.current_camera)
+        }
+      } catch (error) {
+        console.error('Error processing message:', error);
+      }
+    };
             } catch (error) {
                 console.error('Socket 创建失败:', error);
             }
@@ -310,7 +336,9 @@ export function DirectionsScaleControl({
         const Timer = setInterval(() => {
             console.log("SocketRef:", webSocketRef.current);
             if (webSocketRef.current) {
-                webSocketRef.current.send(JSON.stringify({
+                if(currentCamera?.is_zoomable){
+                    console.log("zoom",zoomRef.current.toFixed(1))
+                    webSocketRef.current.send(JSON.stringify({
                     "tid": window.crypto.randomUUID(),
                     "timestamp": Math.floor(Date.now() / 1000),
                     "method": "zoom",
@@ -318,6 +346,7 @@ export function DirectionsScaleControl({
                         "factor": parseFloat(zoomRef.current.toFixed(1))
                     }
                 }));
+                }
                 webSocketRef.current.send(JSON.stringify({
                     "tid": window.crypto.randomUUID(),
                     "timestamp": Math.floor(Date.now() / 1000),
@@ -333,7 +362,21 @@ export function DirectionsScaleControl({
         return () => {
             clearInterval(Timer);
         }
-    }, [webSocketRef.current]);
+    }, [webSocketRef.current,currentCamera]);
+
+    const handleCameraTypeChange = (newCameraType:string)=>{
+        if(webSocketRef.current){
+            setCameraType(newCameraType)
+            webSocketRef.current.send(JSON.stringify({
+                    "tid": window.crypto.randomUUID(),
+                    "timestamp": Math.floor(Date.now() / 1000),
+                    "method": "switch_camera",
+                    "data": {
+                        "camera": newCameraType
+                    }
+                }))
+        }
+    }
 
     // 根据布局属性确定容器样式
     const containerClasses = layout === "vertical" 
@@ -352,7 +395,7 @@ export function DirectionsScaleControl({
                     <select
                         className="text-xs border rounded px-2 py-1 bg-white"
                         value={cameraType}
-                        onChange={(e) => setCameraType(e.target.value)}
+                        onChange={(e) => handleCameraTypeChange(e.target.value)}
                         aria-label="无人机相机选择"
                     >
                         {cameras?.map((camera) => (
@@ -417,14 +460,16 @@ export function DirectionsScaleControl({
             </div>
 
             {/* 缩放控制 */}
-            <Slider
+            {currentCamera && currentCamera.is_zoomable &&
+                <Slider
                 title="变焦"
                 value={zoom}
                 onChange={handleZoomChange}
-                min={2}
-                max={200}
+                min={currentCamera?.min_zoom_factor}
+                max={currentCamera?.max_zoom_factor}
                 step={0.5}
-            />
+            /> 
+            }
         </div>
     );
 }

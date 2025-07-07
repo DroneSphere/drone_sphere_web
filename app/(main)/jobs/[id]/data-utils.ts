@@ -68,9 +68,9 @@ export function formatDronesData(
             equivalent_focal_length: 24,
             min_equivalent_focal_length: 0,
             max_equivalent_focal_length: 0,
-            is_zoomable: true,
-            min_zoom_factor: 2,
-            max_zoom_factor: 200
+            is_zoomable: false,
+            min_zoom_factor: 1,
+            max_zoom_factor: 1
         },
         {
             type: "zoom",
@@ -81,9 +81,9 @@ export function formatDronesData(
             equivalent_focal_length: 0,
             min_equivalent_focal_length: 113,
             max_equivalent_focal_length: 405,
-            is_zoomable: false,
-            min_zoom_factor: 1,
-            max_zoom_factor: 1
+            is_zoomable: true,
+            min_zoom_factor: 2,
+            max_zoom_factor: 200
         }
       ]
     } as DroneStateV2;
