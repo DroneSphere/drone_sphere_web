@@ -327,7 +327,7 @@ const DroneCardList = ({
               </div>
             </div>
           </div>
-          <DirectionsScaleControl/>          
+          <DirectionsScaleControl physicalDroneSn={videoDialog.drone?.physical_drone_sn}/>          
 
           </div>
           <div className="flex justify-end gap-2 mt-2">
