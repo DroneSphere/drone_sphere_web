@@ -10,7 +10,7 @@ export default function DroneContolPage(){
     const [drone,setDrone] = useState<DroneStateV2 | null>(null)
     const searchParams = useSearchParams();
     useEffect(() => {
-      let sn = searchParams.get("sn");
+      const sn = searchParams.get("sn");
       
       if (sn) {
         const storedState = localStorage.getItem(sn);

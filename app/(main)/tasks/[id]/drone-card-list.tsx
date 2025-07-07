@@ -14,7 +14,6 @@ import { DroneRTState } from "../../drones/types";
 import { ControlledVideoPlayer } from "@/components/video/controlled-video-player";
 import { DirectionsScaleControl } from "@/components/ui/directionscale-control";
 const baseRtcURL = process.env.NEXT_PUBLIC_RTC_BASE_URL
-import Link from "next/link";
 import { removeLocalStorage, setLocalStorage } from "@/lib/storage";
 
 interface DroneCardListProps {
