@@ -14,7 +14,7 @@ const MaterialPagination: React.FC<MaterialPaginationProps> = ({
   onChange,
 }) => {
   return (
-    <Stack spacing={2} alignItems="center">
+    <Stack className='mt-2' spacing={2} alignItems="flex-end">
       <Pagination
         count={total}
         page={currentPage}
@@ -30,7 +30,9 @@ const MaterialPagination: React.FC<MaterialPaginationProps> = ({
           },
         }}
       />
-      共{total}页
+      <div className='mt-1'>
+        共{total}页
+      </div>
     </Stack>
   );
 };

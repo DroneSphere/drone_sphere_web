@@ -58,6 +58,34 @@ export function formatDronesData(
         : undefined,
       wayline_name: drone?.wayline?.wayline_name || null,
       wayline_url: drone.wayline?.url || null,
+      cameras:[
+        {
+            type: "wide",
+            label: "广角相机",
+            focal_length: 4.5,
+            min_focal_length: 0,
+            max_focal_length: 0,
+            equivalent_focal_length: 24,
+            min_equivalent_focal_length: 0,
+            max_equivalent_focal_length: 0,
+            is_zoomable: true,
+            min_zoom_factor: 2,
+            max_zoom_factor: 200
+        },
+        {
+            type: "zoom",
+            label: "变焦相机",
+            focal_length: 0,
+            min_focal_length: 21,
+            max_focal_length: 75,
+            equivalent_focal_length: 0,
+            min_equivalent_focal_length: 113,
+            max_equivalent_focal_length: 405,
+            is_zoomable: false,
+            min_zoom_factor: 1,
+            max_zoom_factor: 1
+        }
+      ]
     } as DroneStateV2;
   });
 }

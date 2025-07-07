@@ -371,11 +371,13 @@ export default function AreasPage() {
         // 加载失败
         query.isError && <div className="text-center">加载失败</div>
       }
-      <MaterialPagination currentPage={(()=>{
+      {!query.isLoading && 
+        <MaterialPagination currentPage={(()=>{
         console.log(searchParams?.page)
         return(searchParams?.page || 0)})()} total={Math.ceil((query.data?.total||0)/((searchParams?.page_size||1)))} onChange={(newPage)=>{
         setSearchParams((prev)=>({ ...prev, page:newPage }))
       }}/>
+      }
     </div>
   );
 }

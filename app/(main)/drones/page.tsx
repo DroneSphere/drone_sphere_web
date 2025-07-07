@@ -284,12 +284,14 @@ export default function DronesPage() {
         <div className="text-center text-gray-500">暂无数据</div>
       )}
       {query.isError && <div className="text-center">加载失败</div>}
-      <MaterialPagination currentPage={(()=>{
+      {!query.isLoading &&
+        <MaterialPagination currentPage={(()=>{
         console.log(queryParams?.page)
         return(queryParams?.page || 0)})()} total={Math.ceil((query.data?.total||0)/((queryParams?.page_size||1)))} onChange={(newPage)=>{
         setSearchParams((prev)=>({ ...prev, page:newPage }))
         setQueryParams((prev)=>({ ...prev, page:newPage }))
       }}/>
+      }
     </div>
   );
 }

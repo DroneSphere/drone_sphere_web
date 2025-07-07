@@ -14,6 +14,8 @@ import { DroneRTState } from "../../drones/types";
 import { ControlledVideoPlayer } from "@/components/video/controlled-video-player";
 import { DirectionsScaleControl } from "@/components/ui/directionscale-control";
 const baseRtcURL = process.env.NEXT_PUBLIC_RTC_BASE_URL
+import Link from "next/link";
+import { removeLocalStorage, setLocalStorage } from "@/lib/storage";
 
 interface DroneCardListProps {
   drones?: DroneStateV2[];
@@ -46,6 +48,16 @@ const DroneCardList = ({
   const closeVideoDialog = () => {
     setVideoDialog({ open: false, drone: null });
   };
+
+  const openNewControlPage = (drone: DroneStateV2) => {
+    if(drone.physical_drone_sn){
+      setLocalStorage(drone.physical_drone_sn,JSON.stringify(drone||null))
+      setTimeout(()=>{
+        removeLocalStorage("drone.physical_drone_sn")
+      },120000)
+      window.open(`/control?sn=${drone.physical_drone_sn}`,"_blank")
+    }
+  }
 
   // 处理全局命令发送
   const handleGlobalCommand = () => {
@@ -129,10 +141,15 @@ const DroneCardList = ({
                     : "text-gray-400"
                 }`}
               >
+                <div className="flex flex-row items-center">
                 {drone.physical_drone_sn &&
                 droneConnections[drone.physical_drone_sn]
                   ? "已连接"
                   : "未连接"}
+                  <button className="ml-2 bg-green-200 text-green-600 p-1 rounded-full z-10" onClick={()=>openNewControlPage(drone)}>
+                    <Video className="h-3 w-3" />
+                  </button>
+                  </div>
               </div>
             </div>
 
@@ -327,7 +344,7 @@ const DroneCardList = ({
               </div>
             </div>
           </div>
-          <DirectionsScaleControl physicalDroneSn={videoDialog.drone?.physical_drone_sn}/>          
+          <DirectionsScaleControl  physicalDroneSn={videoDialog.drone?.physical_drone_sn} cameras={videoDialog.drone?.cameras}/>          
 
           </div>
           <div className="flex justify-end gap-2 mt-2">

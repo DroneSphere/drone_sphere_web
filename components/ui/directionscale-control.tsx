@@ -2,22 +2,28 @@ import React, { useRef, useEffect, useState, useCallback } from "react";
 import { cn } from "@/lib/utils";
 import { Slider } from "./slider";
 import { RefreshCcwDot } from "lucide-react";
+import { Camera } from "@/app/(main)/jobs/[id]/job-state";
 
 type Direction = "up" | "down" | "left" | "right" | "left-up" | "left-down" | "right-up" | "right-down";
 
 interface GimbalControlProps {
     className?: string;
     physicalDroneSn?: string;
+    cameras?: Camera[];
+    layout?: "horizontal" | "vertical";
 }
 
 export function DirectionsScaleControl({
     className,
-    physicalDroneSn
+    physicalDroneSn,
+    cameras,
+    layout = "horizontal"
 }: GimbalControlProps) {
     // 云台状态
-    const [pitch, setPitch] = useState(0); // 俯仰角：-90到45度
-    const [yaw, setYaw] = useState(180); // 偏航角：默认180度
-    const [zoom, setZoom] = useState(1); // 缩放：1-200倍
+    const [pitch, setPitch] = useState(0); 
+    const [yaw, setYaw] = useState(180);
+    const [zoom, setZoom] = useState(2);
+    const [cameraType, setCameraType] = useState("zoom")
     
     const pitchRef = useRef(pitch)
     const yawRef =  useRef(yaw)
@@ -105,12 +111,12 @@ export function DirectionsScaleControl({
                 case "left":
                 case "left-up":
                 case "left-down":
-                    newYaw = Math.min(240, prevYaw + step * (direction.includes('-') ? 0.7 : 1));
+                    newYaw = Math.max(120, prevYaw - step * (direction.includes('-') ? 0.7 : 1));
                     break;
                 case "right":
                 case "right-up":
                 case "right-down":
-                    newYaw = Math.max(120, prevYaw - step * (direction.includes('-') ? 0.7 : 1));
+                    newYaw = Math.min(240, prevYaw + step * (direction.includes('-') ? 0.7 : 1));
                     break;
             }
 
@@ -263,18 +269,18 @@ export function DirectionsScaleControl({
             document.removeEventListener('mouseup', handleGlobalMouseUp);
         };
     }, [handleMouseUp]);
+    
     useEffect(() => {
-    zoomRef.current = zoom;
+        zoomRef.current = zoom;
     }, [zoom]);
 
     useEffect(() => {
-    pitchRef.current = pitch;
+        pitchRef.current = pitch;
     }, [pitch]);
 
     useEffect(() => {
-    yawRef.current = yaw;
+        yawRef.current = yaw;
     }, [yaw]);
-
 
     //ws连接
     useEffect(() => {
@@ -318,30 +324,47 @@ export function DirectionsScaleControl({
                     "method": "set_gimbal_angle",
                     "data": {
                         "pitch": parseFloat(pitchRef.current.toFixed(1)),
+                        "roll": 0,
                         "yaw": parseFloat(yawRef.current.toFixed(1))
                     }
                 }));
             }
-        }, 500);
+        }, 1000);
         return () => {
             clearInterval(Timer);
         }
     }, [webSocketRef.current]);
 
+    // 根据布局属性确定容器样式
+    const containerClasses = layout === "vertical" 
+        ? "w-auto h-auto flex flex-col items-center justify-center gap-6" 
+        : "w-auto h-40 flex flex-row items-center justify-between gap-6";
+
     return (
-        <div ref={containerRef} className={cn("w-auto h-40 flex flex-row items-center justify-between gap-6", className)}>
+        <div ref={containerRef} className={cn(containerClasses, className)}>
             {/* 云台状态显示 */}
             <div className="flex flex-col items-center space-y-2">
                 <div className="text-sm font-medium text-gray-700">云台状态</div>
                 <div className="text-xs text-gray-500">
                     <div>俯仰: {pitch.toFixed(1)}°</div>
                     <div>偏航: {yaw.toFixed(1)}°</div>
+                    
+                    <select
+                        className="text-xs border rounded px-2 py-1 bg-white"
+                        value={cameraType}
+                        onChange={(e) => setCameraType(e.target.value)}
+                        aria-label="无人机相机选择"
+                    >
+                        {cameras?.map((camera) => (
+                            <option key={camera.type} value={camera.type}>{camera.label}</option>
+                        ))}
+                    </select>
                 </div>
             </div>
 
             {/* 方向控制器 */}
             <div
-                className="relative h-full bg-white shadow-lg aspect-square rounded-full flex items-center justify-center"
+                className="relative h-40 bg-white shadow-lg aspect-square rounded-full flex items-center justify-center"
                 onMouseLeave={handleMouseLeave}
             >
                 <div className="w-[80%] h-[80%] relative">
@@ -398,7 +421,7 @@ export function DirectionsScaleControl({
                 title="变焦"
                 value={zoom}
                 onChange={handleZoomChange}
-                min={1}
+                min={2}
                 max={200}
                 step={0.5}
             />

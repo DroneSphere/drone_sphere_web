@@ -1,6 +1,30 @@
 import { JobDetailResult, JobDroneVariation } from "./types";
 
 // 定义各种状态类型
+export type Camera = {
+  // 摄像头类型
+  type: string,
+  // 摄像头名称
+  label: string,
+  //实际焦段
+  focal_length: number,
+  //最小焦段
+  min_focal_length: number,
+  //最大焦段
+  max_focal_length: number,
+  //等价焦段
+  equivalent_focal_length: number,
+  //等价最大焦段
+  min_equivalent_focal_length: number,
+  //等价最小焦段
+  max_equivalent_focal_length: number,
+  //是否可以缩放倍率
+  is_zoomable: boolean,
+  //最小缩放倍率
+  min_zoom_factor: number,
+  //最大缩放倍率
+  max_zoom_factor: number
+} 
 export type DroneStateV2 = {
   /** 无人机唯一键, 格式：${index}-${model_id}-${variation_index} */
   key: string;
@@ -32,6 +56,7 @@ export type DroneStateV2 = {
   };
   wayline_name?: string;
   wayline_url?: string;
+  cameras?:Camera[]
 };
 export type DroneState = JobDetailResult["drones"][0];
 export type WaylineAreaState = {
