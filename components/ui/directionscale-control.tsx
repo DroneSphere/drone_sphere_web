@@ -309,7 +309,7 @@ export function DirectionsScaleControl({
                     "timestamp": Math.floor(Date.now() / 1000),
                     "method": "zoom",
                     "data": {
-                        "factor": zoomRef.current.toFixed(1)
+                        "factor": parseFloat(zoomRef.current.toFixed(1))
                     }
                 }));
                 webSocketRef.current.send(JSON.stringify({
@@ -317,8 +317,8 @@ export function DirectionsScaleControl({
                     "timestamp": Math.floor(Date.now() / 1000),
                     "method": "set_gimbal_angle",
                     "data": {
-                        "pitch": pitchRef.current.toFixed(1),
-                        "yaw": yawRef.current.toFixed(1)
+                        "pitch": parseFloat(pitchRef.current.toFixed(1)),
+                        "yaw": parseFloat(yawRef.current.toFixed(1))
                     }
                 }));
             }

@@ -13,7 +13,7 @@ import { DroneStateV2 } from "../../jobs/[id]/job-state";
 import { DroneRTState } from "../../drones/types";
 import { ControlledVideoPlayer } from "@/components/video/controlled-video-player";
 import { DirectionsScaleControl } from "@/components/ui/directionscale-control";
-const baseRtcURL = process.env.RTC_BASE_URL
+const baseRtcURL = process.env.NEXT_PUBLIC_RTC_BASE_URL
 
 interface DroneCardListProps {
   drones?: DroneStateV2[];
