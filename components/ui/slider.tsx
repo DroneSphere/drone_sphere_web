@@ -15,8 +15,8 @@ export function Slider({
     value, 
     onChange, 
     className, 
-    min = 0, 
-    max = 100, 
+    min = 2, 
+    max = 200, 
     step = 0.1 
 }: SliderProps) {
     // 受控组件：始终以父组件的 value 为准

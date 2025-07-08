@@ -1,3 +1,5 @@
+import { Camera } from "./job-state";
+
 export interface JobCreationRequest {
   /** 任务名称（必填） */
   name: string;
@@ -263,6 +265,21 @@ export interface JobDetailResult {
       s3_key: string;
       url: string;
     };
+    gimbal_model: {
+      gimbal_model_id: number;
+      created_time: string; // ISO 8601 格式日期时间字符串
+      updated_time: string; // ISO 8601 格式日期时间字符串
+      state: number;
+      gimbal_model_name: string;
+      gimbal_model_description: string;
+      gimbal_model_product: string;
+      gimbal_model_domain: number;
+      gimbal_model_type: number;
+      gimbal_model_sub_type: number;
+      gimbalindex: number;
+      cameras: Camera[];
+      is_thermal_available: boolean;
+    }
   }[];
   /** 航线列表 */
   waylines: {

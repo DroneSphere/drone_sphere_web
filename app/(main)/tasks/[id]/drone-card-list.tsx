@@ -14,7 +14,7 @@ import { DroneRTState } from "../../drones/types";
 import { ControlledVideoPlayer } from "@/components/video/controlled-video-player";
 import { DirectionsScaleControl } from "@/components/ui/directionscale-control";
 const baseRtcURL = process.env.NEXT_PUBLIC_RTC_BASE_URL
-import { removeLocalStorage, setLocalStorage } from "@/lib/storage";
+import { setLocalStorage } from "@/lib/storage";
 
 interface DroneCardListProps {
   drones?: DroneStateV2[];
@@ -51,9 +51,6 @@ const DroneCardList = ({
   const openNewControlPage = (drone: DroneStateV2) => {
     if(drone.physical_drone_sn){
       setLocalStorage(drone.physical_drone_sn,JSON.stringify(drone||null))
-      setTimeout(()=>{
-        removeLocalStorage("drone.physical_drone_sn")
-      },120000)
       window.open(`/control?sn=${drone.physical_drone_sn}`,"_blank")
     }
   }

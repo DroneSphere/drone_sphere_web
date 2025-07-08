@@ -391,8 +391,8 @@ export function DirectionsScaleControl({
                 <div className="text-xs text-gray-500">
                     <div>俯仰: {pitch.toFixed(1)}°</div>
                     <div>偏航: {yaw.toFixed(1)}°</div>
-                    
-                    <select
+                    {cameras && 
+                        <select
                         className="text-xs border rounded px-2 py-1 bg-white"
                         value={cameraType}
                         onChange={(e) => handleCameraTypeChange(e.target.value)}
@@ -402,6 +402,7 @@ export function DirectionsScaleControl({
                             <option key={camera.type} value={camera.type}>{camera.label}</option>
                         ))}
                     </select>
+                    }
                 </div>
             </div>
 
@@ -460,7 +461,7 @@ export function DirectionsScaleControl({
             </div>
 
             {/* 缩放控制 */}
-            {currentCamera && currentCamera.is_zoomable &&
+            {cameraType == "zoom" &&
                 <Slider
                 title="变焦"
                 value={zoom}

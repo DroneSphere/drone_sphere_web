@@ -5,6 +5,7 @@ const baseRtcURL = process.env.NEXT_PUBLIC_RTC_BASE_URL;
 import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { DroneStateV2 } from "../jobs/[id]/job-state";
+import { removeLocalStorage } from "@/lib/storage";
 export default function DroneContolPage(){
     const containerRef = useRef<HTMLDivElement>(null);
     const [drone,setDrone] = useState<DroneStateV2 | null>(null)
@@ -14,7 +15,7 @@ export default function DroneContolPage(){
       
       if (sn) {
         const storedState = localStorage.getItem(sn);
-        console.log(storedState)
+        console.log("数据",storedState)
         if (storedState) {
           try {
             const parsedState = JSON.parse(storedState);
@@ -25,6 +26,11 @@ export default function DroneContolPage(){
           } catch (e) {
             console.error('解析状态失败', e);
           }
+        }
+      }
+      return () => {
+        if(sn){
+          removeLocalStorage(sn)
         }
       }
   }, [searchParams]);
