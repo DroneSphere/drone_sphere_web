@@ -13,7 +13,7 @@ import { DroneStateV2 } from "../../jobs/[id]/job-state";
 import { DroneRTState } from "../../drones/types";
 import { ControlledVideoPlayer } from "@/components/video/controlled-video-player";
 import { DirectionsScaleControl } from "@/components/ui/directionscale-control";
-const baseRtcURL = process.env.NEXT_PUBLIC_RTC_BASE_URL
+const baseRtcURL = "http://47.245.40.222:1985/rtc/v1";
 import { setLocalStorage } from "@/lib/storage";
 
 interface DroneCardListProps {
