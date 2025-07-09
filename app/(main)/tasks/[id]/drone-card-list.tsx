@@ -209,7 +209,7 @@ const DroneCardList = ({
                     <span className="text-gray-500 w-12">速度：</span>
                     <span>
                       {(drone.physical_drone_sn &&
-                        droneRTStates[drone.physical_drone_sn]?.speed) ??
+                        droneRTStates[drone.physical_drone_sn]?.speed.toFixed(2)) ??
                         "--"}{" "}
                       米/秒
                     </span>
@@ -218,7 +218,7 @@ const DroneCardList = ({
                     <span className="text-gray-500 w-12">航向：</span>
                     <span>
                       {(drone.physical_drone_sn &&
-                        droneRTStates[drone.physical_drone_sn]?.heading) ??
+                        droneRTStates[drone.physical_drone_sn]?.heading.toFixed(2)) ??
                         "--"}
                       °
                     </span>
