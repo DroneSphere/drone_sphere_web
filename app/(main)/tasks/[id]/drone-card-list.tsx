@@ -209,7 +209,7 @@ const DroneCardList = ({
                     <span className="text-gray-500 w-12">速度：</span>
                     <span>
                       {(drone.physical_drone_sn &&
-                        droneRTStates[drone.physical_drone_sn]?.speed) ??
+                        droneRTStates[drone.physical_drone_sn]?.speed.toFixed(1)) ??
                         "--"}{" "}
                       米/秒
                     </span>

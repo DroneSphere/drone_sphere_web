@@ -12,7 +12,7 @@ interface GimbalControlProps {
     cameras?: Camera[];
     layout?: "horizontal" | "vertical";
 }
-
+//TODO: 看看有没有机会实现一下上下限的维护
 export function DirectionsScaleControl({
     className,
     physicalDroneSn,
@@ -20,14 +20,18 @@ export function DirectionsScaleControl({
     layout = "horizontal"
 }: GimbalControlProps) {
     // 云台状态
+    const [prevPitch, setPrevPitch] = useState(0);
+    const [prevYaw, setPrevYaw] = useState(0);
     const [pitch, setPitch] = useState(0); 
-    const [yaw, setYaw] = useState(180);
+    const [yaw, setYaw] = useState(0);
     const [zoom, setZoom] = useState(2);
     const [cameraType, setCameraType] = useState("zoom")
     const [currentCamera, setCurrentCamera] = useState<Camera|null>(null)
     
     const pitchRef = useRef(pitch)
     const yawRef =  useRef(yaw)
+    const prevPitchRef = useRef(prevPitch)
+    const prevYawRef = useRef(prevYaw)
     const zoomRef = useRef(zoom)
     // 交互状态
     const [activeDir, setActiveDir] = useState<Direction | null>(null);
@@ -93,12 +97,12 @@ export function DirectionsScaleControl({
                 case "up":
                 case "left-up":
                 case "right-up":
-                    newPitch = Math.min(45, prevPitch + step * (direction.includes('-') ? 0.7 : 1));
+                    newPitch = prevPitch + step * (direction.includes('-') ? 0.7 : 1);
                     break;
                 case "down":
                 case "left-down":
                 case "right-down":
-                    newPitch = Math.max(-90, prevPitch - step * (direction.includes('-') ? 0.7 : 1));
+                    newPitch =  prevPitch - step * (direction.includes('-') ? 0.7 : 1);
                     break;
             }
 
@@ -112,12 +116,12 @@ export function DirectionsScaleControl({
                 case "left":
                 case "left-up":
                 case "left-down":
-                    newYaw = Math.max(120, prevYaw - step * (direction.includes('-') ? 0.7 : 1));
+                    newYaw = prevYaw - step * (direction.includes('-') ? 0.7 : 1);
                     break;
                 case "right":
                 case "right-up":
                 case "right-down":
-                    newYaw = Math.min(240, prevYaw + step * (direction.includes('-') ? 0.7 : 1));
+                    newYaw = prevYaw + step * (direction.includes('-') ? 0.7 : 1);
                     break;
             }
 
@@ -248,10 +252,10 @@ export function DirectionsScaleControl({
 
     // 重置云台
     const handleReset = useCallback(() => {
-        setPitch(0);
-        setYaw(180);
-        setZoom(1);
-    }, []);
+        setPitch(-prevPitch);
+        setYaw(-prevYaw);
+        setZoom(2);
+    }, [prevPitch, prevYaw]);
 
     useEffect(() => {
         return () => {
@@ -291,6 +295,13 @@ export function DirectionsScaleControl({
     useEffect(() => {
         yawRef.current = yaw;
     }, [yaw]);
+    useEffect(() => {
+        prevPitchRef.current = prevPitch;
+    },[prevPitch])
+    useEffect(() => {
+        prevYawRef.current = prevYaw;
+    },[prevYaw])
+
 
     //ws连接
     useEffect(() => {
@@ -308,9 +319,9 @@ export function DirectionsScaleControl({
         // 验证消息类型
         if (message.method === 'init') {
           console.log('Received init message:', message);
-          setYaw(message.data.yaw)
+        //   setYaw(message.data.yaw)
           setZoom(message.data.zoom)
-          setPitch(message.data.pitch)
+        //   setPitch(message.data.pitch)
           setCameraType(message.data.current_camera)
         }
       } catch (error) {
@@ -347,16 +358,21 @@ export function DirectionsScaleControl({
                     }
                 }));
                 }
-                webSocketRef.current.send(JSON.stringify({
+                if(pitchRef.current - prevPitchRef.current !== 0 || yawRef.current - prevYawRef.current !== 0){
+                    console.log("pitch",(pitchRef.current - prevPitchRef.current).toFixed(1),"yaw",(yawRef.current - prevYawRef.current).toFixed(1))
+                    webSocketRef.current.send(JSON.stringify({
                     "tid": window.crypto.randomUUID(),
                     "timestamp": Math.floor(Date.now() / 1000),
                     "method": "set_gimbal_angle",
                     "data": {
-                        "pitch": parseFloat(pitchRef.current.toFixed(1)),
+                        "pitch": parseFloat((pitchRef.current - prevPitchRef.current).toFixed(1)),
                         "roll": 0,
-                        "yaw": parseFloat(yawRef.current.toFixed(1))
+                        "yaw": parseFloat((yawRef.current - prevYawRef.current).toFixed(1))
                     }
                 }));
+                setPrevPitch(pitchRef.current);
+                setPrevYaw(yawRef.current);
+                }
             }
         }, 1000);
         return () => {
@@ -389,8 +405,6 @@ export function DirectionsScaleControl({
             <div className="flex flex-col items-center space-y-2">
                 <div className="text-sm font-medium text-gray-700">云台状态</div>
                 <div className="text-xs text-gray-500">
-                    <div>俯仰: {pitch.toFixed(1)}°</div>
-                    <div>偏航: {yaw.toFixed(1)}°</div>
                     {cameras && 
                         <select
                         className="text-xs border rounded px-2 py-1 bg-white"
