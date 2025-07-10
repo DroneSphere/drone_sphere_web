@@ -6,6 +6,18 @@ import { Camera } from "@/app/(main)/jobs/[id]/job-state";
 
 type Direction = "up" | "down" | "left" | "right" | "left-up" | "left-down" | "right-up" | "right-down";
 
+function generateUUID() {
+  if (window.crypto && window.crypto.randomUUID) {
+    return window.crypto.randomUUID();
+  } else {
+    // 降级方案：生成一个伪随机 UUID
+    // 这是一个简化版本，不完全符合 UUID v4 规范，但对于许多情况已经足够
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+      const r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+      return v.toString(16);
+    });
+  }
+}
 interface GimbalControlProps {
     className?: string;
     physicalDroneSn?: string;
@@ -350,7 +362,7 @@ export function DirectionsScaleControl({
                 if(currentCamera?.is_zoomable){
                     console.log("zoom",zoomRef.current.toFixed(1))
                     webSocketRef.current.send(JSON.stringify({
-                    "tid": window.crypto.randomUUID(),
+                    "tid": generateUUID(),
                     "timestamp": Math.floor(Date.now() / 1000),
                     "method": "zoom",
                     "data": {
@@ -361,7 +373,7 @@ export function DirectionsScaleControl({
                 if(pitchRef.current - prevPitchRef.current !== 0 || yawRef.current - prevYawRef.current !== 0){
                     console.log("pitch",(pitchRef.current - prevPitchRef.current).toFixed(1),"yaw",(yawRef.current - prevYawRef.current).toFixed(1))
                     webSocketRef.current.send(JSON.stringify({
-                    "tid": window.crypto.randomUUID(),
+                    "tid": generateUUID(),
                     "timestamp": Math.floor(Date.now() / 1000),
                     "method": "set_gimbal_angle",
                     "data": {
@@ -384,7 +396,7 @@ export function DirectionsScaleControl({
         if(webSocketRef.current){
             setCameraType(newCameraType)
             webSocketRef.current.send(JSON.stringify({
-                    "tid": window.crypto.randomUUID(),
+                    "tid": generateUUID(),
                     "timestamp": Math.floor(Date.now() / 1000),
                     "method": "switch_camera",
                     "data": {

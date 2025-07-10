@@ -13,7 +13,7 @@ import { DroneStateV2 } from "../../jobs/[id]/job-state";
 import { DroneRTState } from "../../drones/types";
 import { ControlledVideoPlayer } from "@/components/video/controlled-video-player";
 import { DirectionsScaleControl } from "@/components/ui/directionscale-control";
-const baseRtcURL = process.env.NEXT_PUBLIC_RTC_BASE_URL
+const baseRtcURL = "http://47.245.40.222:1985/rtc/v1";
 import { setLocalStorage } from "@/lib/storage";
 
 interface DroneCardListProps {
@@ -218,7 +218,7 @@ const DroneCardList = ({
                     <span className="text-gray-500 w-12">航向：</span>
                     <span>
                       {(drone.physical_drone_sn &&
-                        droneRTStates[drone.physical_drone_sn]?.heading) ??
+                        droneRTStates[drone.physical_drone_sn]?.heading.toFixed(2)) ??
                         "--"}
                       °
                     </span>
