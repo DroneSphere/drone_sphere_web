@@ -33,7 +33,7 @@ export function Slider({
             <label className="text-sm font-medium text-gray-700">{title}</label>
             <div className="flex flex-col items-center space-y-2 flex-1">
                 <span className="text-sm font-medium text-gray-600">
-                    {value.toFixed(1)}
+                    {value?.toFixed(1)}
                 </span>
                 <div className="relative flex-1 flex items-center pb-4 mx-4">
                     <input
