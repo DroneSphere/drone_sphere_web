@@ -352,7 +352,7 @@ export default function JobDetailPage() {
             border-radius: 3px;
             font-size: 10px;
             white-space: nowrap;
-          ">${droneSN}</div>
+          ">${drone.physical_drone?.callsign || droneSN}</div>
         </div>
       `;
 
