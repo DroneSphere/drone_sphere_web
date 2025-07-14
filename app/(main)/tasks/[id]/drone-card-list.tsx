@@ -153,21 +153,28 @@ const DroneCardList = ({
             <div className="flex px-2 pb-2">
               {/* 左侧视角缩略图 */}
               <div
-                className="w-20 h-20 bg-gray-100 relative cursor-pointer flex-shrink-0 rounded-md overflow-hidden"
+                className="w-20 h-20 bg-gray-100 relative cursor-pointer flex-shrink-0 rounded-md overflow-hidden border-2 border-dashed border-gray-300"
                 onClick={() => openVideoDialog(drone)}
               >
-                <Image
-                  src="http://47.245.40.222:9000/image/WX20250421-150551%402x.png"
-                  alt="无人机视角"
-                  className="object-cover"
-                  fill={true}
-                  sizes="80px"
-                  // 添加占位符效果
-                  placeholder="blur"
-                  blurDataURL="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAiIGhlaWdodD0iODAiIHZlcnNpb249IjEuMSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iODAiIGhlaWdodD0iODAiIGZpbGw9IiNlZWVlZWUiLz48L3N2Zz4="
-                />
+                {/* 使用图标作为占位符 */}
+                <div className="w-full h-full flex items-center justify-center">
+                  <Video className="h-8 w-8 text-gray-400" />
+                </div>
+                
+                {/* 连接状态指示器 */}
                 <div className="absolute bottom-1 right-1 bg-black/50 text-white p-1 rounded-full z-10">
-                  <Video className="h-3 w-3" />
+                  <div className={`w-2 h-2 rounded-full ${
+                    drone.physical_drone_sn && droneConnections[drone.physical_drone_sn] 
+                      ? "bg-green-400" 
+                      : "bg-red-400"
+                  }`} />
+                </div>
+                
+                {/* 点击提示 */}
+                <div className="absolute inset-0 bg-black/0 hover:bg-black/10 transition-colors duration-200 flex items-center justify-center">
+                  <span className="text-xs text-gray-600 opacity-0 hover:opacity-100 transition-opacity">
+                    点击查看视频
+                  </span>
                 </div>
               </div>
 
