@@ -8,7 +8,6 @@ import {
 } from "@/components/ui/dialog";
 import { Video } from "lucide-react";
 import { useState, useRef } from "react";
-import Image from "next/image";
 import { DroneStateV2 } from "../../jobs/[id]/job-state";
 import { DroneRTState } from "../../drones/types";
 import { ControlledVideoPlayer } from "@/components/video/controlled-video-player";
