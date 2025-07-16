@@ -150,7 +150,17 @@ export default function JobListPage() {
           >
             <View className="h-4 w-4 mr-1" />
             任务报告
-          </Button>{" "}
+          </Button>
+          <Button
+            variant="secondary"
+            className="h-8 px-2 bg-blue-400 text-gray-100 hover:bg-blue-500 flex items-center min-w-[100px]" // 修改2：添加 min-width
+            onClick={() => {
+              router.push(`/jobs/${row.row.original.id}/analyse`);
+            }}
+          >
+            <View className="h-4 w-4 mr-1" />
+            任务分析
+          </Button>
           <Button
             variant="destructive"
             className="h-8 px-2 flex items-center min-w-[80px]" // 修改3：添加 min-width
