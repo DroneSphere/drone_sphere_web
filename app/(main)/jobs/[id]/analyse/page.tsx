@@ -4,12 +4,22 @@ import {
   getJobDetailById,
   getSearchResults,
 } from "@/app/(main)/jobs/report/[id]/request";
+import { fetchObjectTypeOptions } from "@/app/(main)/result/requests";
 import AMapLoader from "@amap/amap-jsapi-loader";
 import "@amap/amap-jsapi-types";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
+import { Button } from "@/components/ui/button";
 import SearchResultList from "./search-result-list";
+import GroundTruthInput from "./ground-truth-input";
+import GroundTruthList from "./ground-truth-list";
+import AnalysisResults from "./analysis-results";
 import { usePathname } from "next/navigation";
+import { GroundTruthItem, MatchResult, ErrorStatistics } from "./types";
+import {
+  matchGroundTruthsWithDetections,
+  calculateErrorStatistics,
+} from "./utils";
 
 export default function Page() {
   const AMapRef = useRef<typeof AMap | null>(null);
@@ -24,6 +34,8 @@ export default function Page() {
   const polylinesRef = useRef<AMap.Polyline[]>([]);
   // Add new ref for markers
   const markersRef = useRef<AMap.Marker[][]>([]);
+  // Add new ref for ground truth markers
+  const groundTruthMarkersRef = useRef<AMap.Marker[]>([]);
 
   // 计算工作状态
   const pathname = usePathname().match(/\/jobs\/(\d+)\/analyse/);
@@ -31,6 +43,150 @@ export default function Page() {
 
   // 当前选中的搜索区域路径
   const [path, setPath] = useState<AMap.LngLat[]>([]);
+
+  // 真值数据管理
+  const [groundTruths, setGroundTruths] = useState<GroundTruthItem[]>([]);
+
+  // 分析结果状态
+  const [matchResults, setMatchResults] = useState<MatchResult[]>([]);
+  const [errorStatistics, setErrorStatistics] =
+    useState<ErrorStatistics | null>(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+
+  // 查询目标类型选项
+  const objectTypesQuery = useQuery({
+    queryKey: ["objectTypes"],
+    queryFn: fetchObjectTypeOptions,
+  });
+
+  // 添加真值处理函数
+  const handleAddGroundTruth = (groundTruth: GroundTruthItem) => {
+    setGroundTruths((prev) => [...prev, groundTruth]);
+  };
+
+  // 删除真值处理函数
+  const handleDeleteGroundTruth = (id: string) => {
+    setGroundTruths((prev) => prev.filter((gt) => gt.id !== id));
+  };
+
+  // 执行匹配分析
+  const handleStartAnalysis = async () => {
+    if (groundTruths.length === 0) {
+      alert("请先添加真值数据");
+      return;
+    }
+
+    if (!resultQuery.data?.items || resultQuery.data.items.length === 0) {
+      alert("没有检测结果数据");
+      return;
+    }
+
+    setIsAnalyzing(true);
+    
+    try {
+      console.log('=== 开始匹配分析 ===');
+      console.log('真值数据:', groundTruths);
+      console.log('检测结果数据:', resultQuery.data.items);
+      
+      // 执行匹配
+      const matches = matchGroundTruthsWithDetections(
+        groundTruths,
+        resultQuery.data.items,
+        50 // 50米匹配距离
+      );
+
+      console.log('匹配结果:', matches);
+
+      // 计算统计信息
+      const stats = calculateErrorStatistics(matches, resultQuery.data.items.length);
+      
+      console.log('统计信息:', stats);
+
+      setMatchResults(matches);
+      setErrorStatistics(stats);
+    } catch (error) {
+      console.error("分析过程出错:", error);
+      alert("分析过程出错，请重试");
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
+  // 清空分析结果
+  const handleClearAnalysis = () => {
+    setMatchResults([]);
+    setErrorStatistics(null);
+  };
+
+  // 在地图上绘制真值标记点
+  useEffect(() => {
+    if (
+      !isMapLoaded ||
+      !AMapRef.current ||
+      !mapRef.current ||
+      groundTruths.length === 0
+    ) {
+      return;
+    }
+
+    const currentMap = mapRef.current;
+    const currentAMap = AMapRef.current;
+
+    // 清除之前的真值标记点
+    if (groundTruthMarkersRef.current.length > 0) {
+      currentMap.remove(groundTruthMarkersRef.current);
+      groundTruthMarkersRef.current = [];
+    }
+
+    // 为每个真值创建标记点
+    const markers: AMap.Marker[] = [];
+
+    groundTruths.forEach((groundTruth) => {
+      // 将WGS84坐标转换为GCJ-02坐标（高德地图坐标系）
+      const [gcjLng, gcjLat] = transformWGS84ToGCJ02(
+        groundTruth.lng,
+        groundTruth.lat
+      );
+
+      // 创建标记点
+      const marker = new currentAMap.Marker({
+        position: new currentAMap.LngLat(gcjLng, gcjLat),
+        title: `真值: ${groundTruth.target_label}`,
+        clickable: true,
+        // 添加标签显示
+        label: {
+          // 标签内容
+          content: `真值: ${groundTruth.target_label}`,
+          // 标签方向，以右下角为例
+          direction: "right",
+          // 标签样式
+          offset: new currentAMap.Pixel(0, 0),
+        },
+        // 自定义标记点的图标和样式 - 使用绿色标记图标
+        icon: new currentAMap.Icon({
+          // 使用绿色标记图标
+          image: "https://webapi.amap.com/theme/v1.3/markers/n/mark_g.png",
+          size: new currentAMap.Size(25, 34),
+          imageSize: new currentAMap.Size(25, 34),
+        }),
+      });
+
+      // 添加点击事件监听器
+      marker.on("click", () => {
+        console.log("点击真值标记", groundTruth);
+      });
+
+      markers.push(marker);
+    });
+
+    // 将所有标记点添加到地图上
+    if (markers.length > 0) {
+      currentMap.add(markers);
+      groundTruthMarkersRef.current = markers;
+    }
+
+    console.log(`已在地图上添加 ${markers.length} 个真值标记点`);
+  }, [groundTruths, isMapLoaded, AMapRef, mapRef]);
 
   // WGS84坐标转GCJ02坐标的函数 (GPS坐标转高德坐标)
   const transformWGS84ToGCJ02 = (
@@ -400,50 +556,114 @@ export default function Page() {
   return (
     <div className="px-4 mb-4">
       <div className="flex gap-4">
-        <div
-          id="map"
-          className="h-[calc(100vh-132px)] flex-1 border rounded-md shadow-sm"
-        />
-        {/* 检测结果列表 */}
+        {/* 左侧地图 */}
         <div className="flex-1">
-          <h2 className="text-lg font-bold mb-3 pb-2">检测结果列表</h2>
-          <SearchResultList
-            searchResults={resultQuery.data?.items || []}
-            onResultClick={(result) => {
-              console.log("点击搜索结果", result);
-              // 处理点击事件，例如在地图上显示标记并打开信息窗体
-              if (
-                mapRef.current &&
-                AMapRef.current &&
-                result.lng &&
-                result.lat
-              ) {
-                const wgsLng = parseFloat(result.lng);
-                const wgsLat = parseFloat(result.lat);
-                const [gcjLng, gcjLat] = transformWGS84ToGCJ02(wgsLng, wgsLat);
-
-                // 关闭所有已打开的信息窗体
-                infoWindowsRef.current.forEach((window) => {
-                  window.close();
-                });
-
-                // 找到对应的信息窗体
-                const resultIndex = resultQuery.data?.items.findIndex(
-                  (item) => item.id === result.id
-                );
-
-                if (resultIndex !== undefined && resultIndex >= 0) {
-                  const infoWindow = infoWindowsRef.current[resultIndex];
-                  if (infoWindow) {
-                    infoWindow.open(mapRef.current, [gcjLng, gcjLat]);
-                  }
-                }
-
-                // 调整地图视图
-                mapRef.current.setZoomAndCenter(17, [gcjLng, gcjLat]);
-              }
-            }}
+          <div
+            id="map"
+            className="h-[calc(100vh-132px)] border rounded-md shadow-sm"
           />
+        </div>
+
+        {/* 右侧面板 */}
+        <div className="flex-1 h-[calc(100vh-132px)] overflow-y-auto">
+          <div className="space-y-4 pr-2">
+            {/* 检测结果列表 */}
+            <div>
+              <h2 className="text-lg font-bold mb-3 pb-2">检测结果列表</h2>
+              <SearchResultList
+                searchResults={resultQuery.data?.items || []}
+                onResultClick={(result) => {
+                  console.log("点击搜索结果", result);
+                  // 处理点击事件，例如在地图上显示标记并打开信息窗体
+                  if (
+                    mapRef.current &&
+                    AMapRef.current &&
+                    result.lng &&
+                    result.lat
+                  ) {
+                    const wgsLng = parseFloat(result.lng);
+                    const wgsLat = parseFloat(result.lat);
+                    const [gcjLng, gcjLat] = transformWGS84ToGCJ02(
+                      wgsLng,
+                      wgsLat
+                    );
+
+                    // 关闭所有已打开的信息窗体
+                    infoWindowsRef.current.forEach((window) => {
+                      window.close();
+                    });
+
+                    // 找到对应的信息窗体
+                    const resultIndex = resultQuery.data?.items.findIndex(
+                      (item) => item.id === result.id
+                    );
+
+                    if (resultIndex !== undefined && resultIndex >= 0) {
+                      const infoWindow = infoWindowsRef.current[resultIndex];
+                      if (infoWindow) {
+                        infoWindow.open(mapRef.current, [gcjLng, gcjLat]);
+                      }
+                    }
+
+                    // 调整地图视图
+                    mapRef.current.setZoomAndCenter(17, [gcjLng, gcjLat]);
+                  }
+                }}
+              />
+            </div>
+
+            {/* 真值输入 */}
+            <GroundTruthInput
+              objectTypes={objectTypesQuery.data || []}
+              onAddGroundTruth={handleAddGroundTruth}
+              isLoading={objectTypesQuery.isLoading}
+            />
+
+            {/* 真值列表 */}
+            <GroundTruthList
+              groundTruths={groundTruths}
+              onDeleteGroundTruth={handleDeleteGroundTruth}
+              onGroundTruthClick={(groundTruth) => {
+                console.log("点击真值", groundTruth);
+                // 在地图上定位到该真值
+                if (mapRef.current && AMapRef.current) {
+                  const [gcjLng, gcjLat] = transformWGS84ToGCJ02(
+                    groundTruth.lng,
+                    groundTruth.lat
+                  );
+                  mapRef.current.setZoomAndCenter(17, [gcjLng, gcjLat]);
+                }
+              }}
+            />
+
+            {/* 分析控制按钮 */}
+            <div className="flex gap-2">
+              <Button
+                onClick={handleStartAnalysis}
+                disabled={isAnalyzing || groundTruths.length === 0}
+                className="flex-1 bg-blue-600 text-white"
+              >
+                {isAnalyzing ? "分析中..." : "开始匹配分析"}
+              </Button>
+              {errorStatistics && (
+                <Button
+                  variant="outline"
+                  onClick={handleClearAnalysis}
+                  className="flex-1"
+                >
+                  清空分析
+                </Button>
+              )}
+            </div>
+
+            {/* 分析结果 */}
+            {errorStatistics && (
+              <AnalysisResults
+                statistics={errorStatistics}
+                matchResults={matchResults}
+              />
+            )}
+          </div>
         </div>
       </div>
     </div>

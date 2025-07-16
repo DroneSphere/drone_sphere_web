@@ -1,0 +1,30 @@
+.progressBar {
+  width: 100%;
+  background-color: #e5e7eb;
+  border-radius: 9999px;
+  height: 12px;
+  position: relative;
+  overflow: hidden;
+}
+
+.progressFill {
+  background-color: #2563eb;
+  height: 100%;
+  border-radius: 9999px;
+  transition: width 0.3s ease;
+  position: absolute;
+  left: 0;
+  top: 0;
+}
+
+.progressFill0 { width: 0%; }
+.progressFill10 { width: 10%; }
+.progressFill20 { width: 20%; }
+.progressFill30 { width: 30%; }
+.progressFill40 { width: 40%; }
+.progressFill50 { width: 50%; }
+.progressFill60 { width: 60%; }
+.progressFill70 { width: 70%; }
+.progressFill80 { width: 80%; }
+.progressFill90 { width: 90%; }
+.progressFill100 { width: 100%; }

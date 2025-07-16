@@ -319,3 +319,49 @@ export interface SearchResultItem {
   created_at: string;
   image_url: string;
 }
+
+/**
+ * 真值数据接口
+ */
+export interface GroundTruthItem {
+  id: string; // 本地生成的唯一ID
+  target_label: string; // 目标类型
+  lng: number; // 经度
+  lat: number; // 纬度
+  created_at: string; // 创建时间
+}
+
+/**
+ * 匹配结果接口
+ */
+export interface MatchResult {
+  groundTruth: GroundTruthItem; // 真值
+  detection: SearchResultItem | null; // 匹配的检测结果（null表示未匹配）
+  distance: number; // 距离（米）
+  isMatched: boolean; // 是否匹配成功
+}
+
+/**
+ * 误差统计接口
+ */
+export interface ErrorStatistics {
+  accuracy: number; // 准确率 (0-1)
+  totalGroundTruths: number; // 真值总数
+  totalDetections: number; // 检测结果总数
+  matchedCount: number; // 匹配成功数量
+  errors: number[]; // 所有误差值数组
+  maxError: number; // 最大误差
+  minError: number; // 最小误差
+  avgError: number; // 平均误差
+  stdError: number; // 标准差
+  rmsError: number; // 均方根误差
+}
+
+/**
+ * 目标类型选项接口
+ */
+export interface ObjectTypeOption {
+  id: number;
+  type: string;
+  label: string;
+}
