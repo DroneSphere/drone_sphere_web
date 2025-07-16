@@ -32,6 +32,7 @@ export function DirectionsScaleControl({
     layout = "horizontal"
 }: GimbalControlProps) {
     // 云台状态
+    const [prevZoom, setPrevZoom] = useState(2);
     const [prevPitch, setPrevPitch] = useState(0);
     const [prevYaw, setPrevYaw] = useState(0);
     const [pitch, setPitch] = useState(0); 
@@ -45,6 +46,7 @@ export function DirectionsScaleControl({
     const prevPitchRef = useRef(prevPitch)
     const prevYawRef = useRef(prevYaw)
     const zoomRef = useRef(zoom)
+    const prevZoomRef = useRef(prevZoom);
     // 交互状态
     const [activeDir, setActiveDir] = useState<Direction | null>(null);
 
@@ -313,6 +315,9 @@ export function DirectionsScaleControl({
     useEffect(() => {
         prevYawRef.current = prevYaw;
     },[prevYaw])
+    useEffect(() => {
+        prevZoomRef.current = prevZoom;
+    }, [prevZoom]);
 
 
     //ws连接
@@ -359,8 +364,8 @@ export function DirectionsScaleControl({
         const Timer = setInterval(() => {
             console.log("SocketRef:", webSocketRef.current);
             if (webSocketRef.current) {
-                if(currentCamera?.is_zoomable){
-                    console.log("zoom",zoomRef.current.toFixed(1))
+                if(currentCamera?.is_zoomable && Math.abs(zoomRef.current - prevZoomRef.current) > 0.1){
+                    console.log("zoom",zoomRef.current.toFixed(1));
                     webSocketRef.current.send(JSON.stringify({
                     "tid": generateUUID(),
                     "timestamp": Math.floor(Date.now() / 1000),
@@ -369,6 +374,7 @@ export function DirectionsScaleControl({
                         "factor": parseFloat(zoomRef.current.toFixed(1))
                     }
                 }));
+                setPrevZoom(zoomRef.current);
                 }
                 if(pitchRef.current - prevPitchRef.current !== 0 || yawRef.current - prevYawRef.current !== 0){
                     console.log("pitch",(pitchRef.current - prevPitchRef.current).toFixed(1),"yaw",(yawRef.current - prevYawRef.current).toFixed(1))
