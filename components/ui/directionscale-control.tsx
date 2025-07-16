@@ -235,7 +235,7 @@ export function DirectionsScaleControl({
             window.removeEventListener("keyup", handleKeyUp);
             window.removeEventListener("blur", handleBlur);
         };
-    }, [startContinuousMove, stopContinuousMove,currentCamera]);
+    }, [startContinuousMove, stopContinuousMove, currentCamera]);
 
     // 鼠标事件处理
     const handleMouseDown = useCallback((dir: Direction) => {
