@@ -53,6 +53,11 @@ export default function JobDetailPage() {
   const [searchResults, setSearchResults] = useState<SearchResultItem[]>([]);
   const eventSourcesRef = useRef<Record<string, EventSource>>({});
 
+  useEffect(() => {
+    console.log("Query: ", query.data);
+    console.log("Options: ", optionsQuery.data);
+  }, [query.data, optionsQuery.data]);
+
   // 首次渲染时挂载地图
   useEffect(() => {
     AMapLoader.load({
@@ -381,7 +386,7 @@ export default function JobDetailPage() {
         } catch (error) {
           console.error(`Error creating marker for drone ${droneSN}:`, error);
         }
-        console.log("新 Marker 创建")
+        console.log("新 Marker 创建");
       }
     });
 
@@ -432,7 +437,7 @@ export default function JobDetailPage() {
         <div className="flex flex-col gap-3 max-h-[calc(100vh-4rem)]">
           {/* 实时数据区域 */}
           <div className="flex-1 h-auto overflow-y-auto flex flex-col gap-3">
-            {query.isSuccess && optionsQuery.isSuccess && (
+            {query.data && query.data.drones && optionsQuery.data && (
               <DroneCardList
                 drones={formatDronesData(
                   query.data.drones,
@@ -444,14 +449,14 @@ export default function JobDetailPage() {
             )}
           </div>
 
-          {/* 搜索结果区域 */}
-          <h2 className="text-lg font-bold mb-3 pb-2">
-              搜索结果
-            </h2>
+          <div className="flex flex-col gap-2">
+            {/* 搜索结果区域 */}
+            <h2 className="text-lg font-bold mb-3 pb-2">搜索结果</h2>
             <SearchResultList
               searchResults={searchResults}
               onResultClick={handleSearchResultClick}
             />
+          </div>
         </div>
       </div>
     </div>

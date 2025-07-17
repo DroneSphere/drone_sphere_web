@@ -7,7 +7,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Video } from "lucide-react";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { DroneStateV2 } from "../../jobs/[id]/job-state";
 import { DroneRTState } from "../../drones/types";
 import { ControlledVideoPlayer } from "@/components/video/controlled-video-player";
@@ -38,6 +38,12 @@ const DroneCardList = ({
   const [globalCommand, setGlobalCommand] = useState<string>("hover");
   // 用来获取容器的宽度发给视频组件
   const containerRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    console.log("I'm mounted");
+    if (containerRef.current) {
+      console.log("Container width: ", containerRef.current.offsetWidth);
+    }
+  }, []);
 
   const openVideoDialog = (drone: DroneStateV2) => {
     setVideoDialog({ open: true, drone });
