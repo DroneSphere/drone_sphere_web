@@ -432,7 +432,7 @@ export default function JobDetailPage() {
         <div className="flex flex-col gap-3 max-h-[calc(100vh-4rem)]">
           {/* 实时数据区域 */}
           <div className="flex-1 h-auto overflow-y-auto flex flex-col gap-3">
-            {query.data && query.data.drones && optionsQuery.data && (
+            {query.isSuccess && optionsQuery.isSuccess && (
               <DroneCardList
                 drones={formatDronesData(
                   query.data.drones,
