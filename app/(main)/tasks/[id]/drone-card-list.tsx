@@ -244,6 +244,24 @@ const DroneCardList = ({
                       %
                     </span>
                   </div>
+                  <div className="flex items-center">
+                    <span className="text-gray-500 w-18">云台俯仰角：</span>
+                    <span>
+                      {(drone.physical_drone_sn &&
+                        droneRTStates[drone.physical_drone_sn]?.pitch?.toFixed(2)) ??
+                        "--"}
+                      °
+                    </span>
+                  </div>
+                  <div className="flex items-center">
+                    <span className="text-gray-500 w-18">云台航向角：</span>
+                    <span>
+                      {(drone.physical_drone_sn &&
+                        droneRTStates[drone.physical_drone_sn]?.yaw?.toFixed(2)) ??
+                        "--"}
+                      °
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>

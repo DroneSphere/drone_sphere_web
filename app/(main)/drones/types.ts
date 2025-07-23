@@ -87,4 +87,7 @@ export interface DroneRTState {
   heading: number;
   speed: number;
   battery: number;
+  pitch: number;
+  roll: number;
+  yaw: number;
 }
