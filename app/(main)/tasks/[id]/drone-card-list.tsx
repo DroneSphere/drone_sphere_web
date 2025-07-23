@@ -54,11 +54,11 @@ const DroneCardList = ({
   };
 
   const openNewControlPage = (drone: DroneStateV2) => {
-    if(drone.physical_drone_sn){
-      setLocalStorage(drone.physical_drone_sn,JSON.stringify(drone||null))
-      window.open(`/control?sn=${drone.physical_drone_sn}`,"_blank")
+    if (drone.physical_drone_sn) {
+      setLocalStorage(drone.physical_drone_sn, JSON.stringify(drone || null));
+      window.open(`/control?sn=${drone.physical_drone_sn}`, "_blank");
     }
-  }
+  };
 
   // 处理全局命令发送
   const handleGlobalCommand = () => {
@@ -143,14 +143,17 @@ const DroneCardList = ({
                 }`}
               >
                 <div className="flex flex-row items-center">
-                {drone.physical_drone_sn &&
-                droneConnections[drone.physical_drone_sn]
-                  ? "已连接"
-                  : "未连接"}
-                  <button className="ml-2 bg-green-200 text-green-600 p-1 rounded-full z-10" onClick={()=>openNewControlPage(drone)}>
+                  {drone.physical_drone_sn &&
+                  droneConnections[drone.physical_drone_sn]
+                    ? "已连接"
+                    : "未连接"}
+                  <button
+                    className="ml-2 bg-green-200 text-green-600 p-1 rounded-full z-10"
+                    onClick={() => openNewControlPage(drone)}
+                  >
                     <Video className="h-3 w-3" />
                   </button>
-                  </div>
+                </div>
               </div>
             </div>
 
@@ -165,16 +168,19 @@ const DroneCardList = ({
                 <div className="w-full h-full flex items-center justify-center">
                   <Video className="h-8 w-8 text-gray-400" />
                 </div>
-                
+
                 {/* 连接状态指示器 */}
                 <div className="absolute bottom-1 right-1 bg-black/50 text-white p-1 rounded-full z-10">
-                  <div className={`w-2 h-2 rounded-full ${
-                    drone.physical_drone_sn && droneConnections[drone.physical_drone_sn] 
-                      ? "bg-green-400" 
-                      : "bg-red-400"
-                  }`} />
+                  <div
+                    className={`w-2 h-2 rounded-full ${
+                      drone.physical_drone_sn &&
+                      droneConnections[drone.physical_drone_sn]
+                        ? "bg-green-400"
+                        : "bg-red-400"
+                    }`}
+                  />
                 </div>
-                
+
                 {/* 点击提示 */}
                 <div className="absolute inset-0 bg-black/0 hover:bg-black/10 transition-colors duration-200 flex items-center justify-center">
                   <span className="text-xs text-gray-600 opacity-0 hover:opacity-100 transition-opacity">
@@ -221,7 +227,9 @@ const DroneCardList = ({
                     <span className="text-gray-500 w-12">速度：</span>
                     <span>
                       {(drone.physical_drone_sn &&
-                        droneRTStates[drone.physical_drone_sn]?.speed.toFixed(1)) ??
+                        droneRTStates[drone.physical_drone_sn]?.speed.toFixed(
+                          1
+                        )) ??
                         "--"}{" "}
                       米/秒
                     </span>
@@ -230,7 +238,9 @@ const DroneCardList = ({
                     <span className="text-gray-500 w-12">航向：</span>
                     <span>
                       {(drone.physical_drone_sn &&
-                        droneRTStates[drone.physical_drone_sn]?.heading.toFixed(2)) ??
+                        droneRTStates[drone.physical_drone_sn]?.heading.toFixed(
+                          2
+                        )) ??
                         "--"}
                       °
                     </span>
@@ -248,7 +258,9 @@ const DroneCardList = ({
                     <span className="text-gray-500 w-18">云台俯仰角：</span>
                     <span>
                       {(drone.physical_drone_sn &&
-                        droneRTStates[drone.physical_drone_sn]?.pitch?.toFixed(2)) ??
+                        droneRTStates[drone.physical_drone_sn]?.pitch?.toFixed(
+                          2
+                        )) ??
                         "--"}
                       °
                     </span>
@@ -257,7 +269,9 @@ const DroneCardList = ({
                     <span className="text-gray-500 w-18">云台航向角：</span>
                     <span>
                       {(drone.physical_drone_sn &&
-                        droneRTStates[drone.physical_drone_sn]?.yaw?.toFixed(2)) ??
+                        droneRTStates[drone.physical_drone_sn]?.yaw?.toFixed(
+                          2
+                        )) ??
                         "--"}
                       °
                     </span>
@@ -296,16 +310,23 @@ const DroneCardList = ({
         <DialogContent className="max-w-3xl">
           <DialogHeader>
             <DialogTitle>
-              {videoDialog.drone?.physical_drone_callsign || videoDialog.drone?.physical_drone_sn } 实时视频
+              {videoDialog.drone?.physical_drone_callsign ||
+                videoDialog.drone?.physical_drone_sn}{" "}
+              实时视频
             </DialogTitle>
           </DialogHeader>
 
-          <div ref={containerRef} className="w-full aspect-video bg-black rounded-md overflow-hidden">
+          <div
+            ref={containerRef}
+            className="w-full aspect-video bg-black rounded-md overflow-hidden"
+          >
             <div className="w-full h-full flex items-center justify-center text-white">
-              <ControlledVideoPlayer videoUrl={`${baseRtcURL}/whep/?app=live&stream=${videoDialog.drone?.physical_drone_sn}`}
-              width={containerRef.current?.clientWidth || 0}
-              height={containerRef.current?.clientHeight || 0}
-              type="webrtc"/>
+              <ControlledVideoPlayer
+                videoUrl={`${baseRtcURL}/whep/?app=live&stream=${videoDialog.drone?.physical_drone_sn}`}
+                width={containerRef.current?.clientWidth || 0}
+                height={containerRef.current?.clientHeight || 0}
+                type="webrtc"
+              />
               {/* <img
                 src="http://47.245.40.222:9000/image/WX20250421-150551%402x.png"
                 alt="无人机直播视频"
@@ -313,65 +334,82 @@ const DroneCardList = ({
               /> */}
             </div>
           </div>
-                <div className="flex flex-row items-center justify-between mt-4">
-          <div className="flex flex-col gap-4 text-sm mt-2">
-            <div className="flex flex-col space-y-1">
-              <div className="text-gray-500 text-xs">位置信息</div>
-              <div className="grid grid-cols-2 gap-2 text-xs">
-                <div>
-                  经度:
-                  {(videoDialog.drone?.physical_drone_sn &&
-                    droneRTStates[
-                      videoDialog.drone.physical_drone_sn
-                    ]?.lng?.toFixed(6)) ??
-                    "--"}
+          <div className="flex flex-row items-center justify-between mt-4">
+            <div className="flex flex-col gap-4 text-sm mt-2">
+              <div className="flex flex-col space-y-1">
+                <div className="text-gray-500 text-xs">位置信息</div>
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  <div>
+                    经度:
+                    {(videoDialog.drone?.physical_drone_sn &&
+                      droneRTStates[
+                        videoDialog.drone.physical_drone_sn
+                      ]?.lng?.toFixed(6)) ??
+                      "--"}
+                  </div>
+                  <div>
+                    纬度:
+                    {(videoDialog.drone?.physical_drone_sn &&
+                      droneRTStates[
+                        videoDialog.drone.physical_drone_sn
+                      ]?.lat?.toFixed(6)) ??
+                      "--"}
+                  </div>
                 </div>
-                <div>
-                  纬度:
-                  {(videoDialog.drone?.physical_drone_sn &&
-                    droneRTStates[
-                      videoDialog.drone.physical_drone_sn
-                    ]?.lat?.toFixed(6)) ??
-                    "--"}
+              </div>
+
+              <div className="flex flex-col space-y-1">
+                <div className="text-gray-500 text-xs">飞行数据</div>
+                <div className="grid grid-cols-3 gap-2 text-xs">
+                  <div>
+                    高度:
+                    {(videoDialog.drone?.physical_drone_sn &&
+                      droneRTStates[
+                        videoDialog.drone.physical_drone_sn
+                      ]?.height?.toFixed(1)) ??
+                      "--"}
+                    米
+                  </div>
+                  <div>
+                    速度:
+                    {(videoDialog.drone?.physical_drone_sn &&
+                      droneRTStates[
+                        videoDialog.drone.physical_drone_sn
+                      ]?.speed.toFixed(2)) ??
+                      "--"}
+                    米/秒
+                  </div>
+                  <div>
+                    电量:
+                    {(videoDialog.drone?.physical_drone_sn &&
+                      droneRTStates[videoDialog.drone.physical_drone_sn]
+                        ?.battery) ??
+                      "--"}
+                    %
+                  </div>
+                  <div>
+                    云台俯仰角:
+                    {(videoDialog.drone?.physical_drone_sn &&
+                      droneRTStates[videoDialog.drone.physical_drone_sn]
+                        ?.pitch) ??
+                      "--"}
+                    °
+                  </div>
+                  <div>
+                    云台航向角:
+                    {(videoDialog.drone?.physical_drone_sn &&
+                      droneRTStates[videoDialog.drone.physical_drone_sn]
+                        ?.yaw) ??
+                      "--"}
+                    °
+                  </div>
                 </div>
               </div>
             </div>
-
-            
-
-            <div className="flex flex-col space-y-1">
-              <div className="text-gray-500 text-xs">飞行数据</div>
-              <div className="grid grid-cols-3 gap-2 text-xs">
-                <div>
-                  高度:
-                  {(videoDialog.drone?.physical_drone_sn &&
-                    droneRTStates[
-                      videoDialog.drone.physical_drone_sn
-                    ]?.height?.toFixed(1)) ??
-                    "--"}
-                  米
-                </div>
-                <div>
-                  速度:
-                  {(videoDialog.drone?.physical_drone_sn &&
-                    droneRTStates[videoDialog.drone.physical_drone_sn]
-                      ?.speed.toFixed(2)) ??
-                    "--"}
-                  米/秒
-                </div>
-                <div>
-                  电量:
-                  {(videoDialog.drone?.physical_drone_sn &&
-                    droneRTStates[videoDialog.drone.physical_drone_sn]
-                      ?.battery) ??
-                    "--"}
-                  %
-                </div>
-              </div>
-            </div>
-          </div>
-          <DirectionsScaleControl  physicalDroneSn={videoDialog.drone?.physical_drone_sn} cameras={videoDialog.drone?.cameras}/>          
-
+            <DirectionsScaleControl
+              physicalDroneSn={videoDialog.drone?.physical_drone_sn}
+              cameras={videoDialog.drone?.cameras}
+            />
           </div>
           <div className="flex justify-end gap-2 mt-2">
             <button className="bg-red-600 text-white px-3 py-1 text-xs rounded">
