@@ -51,7 +51,10 @@ const GroundTruthList = ({
           <TableHeader className="bg-gray-100">
             <TableRow className="border-b border-gray-200">
               <TableHead className="text-center p-2 whitespace-nowrap">
-                目标类型
+                编号
+              </TableHead>
+              <TableHead className="text-center p-2 whitespace-nowrap">
+                类型
               </TableHead>
               <TableHead className="text-center p-2 whitespace-nowrap">
                 经度
@@ -74,6 +77,9 @@ const GroundTruthList = ({
                 className="hover:bg-gray-50 border-b border-gray-200 cursor-pointer"
                 onClick={() => onGroundTruthClick?.(groundTruth)}
               >
+                <TableCell className="px-2 font-medium text-sm text-center p-2 border-x border-gray-200 whitespace-nowrap">
+                  {groundTruth.code}
+                </TableCell>
                 <TableCell className="px-2 font-medium text-sm text-center p-2 border-x border-gray-200 whitespace-nowrap">
                   {groundTruth.target_label}
                 </TableCell>

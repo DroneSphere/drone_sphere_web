@@ -203,11 +203,11 @@ const AnalysisResults = ({ statistics, matchResults }: AnalysisResultsProps) => 
                         {result.groundTruth.target_label}
                       </p>
                       <p className="text-xs text-gray-500">
-                        真值: ({result.groundTruth.lng.toFixed(6)}, {result.groundTruth.lat.toFixed(6)})
+                        真值: {result.groundTruth.code} - ({result.groundTruth.lng.toFixed(6)}, {result.groundTruth.lat.toFixed(6)})
                       </p>
                       {result.detection && (
                         <p className="text-xs text-gray-500">
-                          检测: ({parseFloat(result.detection.lng).toFixed(6)}, {parseFloat(result.detection.lat).toFixed(6)})
+                          检测: {result.detection.code} - ({parseFloat(result.detection.lng).toFixed(6)}, {parseFloat(result.detection.lat).toFixed(6)})
                         </p>
                       )}
                     </div>

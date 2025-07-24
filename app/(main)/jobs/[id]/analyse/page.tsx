@@ -36,7 +36,7 @@ export default function Page() {
   const markersRef = useRef<AMap.Marker[][]>([]);
   // Add new ref for ground truth markers
   const groundTruthMarkersRef = useRef<AMap.Marker[]>([]);
-
+  const categoryCount = useRef<Map<string, number>>(new Map());
   // 计算工作状态
   const pathname = usePathname().match(/\/jobs\/(\d+)\/analyse/);
   const idPart = pathname ? pathname[1] : "";
@@ -156,7 +156,7 @@ export default function Page() {
         // 添加标签显示
         label: {
           // 标签内容
-          content: `真值: ${groundTruth.target_label}`,
+          content: `${groundTruth.code}`,
           // 标签方向，以右下角为例
           direction: "right",
           // 标签样式
@@ -495,7 +495,7 @@ export default function Page() {
         // 添加标签显示ID
         label: {
           // 标签内容
-          content: `ID: ${result.id}`,
+          content: `${result.code}`,
           // 标签方向，以右下角为例
           direction: "right",
           // 标签样式
@@ -617,6 +617,7 @@ export default function Page() {
               objectTypes={objectTypesQuery.data || []}
               onAddGroundTruth={handleAddGroundTruth}
               isLoading={objectTypesQuery.isLoading}
+              categoryCount={categoryCount.current}
             />
 
             {/* 真值列表 */}
@@ -641,7 +642,7 @@ export default function Page() {
               <Button
                 onClick={handleStartAnalysis}
                 disabled={isAnalyzing || groundTruths.length === 0}
-                className="flex-1 bg-blue-600 text-white"
+                className="flex-1 bg-blue-600 text-white hover:bg-blue-700"
               >
                 {isAnalyzing ? "分析中..." : "开始匹配分析"}
               </Button>

@@ -19,12 +19,14 @@ interface GroundTruthInputProps {
   objectTypes: ObjectTypeOption[];
   onAddGroundTruth: (groundTruth: GroundTruthItem) => void;
   isLoading?: boolean;
+  categoryCount: Map<string, number>;
 }
 
 const GroundTruthInput = ({
   objectTypes,
   onAddGroundTruth,
   isLoading = false,
+  categoryCount,
 }: GroundTruthInputProps) => {
   const [formData, setFormData] = useState({
     target_label: "",
@@ -64,9 +66,16 @@ const GroundTruthInput = ({
     
     if (!validateForm()) return;
 
+    if (categoryCount.has(formData.target_label)) {
+      categoryCount.set(formData.target_label, categoryCount.get(formData.target_label)! + 1);
+    } else {
+      categoryCount.set(formData.target_label, 1);
+    }
+    const codeIndex = categoryCount.get(formData.target_label)!;
     const groundTruth: GroundTruthItem = {
       id: generateUniqueId(),
       target_label: formData.target_label,
+      code: `${formData.target_label}'-${codeIndex}`, // 生成唯一代码
       lng: parseFloat(formData.lng),
       lat: parseFloat(formData.lat),
       created_at: new Date().toLocaleString("zh-CN"),
@@ -163,7 +172,7 @@ const GroundTruthInput = ({
           )}
 
           {/* 提交按钮 */}
-          <Button type="submit" disabled={isLoading} className="w-full bg-blue-600 text-white">
+          <Button type="submit" disabled={isLoading} className="w-full bg-blue-600 text-white hover:bg-blue-700">
             {isLoading ? "添加中..." : "添加真值"}
           </Button>
         </form>

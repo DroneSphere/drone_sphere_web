@@ -312,6 +312,8 @@ export interface SearchResult {
  */
 export interface SearchResultItem {
   id: number;
+  code: string;
+  confidence: number;
   job_name: string;
   target_label: string;
   lng: string;

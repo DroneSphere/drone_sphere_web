@@ -103,6 +103,20 @@ export const getSearchResults = async (
   if (response.status !== 200) {
     throw new Error("Failed to fetch search results");
   }
+  // 按类别计数的 Map
+  const categoryCount = new Map<string, number>();
+  for (const item of response.data.data.items) {
+    // 生成 code 属性，规则为按照分类使用A、B、C等字母
+    // 同一个分类再按照ID自小到大使用1、2、3等数字，分类下的第一个使用 1
+    // 例如：A1、A2、B1、B2等
+    const category = item.target_label; // 获取目标类型的首字母作为分类
+    // 更新计数器
+    const index = categoryCount.get(category) || 1;
+    categoryCount.set(category, index + 1);
+    item.code = `${category}-${index}`;
+  }
+  // 按照ID排序
+  response.data.data.items.sort((a, b) => a.id - b.id);
   // 返回搜索结果数据
   return response.data.data;
 };

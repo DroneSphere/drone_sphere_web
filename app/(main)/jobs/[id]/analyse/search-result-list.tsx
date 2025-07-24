@@ -87,7 +87,7 @@ const SearchResultList = ({
                 className="px-1 text-sm text-center p-2 border-x border-gray-200 whitespace-nowrap"
                 onClick={() => onResultClick?.(result)}
               >
-                {result.id}
+                {result.code}
               </TableCell>
 
               {/* 检测时间 */}

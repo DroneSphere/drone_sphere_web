@@ -314,6 +314,7 @@ export interface SearchResultItem {
   id: number;
   job_name: string;
   target_label: string;
+  code: string;
   confidence: number;
   lng: string;
   lat: string;
@@ -326,6 +327,7 @@ export interface SearchResultItem {
  */
 export interface GroundTruthItem {
   id: string; // 本地生成的唯一ID
+  code: string; // 生成的代码
   target_label: string; // 目标类型
   lng: number; // 经度
   lat: number; // 纬度
