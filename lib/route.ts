@@ -139,5 +139,5 @@ export const specialRouteMap: Record<string, string> = {
   creation: "创建",
   new: "创建",
   report: "任务报告",
-  analyse: "任务分析",
+  analyse: "搜索结果",
 };
