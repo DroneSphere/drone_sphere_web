@@ -314,6 +314,7 @@ export interface SearchResultItem {
   id: number;
   job_name: string;
   target_label: string;
+  confidence: number;
   lng: string;
   lat: string;
   created_at: string;

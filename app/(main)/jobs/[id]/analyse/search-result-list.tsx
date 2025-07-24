@@ -111,7 +111,7 @@ const SearchResultList = ({
                 className="px-1 text-sm text-muted-foreground text-center p-2 border-x border-gray-200 whitespace-nowrap"
                 onClick={() => onResultClick?.(result)}
               >
-                90%
+                {result.confidence ? `${(result.confidence * 100).toFixed(2)}%` : "N/A"}
               </TableCell>
 
               {/* 经度 */}

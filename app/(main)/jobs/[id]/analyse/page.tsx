@@ -165,7 +165,7 @@ export default function Page() {
         // 自定义标记点的图标和样式 - 使用绿色标记图标
         icon: new currentAMap.Icon({
           // 使用绿色标记图标
-          image: "https://webapi.amap.com/theme/v1.3/markers/n/mark_g.png",
+          image: "https://webapi.amap.com/theme/v1.3/markers/n/mark_b.png",
           size: new currentAMap.Size(25, 34),
           imageSize: new currentAMap.Size(25, 34),
         }),
