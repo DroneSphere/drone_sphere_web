@@ -6,14 +6,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Video } from "lucide-react";
-import { useState, useRef, useEffect } from "react";
-import { DroneStateV2 } from "../../jobs/[id]/job-state";
-import { DroneRTState } from "../../drones/types";
-import { ControlledVideoPlayer } from "@/components/video/controlled-video-player";
 import { DirectionsScaleControl } from "@/components/ui/directionscale-control";
-const baseRtcURL = "http://47.245.40.222:1985/rtc/v1";
+import { ControlledVideoPlayer } from "@/components/video/controlled-video-player";
 import { setLocalStorage } from "@/lib/storage";
+import { Video } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { DroneRTState } from "../../drones/types";
+import { DroneStateV2 } from "../../jobs/[id]/job-state";
+const baseRtcURL = "http://47.245.40.222:1985/rtc/v1";
 
 interface DroneCardListProps {
   drones?: DroneStateV2[];
@@ -190,7 +190,7 @@ const DroneCardList = ({
               </div>
 
               {/* 右侧信息网格 */}
-              <div className="flex-grow pl-3">
+              <div className="flex-grow pl-3 min-w-[320px]">
                 <div className="grid grid-cols-2 text-xs gap-y-1">
                   <div className="flex items-center">
                     <span className="text-gray-500 w-12">经度：</span>
@@ -255,7 +255,7 @@ const DroneCardList = ({
                     </span>
                   </div>
                   <div className="flex items-center">
-                    <span className="text-gray-500 w-18">云台俯仰角：</span>
+                    <span className="text-gray-500 w-18">云台俯仰：</span>
                     <span>
                       {(drone.physical_drone_sn &&
                         droneRTStates[drone.physical_drone_sn]?.pitch?.toFixed(
@@ -266,7 +266,7 @@ const DroneCardList = ({
                     </span>
                   </div>
                   <div className="flex items-center">
-                    <span className="text-gray-500 w-18">云台航向角：</span>
+                    <span className="text-gray-500 w-18">云台航向：</span>
                     <span>
                       {(drone.physical_drone_sn &&
                         droneRTStates[drone.physical_drone_sn]?.yaw?.toFixed(
@@ -279,7 +279,7 @@ const DroneCardList = ({
                 </div>
               </div>
             </div>
-            <div className="px-2 pb-2">
+            {/* <div className="px-2 pb-2">
               <div className="flex items-center gap-2">
                 <label htmlFor={`drone-command-${index}`} className="sr-only">
                   选择无人机命令
@@ -296,11 +296,8 @@ const DroneCardList = ({
                 <button className="bg-blue-600 text-white text-xs px-3 py-1 rounded">
                   发送
                 </button>
-                {/* <button className="bg-green-600 text-white text-xs px-1 py-1 rounded-full">
-                  <Joystick className="h-4 w-4"/>
-                </button> */}
               </div>
-            </div>
+            </div> */}
           </div>
         ))}
       </div>
@@ -388,7 +385,7 @@ const DroneCardList = ({
                     %
                   </div>
                   <div>
-                    云台俯仰角:
+                    云台俯仰:
                     {(videoDialog.drone?.physical_drone_sn &&
                       droneRTStates[videoDialog.drone.physical_drone_sn]
                         ?.pitch) ??
@@ -396,7 +393,7 @@ const DroneCardList = ({
                     °
                   </div>
                   <div>
-                    云台航向角:
+                    云台航向:
                     {(videoDialog.drone?.physical_drone_sn &&
                       droneRTStates[videoDialog.drone.physical_drone_sn]
                         ?.yaw) ??
@@ -411,14 +408,14 @@ const DroneCardList = ({
               cameras={videoDialog.drone?.cameras}
             />
           </div>
-          <div className="flex justify-end gap-2 mt-2">
+          {/* <div className="flex justify-end gap-2 mt-2">
             <button className="bg-red-600 text-white px-3 py-1 text-xs rounded">
               紧急降落
             </button>
             <button className="bg-blue-600 text-white px-3 py-1 text-xs rounded">
               返航
             </button>
-          </div>
+          </div> */}
         </DialogContent>
       </Dialog>
     </>

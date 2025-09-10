@@ -1,22 +1,19 @@
 "use client";
 
-import { DroneRTState } from "@/app/(main)/drones/types";
 import { baseURL } from "@/api/http_client";
+import { DroneRTState } from "@/app/(main)/drones/types";
 import { JobDetailResult } from "@/app/(main)/jobs/[id]/types";
 import AMapLoader from "@amap/amap-jsapi-loader";
 import "@amap/amap-jsapi-types";
 import { useQuery } from "@tanstack/react-query";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { SearchResultItem } from "./type";
-import { getSearchResults } from "./request";
-import DroneCardList from "./drone-card-list";
-import SearchResultList from "./search-result-list";
 import { formatDronesData } from "../../jobs/[id]/data-utils";
 import {
   getJobCreateOptions,
   getJobDetailById,
 } from "../../jobs/[id]/requests";
+import DroneCardList from "./drone-card-list";
 
 export default function JobDetailPage() {
   const pathname = usePathname();
@@ -50,13 +47,8 @@ export default function JobDetailPage() {
   const [droneConnections, setDroneConnections] = useState<
     Record<string, boolean>
   >({});
-  const [searchResults, setSearchResults] = useState<SearchResultItem[]>([]);
+  // const [searchResults, setSearchResults] = useState<SearchResultItem[]>([]);
   const eventSourcesRef = useRef<Record<string, EventSource>>({});
-
-  useEffect(() => {
-    console.log("Query: ", query.data);
-    console.log("Options: ", optionsQuery.data);
-  }, [query.data, optionsQuery.data]);
 
   // 首次渲染时挂载地图
   useEffect(() => {
@@ -273,7 +265,7 @@ export default function JobDetailPage() {
       source.onmessage = (event) => {
         try {
           const newState: DroneRTState = JSON.parse(event.data);
-          console.log("New state", event.data);
+          // console.log("New state", event.data);
 
           setDroneRTStates((prev) => ({
             ...prev,
@@ -313,7 +305,7 @@ export default function JobDetailPage() {
     if (!AMapRef.current || !mapRef.current) return;
 
     Object.entries(droneRTStates).forEach(([droneSN, state]) => {
-      console.log("update marker", droneSN, state);
+      // console.log("update marker", droneSN, state);
 
       const drone = query!.data!.drones.find(
         (d) => d.physical_drone!.sn === droneSN
@@ -322,7 +314,7 @@ export default function JobDetailPage() {
         console.log("1111");
         return;
       } else {
-        console.log("drone found", drone);
+        // console.log("drone found", drone);
       }
 
       const lng = state.lng;
@@ -363,12 +355,12 @@ export default function JobDetailPage() {
 
       const existingMarker = droneMarkers[droneSN];
       if (existingMarker) {
-        console.log("Marker 已存在");
+        // console.log("Marker 已存在");
         existingMarker.setPosition([lng, lat]);
         existingMarker.setContent(markerContent);
-        console.log("Marker 已更新");
+        // console.log("Marker 已更新");
       } else {
-        console.log("创建新 Marker");
+        // console.log("创建新 Marker");
         try {
           const marker = new AMapRef.current!.Marker({
             position: new AMapRef.current!.LngLat(lng, lat),
@@ -386,7 +378,7 @@ export default function JobDetailPage() {
         } catch (error) {
           console.error(`Error creating marker for drone ${droneSN}:`, error);
         }
-        console.log("新 Marker 创建");
+        // console.log("新 Marker 创建");
       }
     });
 
@@ -403,28 +395,28 @@ export default function JobDetailPage() {
   }, [droneRTStates, droneMarkers, query.data, query]); // 添加 droneMarkers 和 processedDrones 到依赖项
 
   // 搜索结果管理
-  useEffect(() => {
-    const jobId = id;
-    const intervalId = setInterval(async () => {
-      try {
-        const result = await getSearchResults(jobId);
-        setSearchResults(result.data.items);
-      } catch (error) {
-        console.error("获取搜索结果失败:", error);
-      }
-    }, 3000);
+  // useEffect(() => {
+  //   const jobId = id;
+  //   const intervalId = setInterval(async () => {
+  //     try {
+  //       const result = await getSearchResults(jobId);
+  //       setSearchResults(result.data.items);
+  //     } catch (error) {
+  //       console.error("获取搜索结果失败:", error);
+  //     }
+  //   }, 3000);
 
-    return () => clearInterval(intervalId);
-  }, [id]);
+  //   return () => clearInterval(intervalId);
+  // }, [id]);
 
   // 处理搜索结果点击
-  const handleSearchResultClick = (result: SearchResultItem) => {
-    if (!mapRef.current) return;
-    console.log("SearchResultItem", result);
+  // const handleSearchResultClick = (result: SearchResultItem) => {
+  //   if (!mapRef.current) return;
+  //   console.log("SearchResultItem", result);
 
-    // mapRef.current.setCenter([Number(result.lng), Number(result.lat)]);
-    // mapRef.current.setZoom(18);
-  };
+  //   // mapRef.current.setCenter([Number(result.lng), Number(result.lat)]);
+  //   // mapRef.current.setZoom(18);
+  // };
 
   return (
     <div className="px-4">
@@ -434,7 +426,7 @@ export default function JobDetailPage() {
           className="h-[calc(100vh-160px)] flex-1 border rounded-md shadow-sm"
         />
         {/* 右侧面板 */}
-        <div className="flex flex-col gap-3 max-h-[calc(100vh-4rem)]">
+        <div className="flex flex-col gap-3">
           {/* 实时数据区域 */}
           <div className="flex-1 h-auto overflow-y-auto flex flex-col gap-3">
             {query.data && query.data.drones && optionsQuery.data && (
@@ -449,14 +441,13 @@ export default function JobDetailPage() {
             )}
           </div>
 
-          <div className="flex flex-col gap-2">
-            {/* 搜索结果区域 */}
+          {/* <div className="flex flex-col gap-2">
             <h2 className="text-lg font-bold mb-3 pb-2">搜索结果</h2>
             <SearchResultList
               searchResults={searchResults}
               onResultClick={handleSearchResultClick}
             />
-          </div>
+          </div> */}
         </div>
       </div>
     </div>

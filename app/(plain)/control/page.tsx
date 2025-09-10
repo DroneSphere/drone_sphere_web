@@ -1,11 +1,11 @@
 "use client"
-import { ControlledVideoPlayer } from "@/components/video/controlled-video-player";
 import { DirectionsScaleControl } from "@/components/ui/directionscale-control";
-const baseRtcURL = "http://47.245.40.222:1985/rtc/v1";
-import { useEffect, useRef, useState, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
-import { DroneStateV2 } from "../../(main)/jobs/[id]/job-state";
+import { ControlledVideoPlayer } from "@/components/video/controlled-video-player";
 import { removeLocalStorage } from "@/lib/storage";
+import { useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useRef, useState } from "react";
+import { DroneStateV2 } from "../../(main)/jobs/[id]/job-state";
+const baseRtcURL = "http://47.245.40.222:1985/rtc/v1";
 
 function DroneControlContent() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -58,14 +58,6 @@ function DroneControlContent() {
           </div>
           <div className="flex flex-col">
             <DirectionsScaleControl layout="vertical" className="m-2" physicalDroneSn={drone?.physical_drone_sn} cameras={drone?.cameras}/>          
-            <div className="flex justify-center gap-2 mt-2 translate-y-6">
-              <button className="bg-red-600 text-white px-3 py-1 text-xs rounded">
-                紧急降落
-              </button>
-              <button className="bg-blue-600 text-white px-3 py-1 text-xs rounded">
-                返航
-              </button>
-            </div>
           </div>
         </div>
       </div>
