@@ -5,20 +5,20 @@ import {
   getSearchResults,
 } from "@/app/(main)/jobs/report/[id]/request";
 import { fetchObjectTypeOptions } from "@/app/(main)/result/requests";
+import { Button } from "@/components/ui/button";
 import AMapLoader from "@amap/amap-jsapi-loader";
 import "@amap/amap-jsapi-types";
 import { useQuery } from "@tanstack/react-query";
+import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { Button } from "@/components/ui/button";
-import SearchResultList from "./search-result-list";
+import AnalysisResults from "./analysis-results";
 import GroundTruthInput from "./ground-truth-input";
 import GroundTruthList from "./ground-truth-list";
-import AnalysisResults from "./analysis-results";
-import { usePathname } from "next/navigation";
-import { GroundTruthItem, MatchResult, ErrorStatistics } from "./types";
+import SearchResultList from "./search-result-list";
+import { ErrorStatistics, GroundTruthItem, MatchResult } from "./types";
 import {
-  matchGroundTruthsWithDetections,
   calculateErrorStatistics,
+  matchGroundTruthsWithDetections,
 } from "./utils";
 
 export default function Page() {
@@ -320,7 +320,7 @@ export default function Page() {
   });
 
   const resultQuery = useQuery({
-    queryKey: ["result"],
+    queryKey: ["result", idPart],
     queryFn: () => getSearchResults(Number(idPart)),
   });
 

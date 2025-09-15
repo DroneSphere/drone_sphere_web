@@ -81,6 +81,9 @@ const SearchResultList = ({
             <TableRow
               key={result.id}
               className="cursor-pointer hover:bg-gray-50 border-b border-gray-200 group"
+              onClick={
+                () => setDetailDialog({ open: true, result: result })
+              }
             >
               {/* ID */}
               <TableCell
@@ -143,37 +146,41 @@ const SearchResultList = ({
 
           <div className="space-y-4">
             {/* 图片展示 - 优化容器和图片显示 */}
-            <div className="w-full aspect-video bg-black rounded-md overflow-hidden relative flex items-center justify-center">
+            <div
+              className="w-full aspect-video bg-black rounded-md overflow-hidden relative flex items-center justify-center cursor-pointer group"
+              onClick={() => window.open(detailDialog.result?.image_url, "_blank")}
+            >
               {detailDialog.result && (
-                <Image
-                  src={detailDialog.result.image_url}
-                  alt={detailDialog.result.target_label}
-                  fill={true}
-                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 80vw, 70vw"
-                  priority={true}
-                  className="object-contain w-full h-full"
-                  style={{ objectFit: "contain" }}
-                  onError={(e) => {
-                    console.log(
-                      "图片加载失败:",
-                      detailDialog.result?.image_url
-                    );
-                    const imgElement = e.target as HTMLImageElement;
-                    imgElement.src = "/placeholder-image.jpg";
-                  }}
-                />
+                <>
+                  <Image
+                    src={detailDialog.result.image_url}
+                    alt={detailDialog.result.target_label}
+                    fill={true}
+                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 80vw, 70vw"
+                    priority={true}
+                    className="object-contain w-full h-full group-hover:opacity-80 transition-opacity"
+                    style={{ objectFit: "cover" }}
+                    onError={(e) => {
+                      console.log(
+                        "图片加载失败:",
+                        detailDialog.result?.image_url
+                      );
+                      const imgElement = e.target as HTMLImageElement;
+                      imgElement.src = "/placeholder-image.jpg";
+                    }}
+                  />
+                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black bg-opacity-20">
+                    <span className="text-white text-sm font-medium">
+                      点击查看大图
+                    </span>
+                  </div>
+                </>
               )}
             </div>
 
             {/* 详细信息 - 网格布局（按每行排序） */}
             {detailDialog.result && (
               <div className="grid grid-cols-2 gap-2 text-sm">
-                {/* ID 行 */}
-                <div className="p-2 col-span-2 bg-gray-100">
-                  <span className="text-gray-500">ID：</span>
-                  <span className="font-medium">{detailDialog.result.id}</span>
-                </div>
-
                 {/* 第一行：目标类型和置信度 */}
                 <div className="p-2">
                   <span className="text-gray-500">目标类型：</span>
