@@ -15,6 +15,7 @@ import AnalysisResults from "./analysis-results";
 import GroundTruthInput from "./ground-truth-input";
 import GroundTruthList from "./ground-truth-list";
 import SearchResultList from "./search-result-list";
+import CSVImport from "./csv-import";
 import { ErrorStatistics, GroundTruthItem, MatchResult } from "./types";
 import {
   calculateErrorStatistics,
@@ -62,6 +63,11 @@ export default function Page() {
   // 添加真值处理函数
   const handleAddGroundTruth = (groundTruth: GroundTruthItem) => {
     setGroundTruths((prev) => [...prev, groundTruth]);
+  };
+
+  // 批量导入真值处理函数
+  const handleImportGroundTruths = (importedGroundTruths: GroundTruthItem[]) => {
+    setGroundTruths((prev) => [...prev, ...importedGroundTruths]);
   };
 
   // 删除真值处理函数
@@ -613,12 +619,22 @@ export default function Page() {
             </div>
 
             {/* 真值输入 */}
-            <GroundTruthInput
-              objectTypes={objectTypesQuery.data || []}
-              onAddGroundTruth={handleAddGroundTruth}
-              isLoading={objectTypesQuery.isLoading}
-              categoryCount={categoryCount.current}
-            />
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold">添加真值数据</h3>
+                <CSVImport
+                  objectTypes={objectTypesQuery.data || []}
+                  onImportGroundTruths={handleImportGroundTruths}
+                  categoryCount={categoryCount.current}
+                />
+              </div>
+              <GroundTruthInput
+                objectTypes={objectTypesQuery.data || []}
+                onAddGroundTruth={handleAddGroundTruth}
+                isLoading={objectTypesQuery.isLoading}
+                categoryCount={categoryCount.current}
+              />
+            </div>
 
             {/* 真值列表 */}
             <GroundTruthList
