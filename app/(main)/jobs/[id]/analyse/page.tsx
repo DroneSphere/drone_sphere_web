@@ -12,10 +12,10 @@ import { useQuery } from "@tanstack/react-query";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import AnalysisResults from "./analysis-results";
+import CSVImport from "./csv-import";
 import GroundTruthInput from "./ground-truth-input";
 import GroundTruthList from "./ground-truth-list";
 import SearchResultList from "./search-result-list";
-import CSVImport from "./csv-import";
 import { ErrorStatistics, GroundTruthItem, MatchResult } from "./types";
 import {
   calculateErrorStatistics,
@@ -168,7 +168,7 @@ export default function Page() {
           // 标签样式
           offset: new currentAMap.Pixel(0, 0),
         },
-        // 自定义标记点的图标和样式 - 使用绿色标记图标
+        // 自定义标记点的图标和样式 - 使用蓝色标记图标
         icon: new currentAMap.Icon({
           // 使用绿色标记图标
           image: "https://webapi.amap.com/theme/v1.3/markers/n/mark_b.png",
@@ -492,7 +492,11 @@ export default function Page() {
 
       // 将WGS84坐标转换为GCJ-02坐标（高德地图坐标系）
       const [gcjLng, gcjLat] = transformWGS84ToGCJ02(wgsLng, wgsLat);
-
+      const resultImgUrlMap = new Map<string, string>();
+      resultImgUrlMap.set("红色卡车", "https://img.xinlab.space/file/1758101043206_red-marker.png");
+      resultImgUrlMap.set("黄色坦克", "https://img.xinlab.space/file/1758101182564_yellow-marker.png");
+      resultImgUrlMap.set("绿色坦克", "https://img.xinlab.space/file/1758101043207_green-marker.png");
+      
       // 创建标记点
       const marker = new currentAMap.Marker({
         position: new currentAMap.LngLat(gcjLng, gcjLat),
@@ -510,9 +514,9 @@ export default function Page() {
         // 自定义标记点的图标和样式
         icon: new currentAMap.Icon({
           // 使用红色标记图标
-          image: "https://webapi.amap.com/theme/v1.3/markers/n/mark_r.png",
-          size: new currentAMap.Size(25, 34),
-          imageSize: new currentAMap.Size(25, 34),
+          image: resultImgUrlMap.get(result.target_label) || "https://webapi.amap.com/theme/v1.3/markers/n/mark_r.png",
+          size: new currentAMap.Size(32, 32),
+          imageSize: new currentAMap.Size(32, 32),
         }),
       });
 
