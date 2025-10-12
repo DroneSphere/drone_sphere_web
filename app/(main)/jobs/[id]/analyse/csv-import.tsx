@@ -11,6 +11,7 @@ import { Upload, FileText } from "lucide-react";
 import { useRef } from "react";
 import { GroundTruthItem, ObjectTypeOption } from "./types";
 import { generateUniqueId } from "./utils";
+import CSVTemplate from "./csv-template";
 
 interface CSVImportProps {
   objectTypes: ObjectTypeOption[];
@@ -180,6 +181,7 @@ const CSVImport = ({ objectTypes, onImportGroundTruths, categoryCount }: CSVImpo
         accept=".csv"
         className="hidden"
       />
+      <CSVTemplate objectTypes={objectTypes} />
       <TooltipProvider>
         <Tooltip>
           <TooltipTrigger asChild>
