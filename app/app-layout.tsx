@@ -29,7 +29,7 @@ export default function AppLayout({
   useEffect(() => {
     if (window) {
       window._AMapSecurityConfig = {
-        securityJsCode: "4ef657a379f13efbbf096baf8b3ed",
+        securityJsCode: "4ef657a379f13efbbf096baf8b08b3ed",
       };
     }
   }, []);

@@ -375,9 +375,9 @@ export default function AreaDetailPage() {
 
   // 挂载地图
   useEffect(() => {
-    // window._AMapSecurityConfig = {
-    //   securityJsCode: "4ef657a379f13efbbf096baf8b08b3ed",
-    // };
+    window._AMapSecurityConfig = {
+      securityJsCode: "4ef657a379f13efbbf096baf8b08b3ed",
+    };
 
     AMapLoader.load({
       key: "82ea7ca3d47546f079185e7ccdade9ba",
@@ -415,12 +415,29 @@ export default function AreaDetailPage() {
             mapRef.current?.addControl(scale);
 
             const placeSearch = new AMap.PlaceSearch({
-              pageSize: 5, //单页显示结果条数
+              pageSize: 10, //单页显示结果条数增加到10条
               pageIndex: 1, //页码
               citylimit: false, //是否强制限制在设置的城市内搜索
               map: mapRef.current, //展示结果的地图实例
               panel: "search-panel", //参数值为你页面定义容器的 id 值<div id="my-panel"></div>，结果列表将在此容器中进行展示。
               autoFitView: true, //是否自动调整地图视野使绘制的 Marker 点都处于视口的可见范围
+            });
+
+            // 添加搜索完成事件监听
+            AMap.Event.addListener(placeSearch, 'complete', function(data: any) {
+              console.log('搜索完成:', data);
+              // 搜索完成后的处理逻辑已经由高德地图自动处理
+              // 结果会显示在panel指定的容器中
+            });
+
+            // 添加搜索错误事件监听
+            AMap.Event.addListener(placeSearch, 'error', function(error: any) {
+              console.error('搜索错误:', error);
+              toast({
+                title: "搜索失败",
+                description: "无法找到相关地点，请尝试其他关键词",
+                variant: "destructive",
+              });
             });
             placeSearchRef.current = placeSearch;
 
@@ -635,170 +652,303 @@ export default function AreaDetailPage() {
               className="h-[calc(100vh-132px)] w-full border rounded-md shadow-sm"
             ></div>
             {/* 修改右侧面板容器结构 */}
-            <div className="flex flex-col w-[420px] h-[calc(100vh-132px)]">
-              {/* 主容器，设置高度 */}
-              {/* 内部滚动容器 */}
-              <div className="flex-1 overflow-y-auto pr-2 space-y-4 mb-4">
-                {/* flex-1 使其填充剩余空间, overflow-y-auto 启用滚动, space-y-4 添加间距 */}
-                {/* 将区域名称和描述移动到这里 */}
-                <div className="space-y-2 p-3 border rounded-md shadow-sm">
-                  <div className="space-y-2">
-                    <FormField
-                      control={form.control}
-                      name="name"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>区域名称</FormLabel>
-                          <FormControl>
-                            <Input placeholder="请输入区域名称" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="description"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>区域描述</FormLabel>
-                          <FormControl>
-                            <Textarea placeholder="请输入区域描述" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
+            <div className="flex flex-col w-[420px] h-[calc(100vh-132px)] min-w-[420px] max-w-[420px] flex-shrink-0">
+              {/* 固定区域信息表单 */}
+              <div className="space-y-2 p-3 border rounded-md shadow-sm flex-shrink-0">
+                <div className="space-y-2">
+                  <FormField
+                    control={form.control}
+                    name="name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>区域名称</FormLabel>
+                        <FormControl>
+                          <Input placeholder="请输入区域名称" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="description"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>区域描述</FormLabel>
+                        <FormControl>
+                          <Textarea placeholder="请输入区域描述" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                 </div>
+              </div>
+
+              {/* 动态内容区域 */}
+              <div className="flex-1 min-h-0 overflow-hidden pt-3">
                 {isCreating && (
-                  <div className="space-y-2 pb-2 border-t border-l border-r rounded-t-md shadow-sm">
-                    <div className="px-3 mt-3 text-sm font-medium">
-                      地图搜索
-                    </div>
-                    <div className="px-3 pb-2">
+                  <div className="flex flex-col border border-gray-200 rounded-md shadow-sm bg-white overflow-hidden h-full w-full min-w-full max-w-full">
+                    <div className="p-3 border-b border-gray-200 flex-shrink-0">
+                      <div className="text-sm font-medium text-gray-900 mb-2">
+                        地图搜索
+                      </div>
                       <Input
                         placeholder="输入地点名称搜索"
                         onChange={(e) => {
-                          if (placeSearchRef.current && e.target.value.trim()) {
-                            // @ts-expect-error - PlaceSearch type not properly defined
-                            placeSearchRef.current.search(e.target.value);
+                          // 延迟搜索，避免输入时频繁请求
+                          const value = e.target.value.trim();
+                          if (placeSearchRef.current && value.length >= 2) {
+                            // 使用setTimeout延迟搜索
+                            setTimeout(() => {
+                              if (placeSearchRef.current && value === e.target.value.trim()) {
+                                // @ts-expect-error - PlaceSearch type not properly defined
+                                placeSearchRef.current.search(value);
+                              }
+                            }, 300);
                           }
                         }}
                         onKeyDown={(e) => {
                           if (e.key === "Enter" && placeSearchRef.current) {
                             e.preventDefault();
-                            // @ts-expect-error - PlaceSearch type not properly defined
-                            placeSearchRef.current.search(
-                              e.currentTarget.value
-                            );
+                            const value = e.currentTarget.value.trim();
+                            if (value) {
+                              // @ts-expect-error - PlaceSearch type not properly defined
+                              placeSearchRef.current.search(value);
+                            }
                           }
                         }}
-                        className="p-2 border rounded-md shadow-sm"
+                        className="p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                       />
                     </div>
-                    <div id="search-panel" className="w-full h-full" />
+                    <div
+                      id="search-panel"
+                      className="flex-1 overflow-y-auto bg-gray-50 min-h-0 w-full min-w-full max-w-full"
+                      style={{ height: '0px' }} // 让flexbox控制高度
+                    />
+                    <style jsx>{`
+                      #search-panel,
+                      #search-panel > div {
+                        height: 100% !important;
+                        width: 100% !important;
+                        display: flex !important;
+                        flex-direction: column !important;
+                        margin: 0 !important;
+                        padding: 0 !important;
+                        min-width: 100% !important;
+                        max-width: 100% !important;
+                        box-sizing: border-box !important;
+                      }
+
+                      #search-panel .amap_lib_placeSearch,
+                      #search-panel .amap-lib-place-search {
+                        height: 100% !important;
+                        width: 100% !important;
+                        display: flex !important;
+                        flex-direction: column !important;
+                        margin: 0 !important;
+                        padding: 0 !important;
+                        min-width: 100% !important;
+                        max-width: 100% !important;
+                        box-sizing: border-box !important;
+                      }
+
+                      #search-panel .amap_lib_placeSearch_list,
+                      #search-panel .amap-lib-place-search-list {
+                        flex: 1 !important;
+                        overflow-y: auto !important;
+                        padding: 6px !important;
+                        margin: 0 !important;
+                        display: flex !important;
+                        flex-direction: column !important;
+                      }
+
+                      #search-panel .amap_lib_placeSearch_list_item,
+                      #search-panel .amap-lib-place-search-list-item {
+                        margin-bottom: 3px !important;
+                        padding: 10px 8px !important;
+                        border-radius: 6px !important;
+                        background: white !important;
+                        border: 1px solid #e5e7eb !important;
+                        transition: all 0.2s ease !important;
+                        min-height: 54px !important;
+                        flex-shrink: 0 !important;
+                      }
+
+                      #search-panel .amap_lib_placeSearch_list_item:hover,
+                      #search-panel .amap-lib-place-search-list-item:hover {
+                        background: #f9fafb !important;
+                        border-color: #d1d5db !important;
+                        transform: translateY(-1px) !important;
+                        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05) !important;
+                      }
+
+                      #search-panel .amap_lib_placeSearch_list_item h3,
+                      #search-panel .amap-lib-place-search-list-item h3 {
+                        font-size: 13px !important;
+                        font-weight: 600 !important;
+                        margin-bottom: 4px !important;
+                        color: #111827 !important;
+                        line-height: 1.2 !important;
+                      }
+
+                      #search-panel .amap_lib_placeSearch_list_item p,
+                      #search-panel .amap-lib-place-search-list-item p {
+                        font-size: 11px !important;
+                        color: #6b7280 !important;
+                        line-height: 1.3 !important;
+                        margin: 1px 0 !important;
+                      }
+
+                      #search-panel .amap_lib_placeSearch_page,
+                      #search-panel .amap-lib-place-search-page {
+                        padding: 8px 6px !important;
+                        background: white !important;
+                        border-top: 1px solid #e5e7eb !important;
+                        margin: 0 !important;
+                        flex-shrink: 0 !important;
+                      }
+
+                      #search-panel .amap_lib_placeSearch_page a,
+                      #search-panel .amap-lib-place-search-page a {
+                        margin: 0 1px !important;
+                        padding: 4px 8px !important;
+                        border-radius: 3px !important;
+                        font-size: 11px !important;
+                        font-weight: 500 !important;
+                        border: 1px solid #d1d5db !important;
+                        background: white !important;
+                        color: #374151 !important;
+                        text-decoration: none !important;
+                        transition: all 0.2s ease !important;
+                      }
+
+                      #search-panel .amap_lib_placeSearch_page a:hover,
+                      #search-panel .amap-lib-place-search-page a:hover,
+                      #search-panel .amap_lib_placeSearch_page a.cur,
+                      #search-panel .amap-lib-place-search-page a.cur {
+                        background: #3b82f6 !important;
+                        color: white !important;
+                        border-color: #3b82f6 !important;
+                      }
+
+                      /* 确保整个搜索面板填满高度 */
+                      #search-panel .poi-list {
+                        height: 100% !important;
+                        display: flex !important;
+                        flex-direction: column !important;
+                      }
+
+                      /* 减少不必要的间距 */
+                      #search-panel * {
+                        box-sizing: border-box !important;
+                      }
+                    `}</style>
                   </div>
                 )}
 
-                {polygonPoints.length > 0 && (
-                  <div className="space-y-2 overflow-auto border rounded-md shadow-sm">
-                    <div className="px-3 mt-3 text-sm font-medium">
-                      节点信息
-                    </div>
-                    <Table className="">
-                      <TableHeader className="bg-gray-100">
-                        <TableRow>
-                          {table.getHeaderGroups().map((headerGroup) =>
-                            headerGroup.headers.map((header) => (
-                              <TableHead
-                                key={header.id}
-                                className="text-center text-sm h-8 min-w-16"
-                              >
-                                {header.isPlaceholder
-                                  ? null
-                                  : flexRender(
-                                      header.column.columnDef.header,
-                                      header.getContext()
-                                    )}
-                              </TableHead>
-                            ))
-                          )}
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {table.getRowModel().rows.map((row) => (
-                          <TableRow
-                            key={row.id}
-                            className="text-sm hover:bg-gray-50 "
-                          >
-                            {row.getVisibleCells().map((cell) => (
-                              // 居中
-                              <TableCell
-                                key={cell.id}
-                                className="text-center py-2 px-0"
-                              >
-                                {flexRender(
-                                  cell.column.columnDef.cell,
-                                  cell.getContext()
-                                )}
-                              </TableCell>
-                            ))}
+                {!isCreating && polygonPoints.length > 0 && (
+                  <div className="h-full overflow-y-auto space-y-3 pr-2">
+                    {/* 节点信息表格 */}
+                    <div className="border rounded-md shadow-sm">
+                      <div className="px-3 pt-3 text-sm font-medium">
+                        节点信息
+                      </div>
+                      <Table className="">
+                        <TableHeader className="bg-gray-100">
+                          <TableRow>
+                            {table.getHeaderGroups().map((headerGroup) =>
+                              headerGroup.headers.map((header) => (
+                                <TableHead
+                                  key={header.id}
+                                  className="text-center text-sm h-8 min-w-16"
+                                >
+                                  {header.isPlaceholder
+                                    ? null
+                                    : flexRender(
+                                        header.column.columnDef.header,
+                                        header.getContext()
+                                      )}
+                                </TableHead>
+                              ))
+                            )}
                           </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
-                )}
-                {polygonPoints.length > 0 && (
-                  <div className="space-y-2 p-3 border rounded-md shadow-sm">
-                    <div className="text-sm font-medium">区域信息</div>
-                    <div className="grid grid-cols-2 gap-1">
-                      <span className="text-sm text-gray-500">总面积:</span>
-                      <span className="text-sm font-medium">
-                        {areaSizeDisplay}
-                      </span>
+                        </TableHeader>
+                        <TableBody>
+                          {table.getRowModel().rows.map((row) => (
+                            <TableRow
+                              key={row.id}
+                              className="text-sm hover:bg-gray-50 "
+                            >
+                              {row.getVisibleCells().map((cell) => (
+                                // 居中
+                                <TableCell
+                                  key={cell.id}
+                                  className="text-center py-2 px-0"
+                                >
+                                  {flexRender(
+                                    cell.column.columnDef.cell,
+                                    cell.getContext()
+                                  )}
+                                </TableCell>
+                              ))}
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
 
-                      <span className="text-sm text-gray-500">总顶点:</span>
-                      <span className="text-sm font-medium">
-                        {polygonPoints.length}个
-                      </span>
+                    {/* 区域信息 */}
+                    <div className="p-3 border rounded-md shadow-sm">
+                      <div className="text-sm font-medium mb-2">区域信息</div>
+                      <div className="grid grid-cols-2 gap-1">
+                        <span className="text-sm text-gray-500">总面积:</span>
+                        <span className="text-sm font-medium">
+                          {areaSizeDisplay}
+                        </span>
 
-                      <span className="text-sm text-gray-500">周长:</span>
-                      <span className="text-sm font-medium">
-                        {areaLengthDisplay}
-                      </span>
+                        <span className="text-sm text-gray-500">总顶点:</span>
+                        <span className="text-sm font-medium">
+                          {polygonPoints.length}个
+                        </span>
 
-                      {query.data?.created_at && (
-                        <>
-                          <span className="text-sm text-gray-500">
-                            创建日期:
-                          </span>
-                          <span className="text-sm font-medium">
-                            {query.data.created_at}
-                          </span>
-                        </>
-                      )}
-                      {query.data?.updated_at && (
-                        <>
-                          <span className="text-sm text-gray-500">
-                            编辑日期:
-                          </span>
-                          <span className="text-sm font-medium">
-                            {query.data.updated_at}
-                          </span>
-                        </>
-                      )}
+                        <span className="text-sm text-gray-500">周长:</span>
+                        <span className="text-sm font-medium">
+                          {areaLengthDisplay}
+                        </span>
+
+                        {query.data?.created_at && (
+                          <>
+                            <span className="text-sm text-gray-500">
+                              创建日期:
+                            </span>
+                            <span className="text-sm font-medium">
+                              {query.data.created_at}
+                            </span>
+                          </>
+                        )}
+                        {query.data?.updated_at && (
+                          <>
+                            <span className="text-sm text-gray-500">
+                              编辑日期:
+                            </span>
+                            <span className="text-sm font-medium">
+                              {query.data.updated_at}
+                            </span>
+                          </>
+                        )}
+                      </div>
                     </div>
                   </div>
                 )}
               </div>
-              <div className="flex space-x-2 justify-end pt-2 border-t">
-                {/* 编辑模式 */}
+
+              {/* 固定底部按钮 */}
+              <div className="flex space-x-2 justify-end pt-2 border-t flex-shrink-0">
                 <Button
                   size="default"
                   variant="default"
-                  type="submit" // 表单提交按钮
+                  type="submit"
                   disabled={isLoading}
                   className="bg-blue-500 hover:bg-blue-600 focus:ring-blue-500 focus:ring-offset-0"
                 >
