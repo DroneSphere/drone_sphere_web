@@ -767,16 +767,16 @@ export default function JobDetailPage() {
   // };
 
   return (
-    <div className="px-4">
-      <div className="flex gap-4">
+    <div className="px-4 h-[calc(100vh-160px)]">
+      <div className="flex gap-2 sm:gap-4 h-full">
         <div
           id="map"
-          className="h-[calc(100vh-160px)] flex-1 border rounded-md shadow-sm"
+          className="flex-1 border rounded-md shadow-sm"
         />
         {/* 右侧面板 */}
-        <div className="flex flex-col gap-3">
+        <div className="hidden sm:flex flex-col gap-3 w-80 max-h-full">
           {/* 实时数据区域 */}
-          <div className="flex-1 h-auto overflow-y-auto flex flex-col gap-3">
+          <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
             {query.data && query.data.drones && optionsQuery.data && (
               <DroneCardList
                 drones={formatDronesData(
@@ -788,15 +788,67 @@ export default function JobDetailPage() {
               />
             )}
           </div>
-
-          {/* <div className="flex flex-col gap-2">
-            <h2 className="text-lg font-bold mb-3 pb-2">搜索结果</h2>
-            <SearchResultList
-              searchResults={searchResults}
-              onResultClick={handleSearchResultClick}
-            />
-          </div> */}
         </div>
+
+        {/* 移动端浮动按钮 */}
+        <div className="sm:hidden fixed bottom-4 right-4 z-50">
+          <button
+            className="bg-blue-600 text-white p-3 rounded-full shadow-lg"
+            onClick={() => {
+              const panel = document.getElementById('mobile-drone-panel');
+              if (panel) {
+                panel.classList.toggle('hidden');
+              }
+            }}
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </button>
+        </div>
+
+        {/* 移动端面板 */}
+        <div
+          id="mobile-drone-panel"
+          className="sm:hidden fixed inset-0 bg-white z-40 hidden overflow-auto"
+        >
+          <div className="p-4">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-lg font-medium">无人机列表</h2>
+              <button
+                className="text-gray-500 hover:text-gray-700"
+                onClick={() => {
+                  const panel = document.getElementById('mobile-drone-panel');
+                  if (panel) {
+                    panel.classList.add('hidden');
+                  }
+                }}
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            {query.data && query.data.drones && optionsQuery.data && (
+              <DroneCardList
+                drones={formatDronesData(
+                  query.data.drones,
+                  optionsQuery.data.drones
+                )}
+                droneRTStates={droneRTStates}
+                droneConnections={droneConnections}
+              />
+            )}
+          </div>
+        </div>
+
+        {/* <div className="flex flex-col gap-2">
+          <h2 className="text-lg font-bold mb-3 pb-2">搜索结果</h2>
+          <SearchResultList
+            searchResults={searchResults}
+            onResultClick={handleSearchResultClick}
+          />
+        </div> */}
       </div>
     </div>
   );
