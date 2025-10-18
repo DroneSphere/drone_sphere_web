@@ -2,7 +2,7 @@
 
 import { baseURL } from "@/api/http_client";
 import { DroneRTState } from "@/app/(main)/drones/types";
-import { JobDetailResult } from "@/app/(main)/jobs/[id]/types";
+import { JobDetailResult, JobCreationOptions } from "@/app/(main)/jobs/[id]/types";
 import AMapLoader from "@amap/amap-jsapi-loader";
 import "@amap/amap-jsapi-types";
 import { useQuery } from "@tanstack/react-query";
@@ -18,10 +18,10 @@ import DroneCardList from "./drone-card-list";
 // 地图数据持久化接口
 interface MapDataState {
   id: string;
-  area: any;
-  waylines: any[];
-  drones: any[];
-  droneOptions: any[];
+  area: unknown;
+  waylines: unknown[];
+  drones: unknown[];
+  droneOptions: unknown[];
   timestamp: number;
 }
 
@@ -110,7 +110,7 @@ export default function JobDetailPage() {
 
     try {
       const { area, waylines, drones, droneOptions } = savedData;
-      const droneStates = formatDronesData(drones, droneOptions);
+      const droneStates = formatDronesData(drones as JobDetailResult["drones"], droneOptions as JobCreationOptions["drones"]);
 
       // 检查地图是否真的需要恢复（可能已经有图层了）
       const existingOverlays = mapRef.current.getAllOverlays();
@@ -131,8 +131,10 @@ export default function JobDetailPage() {
         if (!mapRef.current || !AMapRef.current) return;
 
         // 添加区域
-        const areaPoints = area.points?.map((point: any) => {
-          return new AMap.LngLat(point.lng, point.lat);
+        const areaData = area as { points?: { lng: number; lat: number }[] };
+        const areaPoints = areaData.points?.map((point: unknown) => {
+          const pt = point as { lng: number; lat: number };
+          return new AMap.LngLat(pt.lng, pt.lat);
         });
         if (areaPoints && areaPoints.length > 0) {
           const polygon = new AMapRef.current.Polygon();
@@ -151,13 +153,15 @@ export default function JobDetailPage() {
 
         // 添加航线
         if (waylines && waylines.length > 0) {
-          waylines.forEach((wayline: any, index: number) => {
-            const drone = droneStates.find((d) => d.key === wayline.drone_key);
+          waylines.forEach((wayline: unknown, index: number) => {
+            const wl = wayline as { drone_key: string; path: unknown[]; waypoints: unknown[] };
+            const drone = droneStates.find((d) => d.key === wl.drone_key);
             if (!drone) return;
 
             // 创建航线区域多边形
-            const waylinePath = wayline.path.map((point: any) => {
-              return new AMapRef.current!.LngLat(point.lng, point.lat);
+            const waylinePath = wl.path.map((point: unknown) => {
+              const pt = point as { lng: number; lat: number };
+              return new AMapRef.current!.LngLat(pt.lng, pt.lat);
             });
             if (waylinePath && waylinePath.length > 0) {
               const waylinePolygon = new AMapRef.current!.Polygon();
@@ -175,9 +179,10 @@ export default function JobDetailPage() {
             }
 
             // 如果有具体航点，绘制为折线
-            if (wayline.waypoints && wayline.waypoints.length > 0) {
-              const waylineRoutePoints = wayline.waypoints.map((point: any) => {
-                return new AMapRef.current!.LngLat(point.lng, point.lat);
+            if (wl.waypoints && wl.waypoints.length > 0) {
+              const waylineRoutePoints = wl.waypoints.map((point: unknown) => {
+                const pt = point as { lng: number; lat: number };
+                return new AMapRef.current!.LngLat(pt.lng, pt.lat);
               });
 
               const polyline = new AMapRef.current!.Polyline({
@@ -198,9 +203,10 @@ export default function JobDetailPage() {
               const waylineMarkers: AMap.Marker[] = [];
               markersRef.current[index] = waylineMarkers;
 
-              waylineRoutePoints.forEach((point: any, pointIndex: number) => {
+              waylineRoutePoints.forEach((point: unknown, pointIndex: number) => {
+                const pt = point as AMap.LngLat;
                 const marker = new AMapRef.current!.Marker({
-                  position: point,
+                  position: pt,
                   content: `<div style="
                     background-color: ${drone.color};
                     width: 16px;
@@ -221,16 +227,16 @@ export default function JobDetailPage() {
                 const markerInfo = new AMapRef.current!.InfoWindow({
                   content: `<div style="padding: 5px;">
                             <p>航点 ${pointIndex + 1}</p>
-                            <p>经度: ${point.getLng().toFixed(6)}</p>
-                            <p>纬度: ${point.getLat().toFixed(6)}</p>
+                            <p>经度: ${pt.getLng().toFixed(6)}</p>
+                            <p>纬度: ${pt.getLat().toFixed(6)}</p>
                           </div>`,
                   offset: new AMapRef.current!.Pixel(0, -20),
                 });
 
                 AMapRef.current!.Event.addListener(marker, "mouseover", () => {
                   markerInfo.open(mapRef.current!, [
-                    point.getLng(),
-                    point.getLat(),
+                    pt.getLng(),
+                    pt.getLat(),
                   ]);
                 });
 

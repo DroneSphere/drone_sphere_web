@@ -21,7 +21,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-toast";
 import { useIsCreateMode } from "@/lib/misc";
-import AMapLoader from "@amap/amap-jsapi-loader";
+// import AMapLoader from "@amap/amap-jsapi-loader";
 import "@amap/amap-jsapi-types";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -375,13 +375,17 @@ export default function AreaDetailPage() {
 
   // 挂载地图
   useEffect(() => {
-    window._AMapSecurityConfig = {
-      securityJsCode: "4ef657a379f13efbbf096baf8b08b3ed",
-    };
+    if (typeof window !== 'undefined') {
+      window._AMapSecurityConfig = {
+        securityJsCode: "4ef657a379f13efbbf096baf8b08b3ed",
+      };
+    }
 
-    AMapLoader.load({
-      key: "82ea7ca3d47546f079185e7ccdade9ba",
-      version: "2.0",
+    import("@amap/amap-jsapi-loader").then(({ default: AMapLoader }) => {
+      return AMapLoader.load({
+        key: "82ea7ca3d47546f079185e7ccdade9ba",
+        version: "2.0",
+      });
     })
       .then((AMap) => {
         AMapRef.current = AMap;
@@ -424,14 +428,14 @@ export default function AreaDetailPage() {
             });
 
             // 添加搜索完成事件监听
-            AMap.Event.addListener(placeSearch, 'complete', function(data: any) {
+            AMap.Event.addListener(placeSearch, 'complete', function(data: unknown) {
               console.log('搜索完成:', data);
               // 搜索完成后的处理逻辑已经由高德地图自动处理
               // 结果会显示在panel指定的容器中
             });
 
             // 添加搜索错误事件监听
-            AMap.Event.addListener(placeSearch, 'error', function(error: any) {
+            AMap.Event.addListener(placeSearch, 'error', function(error: unknown) {
               console.error('搜索错误:', error);
               toast({
                 title: "搜索失败",
