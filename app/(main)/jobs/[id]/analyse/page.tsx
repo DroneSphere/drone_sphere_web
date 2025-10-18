@@ -98,7 +98,7 @@ export default function Page() {
       const matches = matchGroundTruthsWithDetections(
         groundTruths,
         resultQuery.data.items,
-        50 // 50米匹配距离
+        5 // 50米匹配距离
       );
 
       console.log('匹配结果:', matches);
