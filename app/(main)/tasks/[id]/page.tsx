@@ -7,13 +7,23 @@ import AMapLoader from "@amap/amap-jsapi-loader";
 import "@amap/amap-jsapi-types";
 import { useQuery } from "@tanstack/react-query";
 import { usePathname } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { formatDronesData } from "../../jobs/[id]/data-utils";
 import {
   getJobCreateOptions,
   getJobDetailById,
 } from "../../jobs/[id]/requests";
 import DroneCardList from "./drone-card-list";
+
+// 地图数据持久化接口
+interface MapDataState {
+  id: string;
+  area: any;
+  waylines: any[];
+  drones: any[];
+  droneOptions: any[];
+  timestamp: number;
+}
 
 export default function JobDetailPage() {
   const pathname = usePathname();
@@ -30,12 +40,54 @@ export default function JobDetailPage() {
     queryFn: () => getJobCreateOptions(),
   });
 
+  // 地图数据持久化键
+  const mapDataKey = `map_data_${id}`;
+
+  // 保存地图数据到 localStorage
+  const saveMapData = useCallback((data: MapDataState) => {
+    if (typeof window === 'undefined') return; // 防止SSR错误
+
+    try {
+      localStorage.setItem(mapDataKey, JSON.stringify(data));
+    } catch (error) {
+      console.warn("保存地图数据失败:", error);
+    }
+  }, [mapDataKey]);
+
+  // 从 localStorage 获取地图数据
+  const getSavedMapData = useCallback((): MapDataState | null => {
+    if (typeof window === 'undefined') return null; // 防止SSR错误
+
+    try {
+      const saved = localStorage.getItem(mapDataKey);
+      if (saved) {
+        const data = JSON.parse(saved) as MapDataState;
+        // 检查数据是否过期（24小时）
+        const now = Date.now();
+        if (now - data.timestamp < 24 * 60 * 60 * 1000) {
+          return data;
+        } else {
+          // 清除过期数据
+          localStorage.removeItem(mapDataKey);
+        }
+      }
+    } catch (error) {
+      console.warn("获取地图数据失败:", error);
+      localStorage.removeItem(mapDataKey);
+    }
+    return null;
+  }, [mapDataKey]);
+
   // 地图相关引用
   const AMapRef = useRef<typeof AMap | null>(null);
   const mapRef = useRef<AMap.Map | null>(null);
   const polygonsRef = useRef<AMap.Polygon[]>([]);
   const polylinesRef = useRef<AMap.Polyline[]>([]);
   const markersRef = useRef<AMap.Marker[][]>([]);
+
+  // 地图初始化状态
+  const [isMapInitialized, setIsMapInitialized] = useState(false);
+  const [mapDataLoaded, setMapDataLoaded] = useState(false);
 
   // 无人机状态管理
   const [droneRTStates, setDroneRTStates] = useState<
@@ -50,8 +102,171 @@ export default function JobDetailPage() {
   // const [searchResults, setSearchResults] = useState<SearchResultItem[]>([]);
   const eventSourcesRef = useRef<Record<string, EventSource>>({});
 
+  // 从保存的数据恢复地图图层
+  const restoreMapLayers = useCallback((savedData: MapDataState) => {
+    if (!AMapRef.current || !mapRef.current) return;
+
+    console.log("恢复地图图层:", savedData.id);
+
+    try {
+      const { area, waylines, drones, droneOptions } = savedData;
+      const droneStates = formatDronesData(drones, droneOptions);
+
+      // 检查地图是否真的需要恢复（可能已经有图层了）
+      const existingOverlays = mapRef.current.getAllOverlays();
+      if (existingOverlays && existingOverlays.length > 0) {
+        console.log("地图已有图层，跳过恢复");
+        setMapDataLoaded(true);
+        return;
+      }
+
+      // 清除当前地图元素
+      mapRef.current.clearMap();
+      polygonsRef.current = [];
+      polylinesRef.current = [];
+      markersRef.current = [];
+
+      // 延迟执行恢复，确保地图完全就绪
+      setTimeout(() => {
+        if (!mapRef.current || !AMapRef.current) return;
+
+        // 添加区域
+        const areaPoints = area.points?.map((point: any) => {
+          return new AMap.LngLat(point.lng, point.lat);
+        });
+        if (areaPoints && areaPoints.length > 0) {
+          const polygon = new AMapRef.current.Polygon();
+          polygon.setOptions({
+            path: areaPoints,
+            strokeColor: "#3366FF",
+            strokeWeight: 2,
+            strokeOpacity: 0.8,
+            fillColor: "#3366FF",
+            fillOpacity: 0.3,
+            zIndex: 50,
+          });
+          polygonsRef.current.push(polygon);
+          mapRef.current.add(polygon);
+        }
+
+        // 添加航线
+        if (waylines && waylines.length > 0) {
+          waylines.forEach((wayline: any, index: number) => {
+            const drone = droneStates.find((d) => d.key === wayline.drone_key);
+            if (!drone) return;
+
+            // 创建航线区域多边形
+            const waylinePath = wayline.path.map((point: any) => {
+              return new AMapRef.current!.LngLat(point.lng, point.lat);
+            });
+            if (waylinePath && waylinePath.length > 0) {
+              const waylinePolygon = new AMapRef.current!.Polygon();
+              waylinePolygon.setOptions({
+                path: waylinePath,
+                strokeColor: drone.color,
+                strokeWeight: 2,
+                strokeOpacity: 1,
+                fillColor: drone.color,
+                fillOpacity: 0.3,
+                zIndex: 100,
+              });
+              polygonsRef.current.push(waylinePolygon);
+              mapRef.current!.add(waylinePolygon);
+            }
+
+            // 如果有具体航点，绘制为折线
+            if (wayline.waypoints && wayline.waypoints.length > 0) {
+              const waylineRoutePoints = wayline.waypoints.map((point: any) => {
+                return new AMapRef.current!.LngLat(point.lng, point.lat);
+              });
+
+              const polyline = new AMapRef.current!.Polyline({
+                path: waylineRoutePoints,
+                strokeColor: drone.color,
+                strokeWeight: 4,
+                strokeOpacity: 0.9,
+                strokeStyle: "solid",
+                strokeDasharray: [10, 5],
+                lineJoin: "round",
+                lineCap: "round",
+                showDir: true,
+              });
+              polylinesRef.current.push(polyline);
+              mapRef.current!.add(polyline);
+
+              // 在每个转折点添加圆形标记
+              const waylineMarkers: AMap.Marker[] = [];
+              markersRef.current[index] = waylineMarkers;
+
+              waylineRoutePoints.forEach((point: any, pointIndex: number) => {
+                const marker = new AMapRef.current!.Marker({
+                  position: point,
+                  content: `<div style="
+                    background-color: ${drone.color};
+                    width: 16px;
+                    height: 16px;
+                    border-radius: 50%;
+                    border: 2px solid white;
+                    box-shadow: 0 0 5px rgba(0,0,0,0.3);
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    color: white;
+                    font-size: 10px;
+                    font-weight: bold;
+                  ">${pointIndex + 1}</div>`,
+                  offset: new AMapRef.current!.Pixel(-8, -8),
+                });
+
+                const markerInfo = new AMapRef.current!.InfoWindow({
+                  content: `<div style="padding: 5px;">
+                            <p>航点 ${pointIndex + 1}</p>
+                            <p>经度: ${point.getLng().toFixed(6)}</p>
+                            <p>纬度: ${point.getLat().toFixed(6)}</p>
+                          </div>`,
+                  offset: new AMapRef.current!.Pixel(0, -20),
+                });
+
+                AMapRef.current!.Event.addListener(marker, "mouseover", () => {
+                  markerInfo.open(mapRef.current!, [
+                    point.getLng(),
+                    point.getLat(),
+                  ]);
+                });
+
+                AMapRef.current!.Event.addListener(marker, "mouseout", () => {
+                  markerInfo.close();
+                });
+
+                waylineMarkers.push(marker);
+                mapRef.current!.add(marker);
+              });
+            }
+          });
+        }
+
+        // 调整视图以包含所有覆盖物
+        setTimeout(() => {
+          if (mapRef.current) {
+            mapRef.current.setFitView();
+          }
+        }, 100);
+
+        setMapDataLoaded(true);
+        console.log("地图图层恢复完成");
+      }, 100); // 短暂延迟确保地图状态稳定
+
+    } catch (error) {
+      console.error("恢复地图图层时出错:", error);
+      setMapDataLoaded(false);
+    }
+  }, []);
+
   // 首次渲染时挂载地图
   useEffect(() => {
+    // 如果地图已经初始化，不重复初始化
+    if (isMapInitialized) return;
+
     AMapLoader.load({
       key: "82ea7ca3d47546f079185e7ccdade9ba",
       version: "2.0",
@@ -59,6 +274,13 @@ export default function JobDetailPage() {
       .then((AMap) => {
         AMapRef.current = AMap;
         if (!AMapRef.current) return;
+
+        // 检查地图容器是否存在
+        const mapContainer = document.getElementById("map");
+        if (!mapContainer) {
+          console.error("地图容器未找到");
+          return;
+        }
 
         mapRef.current = new AMapRef.current.Map("map", {
           viewMode: "3D",
@@ -75,16 +297,27 @@ export default function JobDetailPage() {
           const scale = new AMap.Scale();
           mapRef.current?.addControl(toolBar);
           mapRef.current?.addControl(scale);
+
+          // 地图初始化完成，设置状态
+          setIsMapInitialized(true);
+
+          // 尝试恢复保存的地图数据
+          const savedData = getSavedMapData();
+          if (savedData) {
+            console.log("发现保存的地图数据，开始恢复");
+            restoreMapLayers(savedData);
+          }
         });
       })
       .catch((e) => {
-        console.log(e);
+        console.error("地图加载失败:", e);
       });
 
     return () => {
-      mapRef.current?.destroy();
+      // 不要销毁地图，因为页面切换时需要保持
+      // mapRef.current?.destroy();
     };
-  }, []);
+  }, [isMapInitialized, getSavedMapData, restoreMapLayers]);
 
   // 数据刷新时修改地图
   useEffect(() => {
@@ -92,9 +325,14 @@ export default function JobDetailPage() {
       !AMapRef.current ||
       !mapRef.current ||
       !query.data ||
-      !optionsQuery.data
+      !optionsQuery.data ||
+      !isMapInitialized
     )
       return;
+
+    // 如果已经从保存的数据恢复，则不需要重新绘制
+    if (mapDataLoaded) return;
+
     const { area, waylines } = query.data;
     const droneStates = formatDronesData(
       query.data.drones,
@@ -223,7 +461,18 @@ export default function JobDetailPage() {
     }
 
     mapRef.current.setFitView();
-  }, [optionsQuery.data, optionsQuery.data?.drones, query.data]);
+
+    // 保存地图数据以供后续恢复
+    const mapData: MapDataState = {
+      id: id,
+      area: area,
+      waylines: waylines,
+      drones: query.data.drones,
+      droneOptions: optionsQuery.data.drones,
+      timestamp: Date.now(),
+    };
+    saveMapData(mapData);
+  }, [optionsQuery.data, optionsQuery.data?.drones, query.data, isMapInitialized, mapDataLoaded, id, saveMapData]);
 
   // SSE连接管理
   useEffect(() => {
@@ -393,6 +642,105 @@ export default function JobDetailPage() {
     //   }
     // });
   }, [droneRTStates, droneMarkers, query.data, query]); // 添加 droneMarkers 和 processedDrones 到依赖项
+
+  // 页面可见性变化和焦点变化处理
+  useEffect(() => {
+    let checkInterval: NodeJS.Timeout | null = null;
+
+    const checkAndRestoreMap = () => {
+      if (isMapInitialized && AMapRef.current && mapRef.current) {
+        // 多种方式检查地图状态
+        const mapDestroyed = !mapRef.current ||
+                           mapRef.current.getCenter() === null ||
+                           mapRef.current.getZoom() === undefined ||
+                           mapRef.current.getSize() === null;
+
+        if (mapDestroyed) {
+          console.log("检测到地图被销毁，需要重新初始化");
+          setIsMapInitialized(false);
+          setMapDataLoaded(false);
+        } else {
+          // 检查地图是否缺少图层（通过检查是否有覆盖物）
+          const overlays = mapRef.current.getAllOverlays('polygon');
+          const hasPolygons = overlays && overlays.length > 0;
+
+          if (!hasPolygons && !mapDataLoaded) {
+            console.log("检测到地图缺少图层，尝试恢复");
+            const savedData = getSavedMapData();
+            if (savedData) {
+              console.log("从保存的数据恢复地图图层");
+              restoreMapLayers(savedData);
+            }
+          }
+        }
+      }
+    };
+
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        console.log("页面重新可见，检查地图状态");
+        checkAndRestoreMap();
+      }
+    };
+
+    const handleWindowFocus = () => {
+      console.log("窗口获得焦点，检查地图状态");
+      checkAndRestoreMap();
+    };
+
+    const handlePageShow = (event: PageTransitionEvent) => {
+      console.log("页面显示，检查地图状态", event.persisted);
+      checkAndRestoreMap();
+    };
+
+    // 添加各种事件监听器
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleWindowFocus);
+    window.addEventListener('pageshow', handlePageShow);
+
+    // 添加定期检查（每5秒检查一次，但只在页面可见时）
+    const startPeriodicCheck = () => {
+      if (!document.hidden && !checkInterval) {
+        checkInterval = setInterval(() => {
+          checkAndRestoreMap();
+        }, 5000);
+      }
+    };
+
+    const stopPeriodicCheck = () => {
+      if (checkInterval) {
+        clearInterval(checkInterval);
+        checkInterval = null;
+      }
+    };
+
+    const handleVisibilityChangeWithPeriodic = () => {
+      if (!document.hidden) {
+        startPeriodicCheck();
+      } else {
+        stopPeriodicCheck();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChangeWithPeriodic);
+    startPeriodicCheck(); // 初始启动定期检查
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      document.removeEventListener('visibilitychange', handleVisibilityChangeWithPeriodic);
+      window.removeEventListener('focus', handleWindowFocus);
+      window.removeEventListener('pageshow', handlePageShow);
+      stopPeriodicCheck();
+    };
+  }, [isMapInitialized, mapDataLoaded, getSavedMapData, restoreMapLayers]);
+
+  // 组件卸载时的清理
+  useEffect(() => {
+    return () => {
+      // 清理事件监听器
+      document.removeEventListener('visibilitychange', () => {});
+    };
+  }, []);
 
   // 搜索结果管理
   // useEffect(() => {
