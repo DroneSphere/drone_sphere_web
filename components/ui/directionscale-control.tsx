@@ -348,7 +348,7 @@ export function DirectionsScaleControl({
     const connectSocket = async () => {
       try {
         const socket = new WebSocket(
-          `ws://127.0.0.1:10086/api/v1/drone/${physicalDroneSn}/control`
+          `ws://47.245.40.222:10089/api/v1/drone/${physicalDroneSn}/control`
         );
         socket.onopen = () => {
           console.log("WebSocket connected");

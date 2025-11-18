@@ -18,6 +18,8 @@ export function useMap() {
 
   // 指挥机相关引用和状态
   const commandDroneMarkersRef = useRef<AMap.Marker[]>([]);
+  const commandDronePolylinesRef = useRef<AMap.Polyline[]>([]);
+  const commandDroneArrowsRef = useRef<AMap.Marker[]>([]);
   const [isPickingCommandDronePosition, setIsPickingCommandDronePosition] =
     useState(false);
   // 起飞点相关引用和状态
@@ -393,7 +395,7 @@ export function useMap() {
 
   // 绘制指挥机标记
   const drawCommandDrones = useCallback(
-    (commandDrones: CommandDroneState[], isEditing: boolean = false) => {
+    (commandDrones: CommandDroneState[], areaPath: AMap.LngLat[] = [], isEditing: boolean = false) => {
       if (!isMapLoaded || !AMapRef.current || !mapRef.current) return;
 
       const currentMap = mapRef.current;
@@ -407,21 +409,41 @@ export function useMap() {
       const newMarkers: AMap.Marker[] = [];
 
       commandDrones.forEach((commandDrone) => {
+        // 计算指挥机marker显示位置（南北航线的北端点）
+        let markerPosition = {
+          lng: commandDrone.position.lng,
+          lat: commandDrone.position.lat
+        };
+
+        // 如果有区域路径，则计算北端点位置
+        if (areaPath.length > 0) {
+          let mostNorth = areaPath[0];
+          for (const point of areaPath) {
+            if (point.getLat() > mostNorth.getLat()) mostNorth = point;
+          }
+          // 计算中心经度
+          const centerLng = areaPath.reduce((sum, p) => sum + p.getLng(), 0) / areaPath.length;
+          markerPosition = {
+            lng: centerLng,
+            lat: mostNorth.getLat()
+          };
+        }
+
         // 创建标记
         const marker = new currentAMap.Marker({
           position: new currentAMap.LngLat(
-            commandDrone.position.lng,
-            commandDrone.position.lat
+            markerPosition.lng,
+            markerPosition.lat
           ),
           draggable: isEditing,
           cursor: "move",
           content: `
             <div style="position: relative;">
               <div style="
-                width: 24px; 
-                height: 24px; 
-                background-color: ${commandDrone.color}; 
-                border-radius: 50%; 
+                width: 24px;
+                height: 24px;
+                background-color: ${commandDrone.color};
+                border-radius: 50%;
                 border: 2px solid white;
                 box-shadow: 0 2px 4px rgba(0,0,0,0.3);
                 display: flex;
@@ -432,20 +454,9 @@ export function useMap() {
                   font-size: 14px;
                   font-weight: bold;
                   color: white;
-                ">C</span>
+                ">T</span>
               </div>
-              <div style="
-                position: absolute;
-                top: -20px;
-                left: 50%;
-                transform: translateX(-50%);
-                background-color: rgba(0,0,0,0.7);
-                color: white;
-                padding: 2px 6px;
-                border-radius: 3px;
-                font-size: 10px;
-                white-space: nowrap;
-              ">指挥机 ${commandDrone.position.altitude}m</div>
+              <!-- 移除C标识和高度显示，只保留起飞点符号 -->
             </div>
           `,
           zIndex: 110,
@@ -590,6 +601,120 @@ export function useMap() {
     [isMapLoaded]
   );
 
+  // 绘制指挥机南北贯穿航线
+  const drawCommandDroneCenterLines = useCallback(
+    (commandDrones: CommandDroneState[], areaPath: AMap.LngLat[]) => {
+      if (!isMapLoaded || !AMapRef.current || !mapRef.current || commandDrones.length === 0) return;
+
+      const currentMap = mapRef.current;
+      const currentAMap = AMapRef.current;
+
+      // 清除旧的指挥机线段和箭头
+      commandDronePolylinesRef.current.forEach((polyline) => {
+        currentMap.remove(polyline);
+      });
+      commandDroneArrowsRef.current.forEach((arrow) => {
+        currentMap.remove(arrow);
+      });
+
+      const newPolylines: AMap.Polyline[] = [];
+      const newArrows: AMap.Marker[] = [];
+
+      // 计算区域的南北边界和中心经度
+      if (areaPath.length > 0) {
+        // 找到最北和最南的点
+        let mostNorth = areaPath[0];
+        let mostSouth = areaPath[0];
+
+        for (const point of areaPath) {
+          if (point.getLat() > mostNorth.getLat()) mostNorth = point;
+          if (point.getLat() < mostSouth.getLat()) mostSouth = point;
+        }
+
+        // 计算中心经度（所有点的平均经度）
+        const centerLng = areaPath.reduce((sum, p) => sum + p.getLng(), 0) / areaPath.length;
+
+        // 生成南北贯穿航线
+        const northSouthRoute = [
+          new currentAMap.LngLat(centerLng, mostNorth.getLat()),  // 北端点
+          new currentAMap.LngLat(centerLng, mostSouth.getLat())   // 南端点
+        ];
+
+        // 为每个指挥机绘制南北贯穿航线（单一指挥机模式下只会有一条航线）
+        commandDrones.forEach((commandDrone) => {
+          const polyline = new currentAMap.Polyline({
+            path: northSouthRoute,
+            strokeColor: commandDrone.color,
+            strokeWeight: 3,
+            strokeStyle: "solid",
+            strokeOpacity: 0.8,
+            lineJoin: "round",
+            lineCap: "round",
+            zIndex: 105,
+            // 添加箭头标记
+            showDir: true, // 显示箭头方向
+          });
+
+          currentMap.add(polyline);
+          newPolylines.push(polyline);
+
+          // 在航线的两个端点添加额外的箭头标记
+          const northPoint = northSouthRoute[0];  // 北端点
+          const southPoint = northSouthRoute[1];  // 南端点
+
+          // 北端点箭头（指向南）
+          const northArrow = new currentAMap.Marker({
+            position: northPoint,
+            content: `
+              <div style="
+                position: absolute;
+                left: 50%;
+                top: 50%;
+                transform: translate(-50%, -50%);
+                width: 0;
+                height: 0;
+                border-left: 8px solid transparent;
+                border-right: 8px solid transparent;
+                border-top: 12px solid ${commandDrone.color};
+                filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+              "></div>
+            `,
+            zIndex: 106,
+          });
+
+          // 南端点箭头（指向南）
+          const southArrow = new currentAMap.Marker({
+            position: southPoint,
+            content: `
+              <div style="
+                position: absolute;
+                left: 50%;
+                top: 50%;
+                transform: translate(-50%, -50%);
+                width: 0;
+                height: 0;
+                border-left: 8px solid transparent;
+                border-right: 8px solid transparent;
+                border-top: 12px solid ${commandDrone.color};
+                filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+              "></div>
+            `,
+            zIndex: 106,
+          });
+
+          currentMap.add(northArrow);
+          currentMap.add(southArrow);
+          newArrows.push(northArrow);
+          newArrows.push(southArrow);
+        });
+      }
+
+      commandDronePolylinesRef.current = newPolylines;
+      commandDroneArrowsRef.current = newArrows;
+    },
+    [isMapLoaded]
+  );
+
   // 绘制无人机起飞点
   const drawTakeoffPoints = useCallback(
     (drones: DroneStateV2[], isEditing: boolean = false) => {
@@ -606,7 +731,7 @@ export function useMap() {
       const newMarkers: AMap.Marker[] = [];
 
       // 处理所有有起飞点的无人机
-      drones.forEach((drone) => {
+      drones.forEach((drone, droneIndex) => {
         // 跳过没有起飞点的无人机
         const takeoffPoint = drone.takeoffPoint;
         if (!takeoffPoint) return;
@@ -622,10 +747,10 @@ export function useMap() {
           content: `
             <div style="position: relative;">
               <div style="
-                width: 24px; 
-                height: 24px; 
-                background-color: ${drone.color}; 
-                border-radius: 50%; 
+                width: 24px;
+                height: 24px;
+                background-color: ${drone.color};
+                border-radius: 50%;
                 border: 2px solid white;
                 box-shadow: 0 2px 4px rgba(0,0,0,0.3);
                 display: flex;
@@ -649,7 +774,7 @@ export function useMap() {
                 border-radius: 3px;
                 font-size: 10px;
                 white-space: nowrap;
-              ">起飞点 ${takeoffPoint.altitude}m</div>
+              ">起飞点${droneIndex + 1}</div>
             </div>
           `,
           zIndex: 110,
@@ -793,6 +918,7 @@ export function useMap() {
     drawWaylines,
     // 导出指挥机相关函数和状态
     drawCommandDrones,
+    drawCommandDroneCenterLines,
     setupCommandDronePickingMode,
     isPickingCommandDronePosition,
     setIsPickingCommandDronePosition,

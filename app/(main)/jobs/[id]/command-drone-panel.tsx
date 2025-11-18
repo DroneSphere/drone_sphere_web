@@ -2,7 +2,7 @@
  * 指挥机面板组件
  * 负责管理指挥机列表和操作
  */
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState } from "react";
 import { CommandDroneState, JobAction, JobState } from "./job-state";
 import { Button } from "@/components/ui/button";
 import {
@@ -98,17 +98,19 @@ interface CommandDronePanelProps {
   dispatch: React.Dispatch<JobAction>;
   AMapRef: React.MutableRefObject<typeof AMap | null>;
   mapRef: React.MutableRefObject<AMap.Map | null>;
-  isMapPickingMode: boolean;
-  setIsMapPickingMode: React.Dispatch<React.SetStateAction<boolean>>;
-  onPositionPick: (position: { lat: number; lng: number }) => void;
+  // 移除了地图选点相关的props，因为现在不需要手动选择指挥机位置
+  // isMapPickingMode: boolean;
+  // setIsMapPickingMode: React.Dispatch<React.SetStateAction<boolean>>;
+  // onPositionPick: (position: { lat: number; lng: number }) => void;
 }
 
 export default function CommandDronePanel({
   state,
   dispatch,
-  isMapPickingMode,
-  setIsMapPickingMode,
-  onPositionPick,
+  // 移除了地图选点相关的参数
+  // isMapPickingMode,
+  // setIsMapPickingMode,
+  // onPositionPick,
 }: CommandDronePanelProps) {
   const [selectedDroneKey, setSelectedDroneKey] = useState<string>("");
 
@@ -121,21 +123,21 @@ export default function CommandDronePanel({
       !state.waylineAreas.some((w) => w.droneKey === drone.key)
   );
 
-  // 启动地图选点模式
-  const startMapPicking = () => {
-    if (!selectedDroneKey) return;
+  // 启动地图选点模式（已废弃，因为现在不需要地图选点）
+  // const startMapPicking = () => {
+  //   if (!selectedDroneKey) return;
 
-    setIsMapPickingMode(true);
-    // 向用户显示提示
-    toast({
-      title: "指挥机位置选择模式",
-      description: "请在地图上点击选择指挥机位置",
-      variant: "default",
-    });
+  //   setIsMapPickingMode(true);
+  //   // 向用户显示提示
+  //   toast({
+  //     title: "指挥机位置选择模式",
+  //     description: "请在地图上点击选择指挥机位置",
+  //     variant: "default",
+  //   });
 
-    // 启动地图选点模式
-    onPositionPick({ lat: 0, lng: 0 });
-  };
+  //   // 启动地图选点模式
+  //   onPositionPick({ lat: 0, lng: 0 });
+  // };
 
   // 添加新的指挥机
   const addCommandDrone = () => {
@@ -152,96 +154,119 @@ export default function CommandDronePanel({
       return;
     }
 
-    // 启动地图选点模式
-    startMapPicking();
+    // 直接创建指挥机对象，位置设置为默认值（将在生成航线时自动计算南北贯穿航线）
+    const newCommandDrone: CommandDroneState = {
+      droneKey: selectedDroneKey,
+      position: {
+        lat: 0, // 默认值，将在生成航线时自动计算
+        lng: 0, // 默认值，将在生成航线时自动计算
+        altitude: 30, // 默认高度30米，与无人机起飞点一致
+      },
+      color: drone.color || "#3366FF", // 使用无人机的颜色
+    };
+
+    // 添加到状态
+    dispatch({
+      type: "ADD_COMMAND_DRONE",
+      payload: newCommandDrone,
+    });
+
+    // 重置状态
+    setSelectedDroneKey("");
+
+    toast({
+      title: "添加成功",
+      description: "指挥机已添加，生成航线时将自动显示南北贯穿路径",
+      variant: "default",
+    });
   };
 
-  // 处理地图点击事件，创建指挥机
-  const handleMapClick = useCallback(
-    (position: { lat: number; lng: number }) => {
-      // 检查是否处于地图选点模式并且选择了无人机
-      if (!isMapPickingMode || !selectedDroneKey) return;
+  // 处理地图点击事件，创建指挥机（已废弃，因为现在不需要地图选点）
+  // const handleMapClick = useCallback(
+  //   (position: { lat: number; lng: number }) => {
+  //     // 检查是否处于地图选点模式并且选择了无人机
+  //     if (!isMapPickingMode || !selectedDroneKey) return;
 
-      // 获取选中的无人机信息
-      const drone = state.drones.find((d) => d.key === selectedDroneKey);
-      if (!drone) {
-        toast({
-          title: "错误",
-          description: "无法创建指挥机：无人机信息丢失",
-          variant: "destructive",
-        });
-        return;
-      }
+  //     // 获取选中的无人机信息
+  //     const drone = state.drones.find((d) => d.key === selectedDroneKey);
+  //     if (!drone) {
+  //       toast({
+  //         title: "错误",
+  //         description: "无法创建指挥机：无人机信息丢失",
+  //         variant: "destructive",
+  //       });
+  //       return;
+  //     }
 
-      // 创建指挥机对象
-      const newCommandDrone: CommandDroneState = {
-        droneKey: selectedDroneKey,
-        position: {
-          lat: position.lat,
-          lng: position.lng,
-          altitude: 100, // 默认高度100米
-        },
-        color: drone.color || "#3366FF", // 使用无人机的颜色
-      };
+  //     // 创建指挥机对象
+  //     const newCommandDrone: CommandDroneState = {
+  //       droneKey: selectedDroneKey,
+  //       position: {
+  //         lat: position.lat,
+  //         lng: position.lng,
+  //         altitude: 100, // 默认高度100米
+  //       },
+  //       color: drone.color || "#3366FF", // 使用无人机的颜色
+  //     };
 
-      // 添加到状态
-      dispatch({
-        type: "ADD_COMMAND_DRONE",
-        payload: newCommandDrone,
-      });
+  //     // 添加到状态
+  //     dispatch({
+  //       type: "ADD_COMMAND_DRONE",
+  //       payload: newCommandDrone,
+  //     });
 
-      // 重置状态
-      setSelectedDroneKey("");
-      setIsMapPickingMode(false);
+  //     // 重置状态
+  //     setSelectedDroneKey("");
+  //     setIsMapPickingMode(false);
 
-      toast({
-        title: "添加成功",
-        description: "指挥机位置已设置",
-        variant: "default",
-      });
-    },
-    [
-      isMapPickingMode,
-      selectedDroneKey,
-      state.drones,
-      dispatch,
-      setIsMapPickingMode,
-    ]
-  );
+  //     toast({
+  //       title: "添加成功",
+  //       description: "指挥机位置已设置",
+  //       variant: "default",
+  //     });
+  //   },
+  //   [
+  //     isMapPickingMode,
+  //     selectedDroneKey,
+  //     state.drones,
+  //     dispatch,
+  //     setIsMapPickingMode,
+  //   ]
+  // );
 
-  // 监听地图选点模式状态，确保正确处理点击事件
-  useEffect(() => {
-    if (isMapPickingMode && selectedDroneKey) {
-      // 设置一个一次性的事件处理器，当地图被点击时（即onPositionPick被调用时）
-      const handleOneTimeMapClick = (e: MouseEvent) => {
-        // 获取地图点击位置的经纬度（由page.tsx中的setupCommandDronePickingMode函数提供）
-        // 这里假设点击事件包含了position属性
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const position = (e as any).detail;
-        if (
-          position &&
-          typeof position.lat === "number" &&
-          typeof position.lng === "number"
-        ) {
-          handleMapClick(position);
-        }
-      };
+  // 监听地图选点模式状态（已废弃，因为现在不需要地图选点）
+  // useEffect(() => {
+  //   if (isMapPickingMode && selectedDroneKey) {
+  //     // 设置一个一次性的事件处理器，当地图被点击时（即onPositionPick被调用时）
+  //     const handleOneTimeMapClick = (e: MouseEvent) => {
+  //       // 获取地图点击位置的经纬度（由page.tsx中的setupCommandDronePickingMode函数提供）
+  //       // 这里假设点击事件包含了position属性
+  //       // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  //       const position = (e as any).detail;
+  //       if (
+  //         position &&
+  //         typeof position.lat === "number" &&
+  //         typeof position.lng === "number"
+  //       ) {
+  //         handleMapClick(position);
+  //       }
+  //     };
 
-      // 监听一个自定义事件，这个事件将由page.tsx中的代码触发
-      window.addEventListener(
-        "map-position-picked",
-        handleOneTimeMapClick as EventListener
-      );
+  //     // 监听一个自定义事件，这个事件将由page.tsx中的代码触发
+  //     window.addEventListener(
+  //       "map-position-picked",
+  //       handleOneTimeMapClick as EventListener
+  //     );
 
-      return () => {
-        // 清理函数，确保移除事件监听器
-        window.removeEventListener(
-          "map-position-picked",
-          handleOneTimeMapClick as EventListener
-        );
-      };
-    }
-  }, [isMapPickingMode, selectedDroneKey, handleMapClick]);
+  //     return () => {
+  //       // 清理函数，确保移除事件监听器
+  //       window.removeEventListener(
+  //         "map-position-picked",
+  //         handleOneTimeMapClick as EventListener
+  //       );
+  //     };
+  //   }
+  // }, [isMapPickingMode, selectedDroneKey, handleMapClick]);
 
   // 删除指挥机
   const removeCommandDrone = (droneKey: string) => {
@@ -251,27 +276,27 @@ export default function CommandDronePanel({
     });
   };
 
-  // 更新指挥机位置
-  const updatePosition = (
-    droneKey: string,
-    field: "lat" | "lng" | "altitude",
-    value: number
-  ) => {
-    const commandDrone = state.commandDrones.find(
-      (c) => c.droneKey === droneKey
-    );
-    if (!commandDrone) return;
+  // 更新指挥机位置（已废弃，因为现在不需要手动设置指挥机位置）
+  // const updatePosition = (
+  //   droneKey: string,
+  //   field: "lat" | "lng" | "altitude",
+  //   value: number
+  // ) => {
+  //   const commandDrone = state.commandDrones.find(
+  //     (c) => c.droneKey === droneKey
+  //   );
+  //   if (!commandDrone) return;
 
-    const newPosition = { ...commandDrone.position, [field]: value };
+  //   const newPosition = { ...commandDrone.position, [field]: value };
 
-    dispatch({
-      type: "UPDATE_COMMAND_DRONE_POSITION",
-      payload: {
-        drone_key: droneKey,
-        position: newPosition,
-      },
-    });
-  };
+  //   dispatch({
+  //     type: "UPDATE_COMMAND_DRONE_POSITION",
+  //     payload: {
+  //       drone_key: droneKey,
+  //       position: newPosition,
+  //     },
+  //   });
+  // };
 
   // 获取无人机显示名称
   const getDroneName = (droneKey: string) => {
@@ -292,10 +317,9 @@ export default function CommandDronePanel({
           <Select
             value={selectedDroneKey}
             onValueChange={(value) => setSelectedDroneKey(value)}
-            disabled={isMapPickingMode}
           >
             <SelectTrigger className="h-10 border-gray-300 focus:ring-blue-400 bg-white">
-              <SelectValue placeholder="选择无人机作为指挥机" />
+              <SelectValue placeholder="选择无人机" />
             </SelectTrigger>
             <SelectContent className="max-h-[300px] overflow-y-auto">
               {availableDrones.length === 0 ? (
@@ -318,32 +342,16 @@ export default function CommandDronePanel({
         </div>
         <Button
           type="button"
-          disabled={!selectedDroneKey || isMapPickingMode}
+          disabled={!selectedDroneKey}
           onClick={addCommandDrone}
           className="h-10 bg-blue-500 text-white hover:bg-blue-600 transition-colors"
           size="sm"
         >
-          {isMapPickingMode ? "点击地图选择位置" : "添加指挥机"}
+          添加指挥机
         </Button>
       </div>
 
-      {isMapPickingMode && (
-        <div className="mt-3 mb-4 p-3 bg-blue-50 border border-blue-200 rounded-md text-blue-700 text-sm flex items-center justify-between">
-          <div className="flex items-center">
-            <div className="h-2 w-2 rounded-full bg-blue-500 mr-2"></div>
-            请在地图上点击选择指挥机位置
-          </div>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="h-7 border-blue-200 text-blue-700 bg-blue-50 hover:bg-blue-100"
-            onClick={() => setIsMapPickingMode(false)}
-          >
-            取消选择
-          </Button>
-        </div>
-      )}
+      {/* 地图选点模式UI已移除，因为现在不需要手动选择指挥机位置 */}
 
       {/* 指挥机列表 */}
       <div className="space-y-3">
@@ -381,90 +389,7 @@ export default function CommandDronePanel({
               </Button>
             </div>
 
-            {/* 位置信息 */}
-            <div className="mt-3 border border-gray-200 rounded-md bg-gray-50 p-2">
-              <div className="flex items-center justify-between mb-2">
-                <div className="text-xs font-medium text-gray-700">
-                  指挥机位置
-                </div>
-              </div>
-
-              <div className="grid grid-cols-3 gap-2 text-xs">
-                <div className="flex flex-col">
-                  <label
-                    htmlFor={`lat-${commandDrone.droneKey}`}
-                    className="text-gray-600 mb-1"
-                  >
-                    纬度:
-                  </label>
-                  <input
-                    id={`lat-${commandDrone.droneKey}`}
-                    type="number"
-                    className="w-full h-7 px-2 py-0 text-xs border border-gray-300 rounded bg-white"
-                    step="0.000001"
-                    value={commandDrone.position.lat}
-                    placeholder="输入纬度"
-                    title="指挥机纬度坐标"
-                    onChange={(e) =>
-                      updatePosition(
-                        commandDrone.droneKey,
-                        "lat",
-                        parseFloat(e.target.value)
-                      )
-                    }
-                  />
-                </div>
-                <div className="flex flex-col">
-                  <label
-                    htmlFor={`lng-${commandDrone.droneKey}`}
-                    className="text-gray-600 mb-1"
-                  >
-                    经度:
-                  </label>
-                  <input
-                    id={`lng-${commandDrone.droneKey}`}
-                    type="number"
-                    className="w-full h-7 px-2 py-0 text-xs border border-gray-300 rounded bg-white"
-                    step="0.000001"
-                    value={commandDrone.position.lng}
-                    placeholder="输入经度"
-                    title="指挥机经度坐标"
-                    onChange={(e) =>
-                      updatePosition(
-                        commandDrone.droneKey,
-                        "lng",
-                        parseFloat(e.target.value)
-                      )
-                    }
-                  />
-                </div>
-                <div className="flex flex-col">
-                  <label
-                    htmlFor={`alt-${commandDrone.droneKey}`}
-                    className="text-gray-600 mb-1"
-                  >
-                    高度(米):
-                  </label>
-                  <input
-                    id={`alt-${commandDrone.droneKey}`}
-                    type="number"
-                    className="w-full h-7 px-2 py-0 text-xs border border-gray-300 rounded bg-white"
-                    min="0"
-                    step="1"
-                    value={commandDrone.position.altitude}
-                    placeholder="输入高度"
-                    title="指挥机高度（米）"
-                    onChange={(e) =>
-                      updatePosition(
-                        commandDrone.droneKey,
-                        "altitude",
-                        parseInt(e.target.value)
-                      )
-                    }
-                  />
-                </div>
-              </div>
-            </div>
+            {/* 位置信息区域已移除，因为现在不需要手动设置指挥机位置 */}
           </div>
         ))}
 
@@ -472,19 +397,13 @@ export default function CommandDronePanel({
           <div className="mt-4 p-6 border border-dashed border-gray-300 rounded-md bg-gray-50 text-center">
             <div className="text-gray-500 mb-2">暂无指挥机</div>
             <div className="text-xs text-gray-400">
-              请从下拉菜单选择无人机，然后在地图上点击设置指挥机位置
+              添加指挥机以开始规划航线
             </div>
           </div>
         )}
       </div>
 
-      {isMapPickingMode && (
-        <div className="fixed inset-0 bg-black bg-opacity-5 z-40 pointer-events-none flex items-center justify-center">
-          <div className="bg-blue-600 text-white px-4 py-2 rounded-md shadow-lg text-sm font-medium">
-            请在地图上点击选择指挥机位置
-          </div>
-        </div>
-      )}
+      {/* 地图选点模式遮罩已移除，因为现在不需要手动选择指挥机位置 */}
     </div>
   );
 }

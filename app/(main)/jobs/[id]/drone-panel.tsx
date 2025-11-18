@@ -767,8 +767,8 @@ export default function DronePanel({
               </div>
 
               {drone.takeoffPoint ? (
-                <div className="grid grid-cols-3 gap-2 text-xs">
-                  {/* 经纬度和高度输入框保持不变，只是稍微调整样式 */}
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  {/* 只保留经纬度输入框，隐藏高度输入框 */}
                   <div className="flex flex-col">
                     <span className="text-gray-600 mb-1">经度:</span>
                     <input
@@ -833,7 +833,8 @@ export default function DronePanel({
                       }}
                     />
                   </div>
-                  <div className="flex flex-col">
+                  {/* 隐藏高度输入框，但保留数据更新逻辑 */}
+                  {/* <div className="flex flex-col">
                     <span className="text-gray-600 mb-1">高度:</span>
                     <input
                       id={`alt-${drone.key}`}
@@ -864,7 +865,7 @@ export default function DronePanel({
                         }
                       }}
                     />
-                  </div>
+                  </div> */}
                 </div>
               ) : (
                 <div className="text-xs text-gray-500 bg-white p-2 rounded border border-dashed border-gray-200 text-center">

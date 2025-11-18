@@ -374,7 +374,7 @@ const DroneCardList = ({
                     电量:
                     {(videoDialog.drone?.physical_drone_sn &&
                       droneRTStates[videoDialog.drone.physical_drone_sn]
-                        ?.battery) ??
+                        ?.battery.toFixed(1)) ??
                       "--"}
                     %
                   </div>
@@ -382,7 +382,7 @@ const DroneCardList = ({
                     云台俯仰:
                     {(videoDialog.drone?.physical_drone_sn &&
                       droneRTStates[videoDialog.drone.physical_drone_sn]
-                        ?.pitch) ??
+                        ?.pitch.toFixed(1)) ??
                       "--"}
                     °
                   </div>
@@ -390,7 +390,7 @@ const DroneCardList = ({
                     云台航向:
                     {(videoDialog.drone?.physical_drone_sn &&
                       droneRTStates[videoDialog.drone.physical_drone_sn]
-                        ?.yaw) ??
+                        ?.yaw.toFixed(1)) ??
                       "--"}
                     °
                   </div>

@@ -162,9 +162,9 @@ export default function WaylinePanel({
         </Button>
       </div>
 
-      {/* 添加航线参数设置UI */}
-      <div className="grid grid-cols-2 gap-4 mt-4 p-4 border rounded-md">
-        <div>
+      {/* 航线参数设置UI - 简化为仅保留飞行高度字段 */}
+      <div className="mt-4 p-4 border rounded-md">
+        <div className="max-w-xs">
           <Label htmlFor="flyingHeight">飞行高度 (米)</Label>
           <Input
             id="flyingHeight"
@@ -174,77 +174,20 @@ export default function WaylinePanel({
               handleWaylineParamChange("flyingHeight", e.target.value)
             }
             className="mt-1"
+            placeholder="输入飞行高度"
           />
+          <p className="text-xs text-gray-500 mt-2">
+            设置无人机的飞行高度，其他参数将使用优化默认值
+          </p>
         </div>
-        <div>
-          <Label htmlFor="coverageWidth">覆盖宽度 (米)</Label>
-          <Input
-            id="coverageWidth"
-            type="number"
-            value={state.waylineParams.coverageWidth}
-            onChange={(e) =>
-              handleWaylineParamChange("coverageWidth", e.target.value)
-            }
-            className="mt-1"
-          />
-        </div>
-        <div>
-          <Label htmlFor="overlapRate">重叠率 (0-1)</Label>
-          <Input
-            id="overlapRate"
-            type="number"
-            step="0.01"
-            min="0"
-            max="1"
-            value={state.waylineParams.overlapRate}
-            onChange={(e) =>
-              handleWaylineParamChange("overlapRate", e.target.value)
-            }
-            className="mt-1"
-          />
-        </div>
-        <div>
-          <Label htmlFor="heightInterval">层高间隔 (米)</Label>
-          <Input
-            id="heightInterval"
-            type="number"
-            step="0.1"
-            value={state.waylineParams.heightInterval}
-            onChange={(e) =>
-              handleWaylineParamChange("heightInterval", e.target.value)
-            }
-            className="mt-1"
-          />
-        </div>
-        <div>
-          <Label htmlFor="gimbalPitch">云台俯仰角 (°)</Label>
-          <Input
-            id="gimbalPitch"
-            type="number"
-            step="1"
-            min="-90"
-            max="90"
-            value={state.waylineParams.gimbalPitch}
-            onChange={(e) =>
-              handleWaylineParamChange("gimbalPitch", e.target.value)
-            }
-            className="mt-1"
-          />
-        </div>
-        <div>
-          <Label htmlFor="gimbalZoom">云台变焦 (x)</Label>
-          <Input
-            id="gimbalZoom"
-            type="number"
-            step="0.1"
-            min="1"
-            value={state.waylineParams.gimbalZoom}
-            onChange={(e) =>
-              handleWaylineParamChange("gimbalZoom", e.target.value)
-            }
-            className="mt-1"
-          />
-        </div>
+
+        {/* 以下字段已从UI移除，但保留在后台计算中使用：
+            - 覆盖宽度 (coverageWidth): 默认12米
+            - 重叠率 (overlapRate): 默认0.1
+            - 层高间隔 (heightInterval): 默认0.5米
+            - 云台俯仰角 (gimbalPitch): 默认-90度
+            - 云台变焦 (gimbalZoom): 默认1倍
+        */}
       </div>
     </div>
   );

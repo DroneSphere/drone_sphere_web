@@ -61,10 +61,12 @@ export default function Page() {
     isMapLoaded,
     drawAreaPolygon,
     drawWaylines,
-    drawCommandDrones, // 添加绘制指挥机函数
-    setupCommandDronePickingMode, // 添加指挥机位置选择模式
-    isPickingCommandDronePosition, // 添加指挥机位置选择状态
-    setIsPickingCommandDronePosition, // 添加指挥机位置选择状态设置函数
+    // drawCommandDrones, // 添加绘制指挥机函数（已移除marker显示）
+    drawCommandDroneCenterLines, // 添加绘制指挥机中心线段函数
+    // 移除了指挥机地图选点相关的变量，因为现在不需要手动选择指挥机位置
+    // setupCommandDronePickingMode, // 添加指挥机位置选择模式
+    // isPickingCommandDronePosition, // 添加指挥机位置选择状态
+    // setIsPickingCommandDronePosition, // 添加指挥机位置选择状态设置函数
     drawTakeoffPoints, // 添加绘制起飞点函数
     setupTakeoffPointPickingMode, // 添加起飞点位置选择模式
     isPickingTakeoffPoint, // 添加起飞点选择状态
@@ -250,45 +252,45 @@ export default function Page() {
     []
   );
 
-  // 存储当前选中的无人机键值（用于指挥机添加）
-  const [selectedCommandDroneKey, setSelectedCommandDroneKey] =
-    useState<string>("");
+  // 存储当前选中的无人机键值（用于指挥机添加）（已废弃，因为现在不需要地图选点）
+  // const [selectedCommandDroneKey, setSelectedCommandDroneKey] =
+  //   useState<string>("");
 
-  // 处理指挥机位置选择
-  const handleCommandDronePositionPick = useCallback(
-    (position: { lat: number; lng: number }) => {
-      console.log("选中的指挥机位置", position);
+  // 处理指挥机位置选择（已废弃，因为现在不需要地图选点）
+  // const handleCommandDronePositionPick = useCallback(
+  //   (position: { lat: number; lng: number }) => {
+  //     console.log("选中的指挥机位置", position);
 
-      // 触发自定义事件，供CommandDronePanel组件接收
-      const positionEvent = new CustomEvent("map-position-picked", {
-        detail: position,
-      });
-      window.dispatchEvent(positionEvent);
+  //     // 触发自定义事件，供CommandDronePanel组件接收
+  //     const positionEvent = new CustomEvent("map-position-picked", {
+  //       detail: position,
+  //     });
+  //     window.dispatchEvent(positionEvent);
 
-      if (!selectedCommandDroneKey) return;
+  //     if (!selectedCommandDroneKey) return;
 
-      // 获取选中的无人机信息 - 使用drones替代selectedDrones
-      const drone = state.drones.find((d) => d.key === selectedCommandDroneKey);
-      if (!drone) return;
+  //     // 获取选中的无人机信息 - 使用drones替代selectedDrones
+  //     const drone = state.drones.find((d) => d.key === selectedCommandDroneKey);
+  //     if (!drone) return;
 
-      // 创建新的指挥机对象
-      dispatch({
-        type: "ADD_COMMAND_DRONE",
-        payload: {
-          droneKey: selectedCommandDroneKey,
-          position: {
-            ...position,
-            altitude: 100, // 默认高度100米
-          },
-          color: drone.color || "#3366FF",
-        },
-      });
+  //     // 创建新的指挥机对象
+  //     dispatch({
+  //       type: "ADD_COMMAND_DRONE",
+  //       payload: {
+  //         droneKey: selectedCommandDroneKey,
+  //         position: {
+  //           ...position,
+  //           altitude: 100, // 默认高度100米
+  //         },
+  //         color: drone.color || "#3366FF",
+  //       },
+  //     });
 
-      // 重置选中的无人机键值
-      setSelectedCommandDroneKey("");
-    },
-    [selectedCommandDroneKey, state.drones, dispatch]
-  );
+  //     // 重置选中的无人机键值
+  //     setSelectedCommandDroneKey("");
+  //   },
+  //   [selectedCommandDroneKey, state.drones, dispatch]
+  // );
 
   // 处理起飞点位置选择
   const handleTakeoffPointPick = useCallback(
@@ -361,13 +363,21 @@ export default function Page() {
     handlePolygonEdit,
   ]);
 
-  // 监听指挥机变化，更新地图标记
+  // 监听指挥机变化，更新地图标记（已移除指挥机marker显示）
+  // useEffect(() => {
+  //   if (isMapLoaded && state.commandDrones.length > 0) {
+  //     // 绘制指挥机标记，在编辑模式下允许拖拽，传递区域路径用于计算北端点位置
+  //     drawCommandDrones(state.commandDrones, state.path, isCreating);
+  //   }
+  // }, [isMapLoaded, state.commandDrones, state.path, isCreating, drawCommandDrones]);
+
+  // 监听指挥机和航线变化，绘制指挥机中心线段
   useEffect(() => {
-    if (isMapLoaded && state.commandDrones.length > 0) {
-      // 绘制指挥机标记，在编辑模式下允许拖拽
-      drawCommandDrones(state.commandDrones, isCreating);
+    if (isMapLoaded && state.commandDrones.length > 0 && state.waylineAreas.length > 0 && state.path.length > 0) {
+      // 绘制指挥机中心线段
+      drawCommandDroneCenterLines(state.commandDrones, state.path);
     }
-  }, [isMapLoaded, state.commandDrones, isCreating, drawCommandDrones]);
+  }, [isMapLoaded, state.commandDrones, state.waylineAreas, state.path, drawCommandDroneCenterLines]);
 
   // 监听无人机起飞点变化，更新地图标记
   useEffect(() => {
@@ -437,24 +447,24 @@ export default function Page() {
     };
   }, [dispatch]);
 
-  // 设置指挥机选择模式
-  useEffect(() => {
-    if (isPickingCommandDronePosition && isMapLoaded) {
-      // 设置指挥机位置选择模式
-      const cancelPicking = setupCommandDronePickingMode(
-        handleCommandDronePositionPick
-      );
+  // 设置指挥机选择模式（已废弃，因为现在不需要地图选点）
+  // useEffect(() => {
+  //   if (isPickingCommandDronePosition && isMapLoaded) {
+  //     // 设置指挥机位置选择模式
+  //     const cancelPicking = setupCommandDronePickingMode(
+  //       handleCommandDronePositionPick
+  //     );
 
-      return () => {
-        if (cancelPicking) cancelPicking();
-      };
-    }
-  }, [
-    isPickingCommandDronePosition,
-    isMapLoaded,
-    setupCommandDronePickingMode,
-    handleCommandDronePositionPick,
-  ]);
+  //     return () => {
+  //       if (cancelPicking) cancelPicking();
+  //     };
+  //   }
+  // }, [
+  //   isPickingCommandDronePosition,
+  //   isMapLoaded,
+  //   setupCommandDronePickingMode,
+  //   handleCommandDronePositionPick,
+  // ]);
 
   // 设置起飞点选择模式
   useEffect(() => {
@@ -512,9 +522,10 @@ export default function Page() {
                   dispatch={dispatch}
                   AMapRef={AMapRef}
                   mapRef={mapRef}
-                  isMapPickingMode={isPickingCommandDronePosition}
-                  setIsMapPickingMode={setIsPickingCommandDronePosition}
-                  onPositionPick={handleCommandDronePositionPick}
+                  // 移除了地图选点相关的props，因为现在指挥机直接添加，不需要手动选择位置
+                  // isMapPickingMode={isPickingCommandDronePosition}
+                  // setIsMapPickingMode={setIsPickingCommandDronePosition}
+                  // onPositionPick={handleCommandDronePositionPick}
                 />
                 <WaylinePanel
                   state={state}
