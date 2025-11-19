@@ -190,7 +190,9 @@ const SearchResultList = ({
                 </div>
                 <div className="p-2">
                   <span className="text-gray-500">置信度：</span>
-                  <span className="font-medium">90%</span>
+                  <span className="font-medium">
+                    {detailDialog.result.confidence ? `${(detailDialog.result.confidence * 100).toFixed(2)}%` : "N/A"}
+                  </span>
                 </div>
 
                 {/* 第二行：经度和纬度 */}
