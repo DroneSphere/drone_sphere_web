@@ -147,8 +147,9 @@ const SearchResultList = ({
           <div className="space-y-4">
             {/* 图片展示 - 优化容器和图片显示 */}
             <div
-              className="w-full aspect-video bg-black rounded-md overflow-hidden relative flex items-center justify-center cursor-pointer group"
+              className="w-full bg-black rounded-md overflow-hidden relative cursor-pointer group"
               onClick={() => window.open(detailDialog.result?.image_url, "_blank")}
+              style={{ paddingBottom: '56.25%' }}
             >
               {detailDialog.result && (
                 <>
@@ -158,8 +159,8 @@ const SearchResultList = ({
                     fill={true}
                     sizes="(max-width: 768px) 100vw, (max-width: 1200px) 80vw, 70vw"
                     priority={true}
-                    className="object-contain w-full h-full group-hover:opacity-80 transition-opacity"
-                    style={{ objectFit: "cover" }}
+                    className="object-contain w-full h-full group-hover:opacity-80 transition-opacity absolute inset-0"
+                    style={{ objectFit: "contain" }}
                     onError={(e) => {
                       console.log(
                         "图片加载失败:",
